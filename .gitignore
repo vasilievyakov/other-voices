@@ -1,0 +1,19 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# Data (contains recordings and personal transcripts)
+data/
+logs/
+
+# macOS
+.DS_Store
+
+# Swift build
+app/.build/
+app/Other Voices.app/
+app/icon/AppIcon.iconset/
+
+# Temporary
+*.tmp
