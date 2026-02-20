@@ -1,8 +1,9 @@
-"""Shared fixtures for call-recorder tests."""
+"""Shared fixtures for call-recorder enterprise tests."""
 
 import json
 import pytest
 from pathlib import Path
+from unittest.mock import MagicMock
 
 from src.database import Database
 
@@ -15,7 +16,7 @@ def tmp_db(tmp_path):
 
 @pytest.fixture
 def populated_db(tmp_db):
-    """Database pre-loaded with 3 calls."""
+    """Database pre-loaded with 3 calls spanning 2 days."""
     calls = [
         {
             "session_id": "20250220_100000",
@@ -99,8 +100,6 @@ def sample_summary():
 
 def make_proc(name, pid=1000, connections=None):
     """Helper to create mock psutil process objects."""
-    from unittest.mock import MagicMock
-
     proc = MagicMock()
     proc.info = {"name": name}
     proc.pid = pid
@@ -109,3 +108,19 @@ def make_proc(name, pid=1000, connections=None):
     else:
         proc.net_connections.return_value = []
     return proc
+
+
+def make_conn(ip, port=12345):
+    """Create a mock UDP connection with remote address."""
+    conn = MagicMock()
+    conn.raddr = MagicMock()
+    conn.raddr.ip = ip
+    conn.raddr.port = port
+    return conn
+
+
+def make_conn_no_raddr():
+    """Create a mock UDP connection without remote address (listening socket)."""
+    conn = MagicMock()
+    conn.raddr = None
+    return conn

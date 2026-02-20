@@ -1,13 +1,13 @@
 import Foundation
 
-struct DaemonStatus: Codable {
-    let daemonPid: Int
-    let timestamp: String
-    let state: String
-    let appName: String?
-    let sessionId: String?
-    let startedAt: String?
-    let pipeline: String?
+package struct DaemonStatus: Codable {
+    package let daemonPid: Int
+    package let timestamp: String
+    package let state: String
+    package let appName: String?
+    package let sessionId: String?
+    package let startedAt: String?
+    package let pipeline: String?
 
     enum CodingKeys: String, CodingKey {
         case daemonPid = "daemon_pid"
@@ -19,19 +19,19 @@ struct DaemonStatus: Codable {
         case pipeline
     }
 
-    var isActive: Bool {
+    package var isActive: Bool {
         state != "stopped"
     }
 
-    var isRecording: Bool {
+    package var isRecording: Bool {
         state == "recording"
     }
 
-    var isProcessing: Bool {
+    package var isProcessing: Bool {
         state == "processing"
     }
 
-    var stateLabel: String {
+    package var stateLabel: String {
         switch state {
         case "recording": return "Recording"
         case "processing":
@@ -47,7 +47,7 @@ struct DaemonStatus: Codable {
         }
     }
 
-    var recordingDuration: TimeInterval? {
+    package var recordingDuration: TimeInterval? {
         guard let startedAt, let date = parseDate(startedAt) else { return nil }
         return Date().timeIntervalSince(date)
     }

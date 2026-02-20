@@ -1,11 +1,11 @@
 import Foundation
 
-enum SidebarItem: Hashable {
+package enum SidebarItem: Hashable {
     case allCalls
     case actionItems
     case app(String)
 
-    var label: String {
+    package var label: String {
         switch self {
         case .allCalls: return "All Calls"
         case .actionItems: return "Action Items"
@@ -13,7 +13,7 @@ enum SidebarItem: Hashable {
         }
     }
 
-    var icon: String {
+    package var icon: String {
         switch self {
         case .allCalls: return "phone.fill"
         case .actionItems: return "checklist"

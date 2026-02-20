@@ -12,7 +12,7 @@ def fmt_duration(seconds: float) -> str:
     m, s = divmod(int(seconds), 60)
     h, m = divmod(m, 60)
     if h:
-        return f"{h}h{m:02d}m"
+        return f"{h}h{m:02d}m{s:02d}s"
     return f"{m}m{s:02d}s"
 
 
