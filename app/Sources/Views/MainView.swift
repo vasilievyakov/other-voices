@@ -4,7 +4,7 @@ package struct MainView: View {
     package init() {}
     @Environment(CallStore.self) private var store
     @State private var selectedSidebarItem: SidebarItem? = .allCalls
-    @State private var selectedCall: Call?
+    @State private var selectedCallId: String?
     @State private var searchText = ""
 
     package var body: some View {
@@ -13,28 +13,31 @@ package struct MainView: View {
         NavigationSplitView {
             SidebarView(selection: $selectedSidebarItem)
         } content: {
-            if selectedSidebarItem == .actionItems {
-                ActionItemsView(selectedCall: $selectedCall)
-            } else {
-                CallListView(selectedCall: $selectedCall)
-                    .searchable(text: $searchText, prompt: "Search calls...")
-                    .onChange(of: searchText) { _, newValue in
-                        store.setSearch(newValue)
-                    }
+            switch selectedSidebarItem {
+            case .actionItems:
+                ActionItemsView(selectedCallId: $selectedCallId)
+            case .commitments:
+                CommitmentsView(selectedCallId: $selectedCallId)
+            default:
+                CallListView(selectedCallId: $selectedCallId)
             }
         } detail: {
-            if let call = selectedCall {
-                CallDetailView(call: call)
+            if let sessionId = selectedCallId {
+                CallDetailView(sessionId: sessionId)
             } else {
                 ContentUnavailableView("Select a call", systemImage: "phone.fill",
                     description: Text("Choose a call from the list to see details"))
             }
         }
+        .searchable(text: $searchText, prompt: "Search calls...")
+        .onChange(of: searchText) { _, newValue in
+            store.setSearch(newValue)
+        }
         .navigationSplitViewStyle(.balanced)
         .onChange(of: selectedSidebarItem) { _, newValue in
             if let item = newValue {
                 store.setFilter(item)
-                selectedCall = nil
+                selectedCallId = nil
             }
         }
     }

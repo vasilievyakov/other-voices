@@ -12,8 +12,12 @@ from src.summarizer import Summarizer
 
 
 def _mock_ollama(response_text):
-    """Create a mock urlopen response with the given text."""
-    body = json.dumps({"response": response_text}).encode("utf-8")
+    """Create a mock urlopen response in /api/chat format."""
+    body = json.dumps(
+        {
+            "message": {"role": "assistant", "content": response_text},
+        }
+    ).encode("utf-8")
     resp = MagicMock()
     resp.read.return_value = body
     resp.__enter__ = lambda s: s
@@ -143,22 +147,21 @@ class TestSummarizerOutput:
             }
         )
         mock_urlopen.return_value = _mock_ollama(valid)
-        long_text = "A" * 20000
+        long_text = "A" * 60000
         self.summarizer.summarize(long_text)
 
         req = mock_urlopen.call_args[0][0]
         payload = json.loads(req.data.decode("utf-8"))
-        prompt = payload["prompt"]
-        # Prompt includes SUMMARY_PROMPT prefix + transcript (max 12000)
-        assert len(prompt) < 20000
+        prompt = payload["messages"][0]["content"]
+        # Prompt includes SUMMARY_PROMPT prefix + transcript (max 50000)
+        assert len(prompt) < 60000
 
     @patch("src.summarizer.urllib.request.urlopen")
-    def test_empty_response_fallback(self, mock_urlopen):
-        """Empty Ollama response → fallback dict."""
+    def test_empty_response_returns_none(self, mock_urlopen):
+        """Empty Ollama response returns None (no content to parse)."""
         mock_urlopen.return_value = _mock_ollama("")
         result = self.summarizer.summarize("A" * 100)
-        assert result is not None
-        assert result["summary"] == ""
+        assert result is None
 
     @patch("src.summarizer.urllib.request.urlopen")
     def test_cyrillic_json_parsed(self, mock_urlopen):
@@ -304,29 +307,29 @@ class TestSummarizerTemplates:
 
         req = mock_urlopen.call_args[0][0]
         payload = json.loads(req.data.decode("utf-8"))
-        assert "objections" in payload["prompt"]
+        assert "objections" in payload["messages"][0]["content"]
 
     @patch("src.summarizer.urllib.request.urlopen")
-    def test_non_default_template_higher_num_predict(self, mock_urlopen):
-        """Non-default templates use num_predict=2048."""
+    def test_non_default_template_num_predict(self, mock_urlopen):
+        """Non-default templates use num_predict=16384."""
         valid = json.dumps({"summary": "ok", "participants": []})
         mock_urlopen.return_value = _mock_ollama(valid)
         self.summarizer.summarize("A" * 100, template_name="sales_call")
 
         req = mock_urlopen.call_args[0][0]
         payload = json.loads(req.data.decode("utf-8"))
-        assert payload["options"]["num_predict"] == 2048
+        assert payload["options"]["num_predict"] == 16384
 
     @patch("src.summarizer.urllib.request.urlopen")
-    def test_default_template_standard_num_predict(self, mock_urlopen):
-        """Default template uses num_predict=1024."""
+    def test_default_template_num_predict(self, mock_urlopen):
+        """Default template uses num_predict=16384."""
         valid = json.dumps({"summary": "ok", "participants": []})
         mock_urlopen.return_value = _mock_ollama(valid)
         self.summarizer.summarize("A" * 100)
 
         req = mock_urlopen.call_args[0][0]
         payload = json.loads(req.data.decode("utf-8"))
-        assert payload["options"]["num_predict"] == 1024
+        assert payload["options"]["num_predict"] == 16384
 
     @patch("src.summarizer.urllib.request.urlopen")
     def test_notes_included_in_prompt(self, mock_urlopen):
@@ -337,4 +340,122 @@ class TestSummarizerTemplates:
 
         req = mock_urlopen.call_args[0][0]
         payload = json.loads(req.data.decode("utf-8"))
-        assert "Focus on deadlines" in payload["prompt"]
+        assert "Focus on deadlines" in payload["messages"][0]["content"]
+
+
+# =============================================================================
+# Chunked Summarization (5 tests)
+# =============================================================================
+
+
+class TestSummarizerChunked:
+    def setup_method(self):
+        self.summarizer = Summarizer()
+
+    def _make_long_text(self, chars: int = 60000) -> str:
+        line = "Speaker A: This is a test line for chunking purposes.\n"
+        return line * (chars // len(line) + 1)
+
+    @patch("src.summarizer.urllib.request.urlopen")
+    def test_long_transcript_uses_chunks(self, mock_urlopen):
+        """Transcript >25K is split into chunks and merged."""
+        chunk_summary = json.dumps(
+            {
+                "summary": "Chunk summary",
+                "key_points": ["point 1"],
+                "decisions": [],
+                "action_items": [],
+                "participants": ["Alice"],
+            }
+        )
+        merge_summary = json.dumps(
+            {
+                "summary": "Merged summary of whole call",
+                "key_points": ["point 1"],
+                "decisions": [],
+                "action_items": [],
+                "participants": ["Alice"],
+            }
+        )
+        # First N calls = chunk summaries, last call = merge
+        mock_urlopen.side_effect = [
+            _mock_ollama(chunk_summary),
+            _mock_ollama(chunk_summary),
+            _mock_ollama(chunk_summary),
+            _mock_ollama(merge_summary),
+        ]
+        result = self.summarizer.summarize(self._make_long_text(60000))
+        assert result is not None
+        assert "_chunks" in result
+        assert result["summary"] == "Merged summary of whole call"
+
+    @patch("src.summarizer.urllib.request.urlopen")
+    def test_short_transcript_single_pass(self, mock_urlopen):
+        """Transcript <25K uses single pass (no chunking)."""
+        valid = json.dumps(
+            {
+                "summary": "ok",
+                "key_points": [],
+                "decisions": [],
+                "action_items": [],
+                "participants": [],
+            }
+        )
+        mock_urlopen.return_value = _mock_ollama(valid)
+        result = self.summarizer.summarize("A" * 100)
+        assert result is not None
+        assert "_chunks" not in result
+
+    @patch("src.summarizer.urllib.request.urlopen")
+    def test_merge_failure_falls_back_to_mechanical(self, mock_urlopen):
+        """If LLM merge fails, mechanical merge is used."""
+        chunk_summary = json.dumps(
+            {
+                "summary": "Chunk 1",
+                "key_points": ["point A"],
+                "decisions": [],
+                "action_items": ["task 1"],
+                "participants": ["Alice"],
+            }
+        )
+        # Chunk calls succeed, merge call returns invalid JSON
+        mock_urlopen.side_effect = [
+            _mock_ollama(chunk_summary),
+            _mock_ollama(chunk_summary),
+            _mock_ollama(chunk_summary),
+            _mock_ollama("not valid json"),
+        ]
+        result = self.summarizer.summarize(self._make_long_text(60000))
+        assert result is not None
+        # Mechanical merge concatenates summaries
+        assert "Chunk 1" in result["summary"]
+        assert "_chunks" in result
+
+    @patch("src.summarizer.urllib.request.urlopen")
+    def test_all_chunks_fail_returns_none(self, mock_urlopen):
+        """If all chunk summarizations fail, returns None."""
+        mock_urlopen.side_effect = URLError("Connection refused")
+        result = self.summarizer.summarize(self._make_long_text(60000))
+        assert result is None
+
+    @patch("src.summarizer.urllib.request.urlopen")
+    def test_single_chunk_succeeds_used_directly(self, mock_urlopen):
+        """If only one chunk succeeds out of many, use it as-is."""
+        chunk_summary = json.dumps(
+            {
+                "summary": "Only success",
+                "key_points": ["x"],
+                "decisions": [],
+                "action_items": [],
+                "participants": [],
+            }
+        )
+        # First chunk succeeds, rest fail
+        mock_urlopen.side_effect = [
+            _mock_ollama(chunk_summary),
+            URLError("fail"),
+            URLError("fail"),
+        ]
+        result = self.summarizer.summarize(self._make_long_text(60000))
+        assert result is not None
+        assert result["summary"] == "Only success"

@@ -3,6 +3,7 @@ import Foundation
 package enum SidebarItem: Hashable {
     case allCalls
     case actionItems
+    case commitments
     case app(String)
     case entity(String)
 
@@ -10,6 +11,7 @@ package enum SidebarItem: Hashable {
         switch self {
         case .allCalls: return "All Calls"
         case .actionItems: return "Action Items"
+        case .commitments: return "Commitments"
         case .app(let name): return name
         case .entity(let name): return name
         }
@@ -19,6 +21,7 @@ package enum SidebarItem: Hashable {
         switch self {
         case .allCalls: return "phone.fill"
         case .actionItems: return "checklist"
+        case .commitments: return "handshake.fill"
         case .entity: return "person.fill"
         case .app(let name):
             switch name {

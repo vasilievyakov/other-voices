@@ -7,9 +7,30 @@ final class AudioPlayer: NSObject, AVAudioPlayerDelegate {
     var currentTime: TimeInterval = 0
     var duration: TimeInterval = 0
     var currentFile: String?
+    var playbackSpeed: Float = 1.0
 
     private var player: AVAudioPlayer?
     private var timer: Timer?
+
+    private static let speeds: [Float] = [1.0, 1.25, 1.5, 2.0, 0.75]
+
+    var speedLabel: String {
+        if playbackSpeed == Float(Int(playbackSpeed)) {
+            return "\(Int(playbackSpeed))x"
+        }
+        return String(format: "%.2gx", playbackSpeed)
+    }
+
+    func cycleSpeed() {
+        guard let idx = Self.speeds.firstIndex(of: playbackSpeed) else {
+            playbackSpeed = 1.0
+            player?.rate = 1.0
+            return
+        }
+        let next = Self.speeds[(idx + 1) % Self.speeds.count]
+        playbackSpeed = next
+        player?.rate = next
+    }
 
     func play(path: String) {
         let url = URL(fileURLWithPath: path)
@@ -27,7 +48,9 @@ final class AudioPlayer: NSObject, AVAudioPlayerDelegate {
             player?.stop()
             player = try AVAudioPlayer(contentsOf: url)
             player?.delegate = self
+            player?.enableRate = true
             player?.prepareToPlay()
+            player?.rate = playbackSpeed
             duration = player?.duration ?? 0
             currentTime = 0
             currentFile = path

@@ -6,87 +6,87 @@ struct SidebarView: View {
     @Binding var selection: SidebarItem?
 
     var body: some View {
-        List(selection: $selection) {
+        VStack(spacing: 0) {
+            List(selection: $selection) {
+                librarySection
+                appsSection
+                peopleSection
+            }
+            .listStyle(.sidebar)
+            .navigationTitle("Other Voices")
+
+            Divider()
             DaemonStatusCard()
-                .listRowSeparator(.hidden)
-                .listRowInsets(EdgeInsets(top: 8, leading: 8, bottom: 8, trailing: 8))
+                .padding(8)
+        }
+    }
 
-            Section("Library") {
-                Label {
-                    HStack {
-                        Text("All Calls")
-                        Spacer()
-                        Text("\(store.totalCount)")
-                            .foregroundStyle(.secondary)
-                            .font(.caption)
-                    }
-                } icon: {
-                    Image(systemName: "phone.fill")
-                }
-                .tag(SidebarItem.allCalls)
+    // MARK: - Sections
 
-                Label {
-                    HStack {
-                        Text("Action Items")
-                        Spacer()
-                        let count = store.allActionItems().count
-                        if count > 0 {
-                            Text("\(count)")
-                                .foregroundStyle(.secondary)
-                                .font(.caption)
-                        }
-                    }
-                } icon: {
-                    Image(systemName: "checklist")
-                }
-                .tag(SidebarItem.actionItems)
+    private var librarySection: some View {
+        Section("Library") {
+            Label {
+                Text("All Calls")
+            } icon: {
+                Image(systemName: SidebarItem.allCalls.icon)
             }
+            .badge(store.totalCount)
+            .accessibilityLabel("All Calls, \(store.totalCount) calls")
+            .tag(SidebarItem.allCalls)
 
-            if !store.appCounts.isEmpty {
-                Section("Apps") {
-                    ForEach(store.appCounts, id: \.0) { appName, count in
-                        Label {
-                            HStack {
-                                Text(appName)
-                                Spacer()
-                                Text("\(count)")
-                                    .foregroundStyle(.secondary)
-                                    .font(.caption)
-                            }
-                        } icon: {
-                            Image(systemName: iconForApp(appName))
-                        }
-                        .tag(SidebarItem.app(appName))
-                    }
-                }
+            Label {
+                Text("Action Items")
+            } icon: {
+                Image(systemName: SidebarItem.actionItems.icon)
             }
+            .badge(store.allActionItems().count)
+            .accessibilityLabel("Action Items")
+            .tag(SidebarItem.actionItems)
 
-            if !store.entities.isEmpty {
-                Section("People") {
-                    ForEach(store.entities, id: \.name) { entity in
-                        Label {
-                            Text(entity.name)
-                        } icon: {
-                            Image(systemName: entity.icon)
-                        }
-                        .tag(SidebarItem.entity(entity.name))
+            Label {
+                Text("Commitments")
+            } icon: {
+                Image(systemName: SidebarItem.commitments.icon)
+            }
+            .badge(store.commitmentCounts.outgoing + store.commitmentCounts.incoming)
+            .accessibilityLabel("Commitments, \(store.commitmentCounts.outgoing + store.commitmentCounts.incoming) open")
+            .tag(SidebarItem.commitments)
+        }
+    }
+
+    @ViewBuilder
+    private var appsSection: some View {
+        if !store.appCounts.isEmpty {
+            Section("Apps") {
+                ForEach(store.appCounts, id: \.0) { appName, count in
+                    Label {
+                        Text(appName)
+                    } icon: {
+                        Image(systemName: SidebarItem.app(appName).icon)
                     }
+                    .badge(count)
+                    .accessibilityLabel("\(appName), \(count) calls")
+                    .tag(SidebarItem.app(appName))
                 }
             }
         }
-        .listStyle(.sidebar)
-        .navigationTitle("Other Voices")
     }
 
-    private func iconForApp(_ name: String) -> String {
-        switch name {
-        case "Zoom": return "video.fill"
-        case "Google Meet": return "globe"
-        case "Telegram": return "bubble.left.fill"
-        case "FaceTime": return "phone.fill"
-        case "Discord": return "headphones"
-        case "Microsoft Teams": return "person.3.fill"
-        default: return "phone.fill"
+    @ViewBuilder
+    private var peopleSection: some View {
+        if !store.entities.isEmpty {
+            Section("People") {
+                ForEach(store.entities, id: \.name) { entity in
+                    Label {
+                        Text(entity.name)
+                    } icon: {
+                        Image(systemName: entity.icon)
+                    }
+                    .badge(store.entityCallCount(entity.name) ?? 0)
+                    .accessibilityLabel("\(entity.name), \(store.entityCallCount(entity.name) ?? 0) calls")
+                    .tag(SidebarItem.entity(entity.name))
+                }
+            }
         }
     }
 }

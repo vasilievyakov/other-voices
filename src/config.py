@@ -56,7 +56,7 @@ FFMPEG_BIN = "ffmpeg"
 
 # Summarization
 OLLAMA_URL = "http://localhost:11434/api/generate"
-OLLAMA_MODEL = "qwen2.5:7b"
+OLLAMA_MODEL = "qwen3:14b"
 
 # Notifications
 NOTIFY_ENABLED = True

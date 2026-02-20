@@ -11,9 +11,11 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from .config import MIN_CALL_DURATION, POLL_INTERVAL, LOG_PATH, STATUS_PATH, DATA_DIR
+from .commitment_extractor import extract_commitments
 from .database import Database
 from .detector import CallDetector
 from .recorder import AudioRecorder
+from .speaker_resolver import resolve_speakers, format_transcript_for_prompt
 from .summarizer import Summarizer
 from .templates import export_templates_json
 from .transcriber import Transcriber
@@ -77,7 +79,7 @@ def write_status(
 def process_recording(
     session: dict, transcriber: Transcriber, summarizer: Summarizer, db: Database
 ):
-    """Post-process a completed recording: transcribe, summarize, save to DB."""
+    """Post-process a completed recording: transcribe, summarize, extract commitments."""
     session_id = session["session_id"]
     duration = session["duration_seconds"]
     app_name = session["app_name"]
@@ -92,54 +94,71 @@ def process_recording(
 
     notify("Call Recorder", f"Обработка звонка {app_name} ({duration:.0f}с)...")
 
-    # Transcribe
-    log.info(f"Transcribing {session_id}...")
+    # ── Step 1: Separate transcription (mic + system independently) ──
+    log.info(f"Transcribing {session_id} (separate channels)...")
     write_status(
         "processing", app_name, session_id, session["started_at"], "transcribing"
     )
-    transcribe_result = transcriber.transcribe(session["session_dir"])
+    separate_result = transcriber.transcribe_separate(session["session_dir"])
 
-    if not transcribe_result:
-        log.warning(f"Transcription failed for {session_id}")
-        notify("Call Recorder", f"Ошибка транскрипции {app_name}")
-        # Still save the record without transcript
-        db.insert_call(
-            session_id=session_id,
-            app_name=app_name,
-            started_at=session["started_at"],
-            ended_at=session["ended_at"],
-            duration_seconds=duration,
-            system_wav_path=session["system_wav"],
-            mic_wav_path=session["mic_wav"],
-            transcript=None,
-            summary=None,
-        )
-        return
-
-    # Handle both dict (with segments) and str (plain text) return
-    import json as _json
-
-    transcript_segments = None
-    if isinstance(transcribe_result, dict):
-        transcript = transcribe_result["text"]
-        transcript_segments = _json.dumps(
-            transcribe_result["segments"], ensure_ascii=False
-        )
+    # Fallback to merged transcription if separate fails
+    if not separate_result:
+        log.warning(f"Separate transcription failed for {session_id}, trying merged...")
+        transcribe_result = transcriber.transcribe(session["session_dir"])
+        if not transcribe_result:
+            log.warning(f"Transcription failed for {session_id}")
+            notify("Call Recorder", f"Ошибка транскрипции {app_name}")
+            db.insert_call(
+                session_id=session_id,
+                app_name=app_name,
+                started_at=session["started_at"],
+                ended_at=session["ended_at"],
+                duration_seconds=duration,
+                system_wav_path=session["system_wav"],
+                mic_wav_path=session["mic_wav"],
+                transcript=None,
+                summary=None,
+            )
+            return
+        # Use merged result without speaker info
+        if isinstance(transcribe_result, dict):
+            transcript = transcribe_result["text"]
+            transcript_segments = json.dumps(
+                transcribe_result["segments"], ensure_ascii=False
+            )
+            segments_list = transcribe_result["segments"]
+        else:
+            transcript = transcribe_result
+            transcript_segments = None
+            segments_list = None
+        unified_segments = None
+        speaker_map = None
     else:
-        transcript = transcribe_result
+        # Separate transcription succeeded — we have speaker-labeled segments
+        unified_segments = separate_result["segments"]
+        transcript = separate_result["text"]
+        transcript_segments = json.dumps(unified_segments, ensure_ascii=False)
+        segments_list = unified_segments
 
-    # Summarize
+    # ── Step 2: Speaker resolution (if we have separate segments) ──
+    if unified_segments:
+        log.info(f"Resolving speakers for {session_id}...")
+        write_status(
+            "processing",
+            app_name,
+            session_id,
+            session["started_at"],
+            "resolving speakers",
+        )
+        speaker_map = resolve_speakers(unified_segments)
+        log.info(f"Speaker map: {json.dumps(speaker_map, ensure_ascii=False)}")
+
+    # ── Step 3: Summarize ──
     log.info(f"Summarizing {session_id}...")
     write_status(
         "processing", app_name, session_id, session["started_at"], "summarizing"
     )
     template_name = session.get("template_name", "default")
-    # Pass segments for timestamp-aware citation in summary
-    segments_list = (
-        transcribe_result.get("segments")
-        if isinstance(transcribe_result, dict)
-        else None
-    )
     summary = summarizer.summarize(
         transcript, template_name=template_name, segments=segments_list
     )
@@ -149,7 +168,27 @@ def process_recording(
     if summary and isinstance(summary.get("entities"), list):
         entities = summary.pop("entities")
 
-    # Save to database
+    # ── Step 4: Extract commitments (if we have speaker-resolved transcript) ──
+    commitments_data = None
+    if unified_segments and speaker_map:
+        log.info(f"Extracting commitments for {session_id}...")
+        write_status(
+            "processing",
+            app_name,
+            session_id,
+            session["started_at"],
+            "extracting commitments",
+        )
+        # Format transcript with resolved speaker names for commitment prompt
+        resolved_transcript = format_transcript_for_prompt(
+            unified_segments, speaker_map
+        )
+        call_date = session.get("started_at", "")[:10]  # ISO date
+        commitments_data = extract_commitments(
+            resolved_transcript, speaker_map, call_date
+        )
+
+    # ── Step 5: Save to database ──
     write_status("processing", app_name, session_id, session["started_at"], "saving")
     db.insert_call(
         session_id=session_id,
@@ -168,12 +207,23 @@ def process_recording(
     if entities:
         db.insert_entities(session_id, entities)
 
+    if commitments_data and commitments_data.get("commitments"):
+        db.insert_commitments(session_id, commitments_data["commitments"])
+        n = len(commitments_data["commitments"])
+        log.info(f"Saved {n} commitments for {session_id}")
+
     summary_text = ""
     if summary and summary.get("summary"):
         summary_text = f"\n{summary['summary'][:100]}"
 
+    commitment_text = ""
+    if commitments_data and commitments_data.get("commitments"):
+        n = len(commitments_data["commitments"])
+        commitment_text = f" | {n} обязательств"
+
     notify(
-        "Call Recorder", f"Звонок {app_name} ({duration:.0f}с) записан.{summary_text}"
+        "Call Recorder",
+        f"Звонок {app_name} ({duration:.0f}с) записан.{summary_text}{commitment_text}",
     )
     log.info(f"Call {session_id} fully processed and saved")
 

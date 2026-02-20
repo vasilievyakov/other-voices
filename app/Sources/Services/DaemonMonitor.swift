@@ -2,8 +2,8 @@ import Foundation
 
 @Observable
 package final class DaemonMonitor {
-    var status: DaemonStatus?
-    var isAvailable: Bool { status != nil && status!.isActive }
+    package var status: DaemonStatus?
+    package var isAvailable: Bool { status != nil && status!.isActive }
 
     private var statusMonitor: StatusMonitor?
     private var durationTimer: Timer?

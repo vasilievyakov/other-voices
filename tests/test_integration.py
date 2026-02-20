@@ -20,14 +20,36 @@ from src.summarizer import Summarizer
 
 
 class TestIntegration:
+    @staticmethod
+    def _make_separate(text):
+        """Create a transcribe_separate() return value."""
+        return {
+            "text": text,
+            "segments": [
+                {"start": 0.0, "end": 5.0, "text": text, "speaker": "SPEAKER_ME"},
+            ],
+            "transcript_me": [{"start": 0.0, "end": 5.0, "text": text}],
+            "transcript_others": [],
+        }
+
     def test_full_pipeline_data_integrity(self, tmp_db, sample_session, sample_summary):
         """Full pipeline: process_recording → get_call → all fields match."""
         transcriber = MagicMock()
-        transcriber.transcribe.return_value = "Full transcript for integration test"
+        transcriber.transcribe_separate.return_value = self._make_separate(
+            "Full transcript for integration test"
+        )
         summarizer = MagicMock()
         summarizer.summarize.return_value = sample_summary
 
-        with patch("src.daemon.notify"), patch("src.daemon.write_status"):
+        with (
+            patch("src.daemon.notify"),
+            patch("src.daemon.write_status"),
+            patch(
+                "src.daemon.resolve_speakers",
+                return_value={"SPEAKER_ME": {"confirmed": True}},
+            ),
+            patch("src.daemon.extract_commitments", return_value={"commitments": []}),
+        ):
             process_recording(sample_session, transcriber, summarizer, tmp_db)
 
         call = tmp_db.get_call(sample_session["session_id"])
@@ -42,13 +64,21 @@ class TestIntegration:
     def test_pipeline_then_search(self, tmp_db, sample_session, sample_summary):
         """After pipeline, FTS5 search finds the call."""
         transcriber = MagicMock()
-        transcriber.transcribe.return_value = (
+        transcriber.transcribe_separate.return_value = self._make_separate(
             "Discussed quantum computing breakthroughs"
         )
         summarizer = MagicMock()
         summarizer.summarize.return_value = sample_summary
 
-        with patch("src.daemon.notify"), patch("src.daemon.write_status"):
+        with (
+            patch("src.daemon.notify"),
+            patch("src.daemon.write_status"),
+            patch(
+                "src.daemon.resolve_speakers",
+                return_value={"SPEAKER_ME": {"confirmed": True}},
+            ),
+            patch("src.daemon.extract_commitments", return_value={"commitments": []}),
+        ):
             process_recording(sample_session, transcriber, summarizer, tmp_db)
 
         results = tmp_db.search("quantum")
@@ -58,11 +88,21 @@ class TestIntegration:
     def test_pipeline_then_action_items(self, tmp_db, sample_session, sample_summary):
         """After pipeline, action_items are retrievable."""
         transcriber = MagicMock()
-        transcriber.transcribe.return_value = "Some transcript"
+        transcriber.transcribe_separate.return_value = self._make_separate(
+            "Some transcript"
+        )
         summarizer = MagicMock()
         summarizer.summarize.return_value = sample_summary
 
-        with patch("src.daemon.notify"), patch("src.daemon.write_status"):
+        with (
+            patch("src.daemon.notify"),
+            patch("src.daemon.write_status"),
+            patch(
+                "src.daemon.resolve_speakers",
+                return_value={"SPEAKER_ME": {"confirmed": True}},
+            ),
+            patch("src.daemon.extract_commitments", return_value={"commitments": []}),
+        ):
             process_recording(sample_session, transcriber, summarizer, tmp_db)
 
         items = tmp_db.get_action_items(days=365)
@@ -95,7 +135,9 @@ class TestIntegration:
         summarizer = MagicMock()
 
         for i, session in enumerate(sessions):
-            transcriber.transcribe.return_value = f"Unique transcript {i}"
+            transcriber.transcribe_separate.return_value = self._make_separate(
+                f"Unique transcript {i}"
+            )
             summarizer.summarize.return_value = {
                 "summary": f"Summary {i}",
                 "key_points": [],
@@ -103,7 +145,17 @@ class TestIntegration:
                 "action_items": [f"Task {i}"] if i == 0 else [],
                 "participants": [],
             }
-            with patch("src.daemon.notify"), patch("src.daemon.write_status"):
+            with (
+                patch("src.daemon.notify"),
+                patch("src.daemon.write_status"),
+                patch(
+                    "src.daemon.resolve_speakers",
+                    return_value={"SPEAKER_ME": {"confirmed": True}},
+                ),
+                patch(
+                    "src.daemon.extract_commitments", return_value={"commitments": []}
+                ),
+            ):
                 process_recording(session, transcriber, summarizer, tmp_db)
 
         all_calls = tmp_db.list_recent()

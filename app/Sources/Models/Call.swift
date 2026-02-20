@@ -1,7 +1,7 @@
 import Foundation
 import SQLite3
 
-package struct Call: Identifiable, Hashable {
+package struct Call: Identifiable {
     package let sessionId: String
     package let appName: String
     package let startedAt: Date
@@ -14,17 +14,34 @@ package struct Call: Identifiable, Hashable {
     package let templateName: String?
     package let notes: String?
     package let transcriptSegmentsJson: String?
+    package let summary: CallSummary?
 
     package var id: String { sessionId }
 
-    package var summary: CallSummary? {
-        guard let json = summaryJson, let data = json.data(using: .utf8) else { return nil }
-        return try? JSONDecoder().decode(CallSummary.self, from: data)
+    /// Raw summary text for fallback display when decode partially fails
+    package var rawSummaryText: String? {
+        guard summaryJson != nil else { return nil }
+        if summary == nil { return summaryJson }
+        return nil
     }
 
     package var transcriptSegments: [TranscriptSegment]? {
         guard let json = transcriptSegmentsJson, let data = json.data(using: .utf8) else { return nil }
         return try? JSONDecoder().decode([TranscriptSegment].self, from: data)
+    }
+
+    package var callTitle: String? {
+        // First try the dedicated title field
+        if let title = summary?.title, !title.isEmpty {
+            return title
+        }
+        // Fallback: first sentence of summary text
+        if let text = summary?.summary, !text.isEmpty {
+            let firstSentence = text.prefix(while: { $0 != "." && $0 != "\n" })
+            let trimmed = String(firstSentence).trimmingCharacters(in: .whitespaces)
+            return trimmed.isEmpty ? nil : String(trimmed.prefix(80))
+        }
+        return nil
     }
 
     package var durationFormatted: String {
@@ -33,13 +50,13 @@ package struct Call: Identifiable, Hashable {
         let minutes = (total % 3600) / 60
         let seconds = total % 60
         if hours > 0 {
-            return String(format: "%dh%02dm%02ds", hours, minutes, seconds)
+            return String(format: "%d:%02d:%02d", hours, minutes, seconds)
         }
-        return String(format: "%dm%02ds", minutes, seconds)
+        return String(format: "%d:%02d", minutes, seconds)
     }
 
-    package var appIcon: String {
-        switch appName {
+    package static func iconForApp(_ name: String) -> String {
+        switch name {
         case "Zoom": return "video.fill"
         case "Google Meet": return "globe"
         case "Telegram": return "bubble.left.fill"
@@ -48,6 +65,10 @@ package struct Call: Identifiable, Hashable {
         case "Microsoft Teams": return "person.3.fill"
         default: return "phone.fill"
         }
+    }
+
+    package var appIcon: String {
+        Call.iconForApp(appName)
     }
 
     package static let dateFormatter: DateFormatter = {
@@ -84,7 +105,8 @@ package struct Call: Identifiable, Hashable {
         durationSeconds: Double, systemWavPath: String?, micWavPath: String?,
         transcript: String?, summaryJson: String?,
         templateName: String? = "default", notes: String? = nil,
-        transcriptSegmentsJson: String? = nil
+        transcriptSegmentsJson: String? = nil,
+        summary: CallSummary? = nil
     ) {
         self.sessionId = sessionId
         self.appName = appName
@@ -98,5 +120,25 @@ package struct Call: Identifiable, Hashable {
         self.templateName = templateName
         self.notes = notes
         self.transcriptSegmentsJson = transcriptSegmentsJson
+        // Pre-parse summary if provided; otherwise parse from summaryJson
+        if let summary {
+            self.summary = summary
+        } else if let json = summaryJson, let data = json.data(using: .utf8) {
+            self.summary = CallSummary.decode(from: data)
+        } else {
+            self.summary = nil
+        }
+    }
+}
+
+// MARK: - Hashable (by sessionId only, avoids hashing transcript/summary)
+
+extension Call: Hashable {
+    package static func == (lhs: Call, rhs: Call) -> Bool {
+        lhs.sessionId == rhs.sessionId
+    }
+
+    package func hash(into hasher: inout Hasher) {
+        hasher.combine(sessionId)
     }
 }

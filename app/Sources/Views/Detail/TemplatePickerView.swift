@@ -19,8 +19,13 @@ struct TemplatePickerView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Choose Template")
-                .font(.headline)
+            Label("Choose Template", systemImage: "doc.text")
+                .font(.title3)
+                .fontWeight(.semibold)
+
+            Text("This will re-generate the summary using the selected template.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
 
             ForEach(templates) { template in
                 Button {
@@ -39,12 +44,14 @@ struct TemplatePickerView: View {
                         if selectedTemplate == template.name {
                             Image(systemName: "checkmark")
                                 .foregroundStyle(.blue)
+                                .accessibilityHidden(true)
                         }
                     }
                     .padding(.vertical, 4)
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
+                .accessibilityAddTraits(selectedTemplate == template.name ? .isSelected : [])
             }
 
             Divider()
@@ -62,6 +69,7 @@ struct TemplatePickerView: View {
                     Text(error)
                         .font(.caption)
                         .foregroundStyle(.red)
+                        .lineLimit(2)
                 }
 
                 Spacer()
@@ -80,10 +88,10 @@ struct TemplatePickerView: View {
                     }
                 }
                 .buttonStyle(.borderedProminent)
-                .disabled(resummarizeService.isProcessing)
+                .disabled(resummarizeService.isProcessing || selectedTemplate == currentTemplate)
             }
         }
         .padding()
-        .frame(width: 320)
+        .frame(width: 360)
     }
 }

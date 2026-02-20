@@ -74,11 +74,21 @@ class ChatEngine:
         context = self._build_context(session_id, question)
         history = self._get_history(session_id, scope)
 
+        is_global = session_id is None
         system_msg = (
-            "You are a helpful assistant analyzing call recordings. "
-            "Answer questions based on the call data provided. "
-            "Be concise and specific. Respond in the same language as the question."
+            "You are a call recording analyst. Rules:\n"
+            "1. Answer ONLY from the provided call data. Never use outside knowledge.\n"
+            "2. If the answer is not in the transcript or summary, say: "
+            "'This was not discussed in the call.' Do NOT guess or infer.\n"
+            "3. Cite specific timestamps [M:SS] when referencing transcript moments.\n"
+            "4. Be direct. No preamble. Start your answer immediately.\n"
+            "5. Respond in the same language as the question."
         )
+        if is_global:
+            system_msg += (
+                "\n6. When answering about multiple calls, name which call "
+                "each fact comes from (use the date and app as identifier)."
+            )
 
         messages = [
             {"role": "system", "content": f"{system_msg}\n\nCall data:\n{context}"}
@@ -91,7 +101,7 @@ class ChatEngine:
                 "model": OLLAMA_MODEL,
                 "messages": messages,
                 "stream": False,
-                "options": {"temperature": 0.3, "num_predict": 1024},
+                "options": {"temperature": 0.1, "num_predict": 1024, "num_ctx": 32768},
             }
         ).encode("utf-8")
 

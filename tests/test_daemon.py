@@ -82,6 +82,23 @@ class TestWriteStatus:
 
 
 class TestProcessRecording:
+    """Tests for process_recording pipeline.
+
+    The pipeline is: transcribe_separate → fallback(transcribe) → resolve_speakers
+    → summarize → extract_commitments → save.
+    """
+
+    def _make_separate_result(self, text="Full transcript text here"):
+        """Create a mock transcribe_separate() return value."""
+        return {
+            "text": text,
+            "segments": [
+                {"start": 0.0, "end": 5.0, "text": text, "speaker": "SPEAKER_ME"},
+            ],
+            "transcript_me": [{"start": 0.0, "end": 5.0, "text": text}],
+            "transcript_others": [],
+        }
+
     @patch("src.daemon.notify")
     @patch("src.daemon.write_status")
     def test_short_call_skipped(self, mock_status, mock_notify, tmp_db, sample_session):
@@ -92,58 +109,128 @@ class TestProcessRecording:
 
         process_recording(sample_session, transcriber, summarizer, tmp_db)
 
+        transcriber.transcribe_separate.assert_not_called()
         transcriber.transcribe.assert_not_called()
         summarizer.summarize.assert_not_called()
 
+    @patch("src.daemon.extract_commitments")
+    @patch("src.daemon.resolve_speakers")
     @patch("src.daemon.notify")
     @patch("src.daemon.write_status")
     def test_no_transcript_saves_without_summary(
-        self, mock_status, mock_notify, tmp_db, sample_session
+        self,
+        mock_status,
+        mock_notify,
+        mock_resolve,
+        mock_extract,
+        tmp_db,
+        sample_session,
     ):
-        """Transcription fails → save record without transcript/summary."""
+        """Both transcriptions fail → save record without transcript/summary."""
         transcriber = MagicMock()
+        transcriber.transcribe_separate.return_value = None
         transcriber.transcribe.return_value = None
         summarizer = MagicMock()
 
         process_recording(sample_session, transcriber, summarizer, tmp_db)
 
         summarizer.summarize.assert_not_called()
+        mock_resolve.assert_not_called()
+        mock_extract.assert_not_called()
         call_record = tmp_db.get_call(sample_session["session_id"])
         assert call_record is not None
         assert call_record["transcript"] is None
         assert call_record["summary_json"] is None
 
+    @patch("src.daemon.extract_commitments", return_value={"commitments": []})
+    @patch(
+        "src.daemon.resolve_speakers", return_value={"SPEAKER_ME": {"confirmed": True}}
+    )
     @patch("src.daemon.notify")
     @patch("src.daemon.write_status")
     def test_full_pipeline(
-        self, mock_status, mock_notify, tmp_db, sample_session, sample_summary
+        self,
+        mock_status,
+        mock_notify,
+        mock_resolve,
+        mock_extract,
+        tmp_db,
+        sample_session,
+        sample_summary,
     ):
-        """transcribe → summarize → insert_call — full pipeline."""
+        """transcribe_separate → resolve → summarize → extract → save."""
         transcriber = MagicMock()
-        transcriber.transcribe.return_value = "Full transcript text here"
+        separate = self._make_separate_result()
+        transcriber.transcribe_separate.return_value = separate
         summarizer = MagicMock()
         summarizer.summarize.return_value = sample_summary
 
         process_recording(sample_session, transcriber, summarizer, tmp_db)
 
-        transcriber.transcribe.assert_called_once_with(sample_session["session_dir"])
-        summarizer.summarize.assert_called_once_with(
-            "Full transcript text here", template_name="default", segments=None
+        transcriber.transcribe_separate.assert_called_once_with(
+            sample_session["session_dir"]
         )
+        mock_resolve.assert_called_once()
+        summarizer.summarize.assert_called_once()
+        mock_extract.assert_called_once()
         call_record = tmp_db.get_call(sample_session["session_id"])
         assert call_record is not None
-        assert call_record["transcript"] == "Full transcript text here"
+        assert call_record["transcript"] == separate["text"]
         parsed = json.loads(call_record["summary_json"])
         assert parsed["summary"] == sample_summary["summary"]
 
+    @patch("src.daemon.extract_commitments", return_value={"commitments": []})
+    @patch(
+        "src.daemon.resolve_speakers", return_value={"SPEAKER_ME": {"confirmed": True}}
+    )
+    @patch("src.daemon.notify")
+    @patch("src.daemon.write_status")
+    def test_fallback_to_merged_transcribe(
+        self,
+        mock_status,
+        mock_notify,
+        mock_resolve,
+        mock_extract,
+        tmp_db,
+        sample_session,
+        sample_summary,
+    ):
+        """transcribe_separate fails → falls back to transcribe()."""
+        transcriber = MagicMock()
+        transcriber.transcribe_separate.return_value = None
+        transcriber.transcribe.return_value = "Merged transcript text"
+        summarizer = MagicMock()
+        summarizer.summarize.return_value = sample_summary
+
+        process_recording(sample_session, transcriber, summarizer, tmp_db)
+
+        # Fallback path: no speaker resolution or commitment extraction
+        mock_resolve.assert_not_called()
+        mock_extract.assert_not_called()
+        summarizer.summarize.assert_called_once()
+        call_record = tmp_db.get_call(sample_session["session_id"])
+        assert call_record["transcript"] == "Merged transcript text"
+
+    @patch("src.daemon.extract_commitments", return_value={"commitments": []})
+    @patch(
+        "src.daemon.resolve_speakers", return_value={"SPEAKER_ME": {"confirmed": True}}
+    )
     @patch("src.daemon.notify")
     @patch("src.daemon.write_status")
     def test_no_summary_saves_transcript(
-        self, mock_status, mock_notify, tmp_db, sample_session
+        self,
+        mock_status,
+        mock_notify,
+        mock_resolve,
+        mock_extract,
+        tmp_db,
+        sample_session,
     ):
         """summarizer returns None → save with transcript but no summary."""
         transcriber = MagicMock()
-        transcriber.transcribe.return_value = "Some transcript"
+        transcriber.transcribe_separate.return_value = self._make_separate_result(
+            "Some transcript"
+        )
         summarizer = MagicMock()
         summarizer.summarize.return_value = None
 
@@ -153,14 +240,25 @@ class TestProcessRecording:
         assert call_record["transcript"] == "Some transcript"
         assert call_record["summary_json"] is None
 
+    @patch("src.daemon.extract_commitments", return_value={"commitments": []})
+    @patch(
+        "src.daemon.resolve_speakers", return_value={"SPEAKER_ME": {"confirmed": True}}
+    )
     @patch("src.daemon.notify")
     @patch("src.daemon.write_status")
     def test_write_status_pipeline_stages(
-        self, mock_status, mock_notify, tmp_db, sample_session, sample_summary
+        self,
+        mock_status,
+        mock_notify,
+        mock_resolve,
+        mock_extract,
+        tmp_db,
+        sample_session,
+        sample_summary,
     ):
-        """write_status is called with pipeline stages: transcribing, summarizing, saving."""
+        """write_status is called with all pipeline stages."""
         transcriber = MagicMock()
-        transcriber.transcribe.return_value = "Transcript"
+        transcriber.transcribe_separate.return_value = self._make_separate_result()
         summarizer = MagicMock()
         summarizer.summarize.return_value = sample_summary
 
@@ -173,7 +271,9 @@ class TestProcessRecording:
         ]
         pipelines = [c[0][4] for c in pipeline_calls]
         assert "transcribing" in pipelines
+        assert "resolving speakers" in pipelines
         assert "summarizing" in pipelines
+        assert "extracting commitments" in pipelines
         assert "saving" in pipelines
 
     @patch("src.daemon.notify")
@@ -186,14 +286,25 @@ class TestProcessRecording:
         process_recording(sample_session, MagicMock(), MagicMock(), tmp_db)
         mock_notify.assert_called()
 
+    @patch("src.daemon.extract_commitments", return_value={"commitments": []})
+    @patch(
+        "src.daemon.resolve_speakers", return_value={"SPEAKER_ME": {"confirmed": True}}
+    )
     @patch("src.daemon.notify")
     @patch("src.daemon.write_status")
     def test_full_pipeline_notifies(
-        self, mock_status, mock_notify, tmp_db, sample_session, sample_summary
+        self,
+        mock_status,
+        mock_notify,
+        mock_resolve,
+        mock_extract,
+        tmp_db,
+        sample_session,
+        sample_summary,
     ):
         """Full pipeline sends notification at start and end."""
         transcriber = MagicMock()
-        transcriber.transcribe.return_value = "Transcript"
+        transcriber.transcribe_separate.return_value = self._make_separate_result()
         summarizer = MagicMock()
         summarizer.summarize.return_value = sample_summary
 
@@ -201,6 +312,49 @@ class TestProcessRecording:
 
         # At least 2 notify calls: processing start + saved
         assert mock_notify.call_count >= 2
+
+    @patch("src.daemon.extract_commitments")
+    @patch(
+        "src.daemon.resolve_speakers", return_value={"SPEAKER_ME": {"confirmed": True}}
+    )
+    @patch("src.daemon.notify")
+    @patch("src.daemon.write_status")
+    def test_commitments_saved_to_db(
+        self,
+        mock_status,
+        mock_notify,
+        mock_resolve,
+        mock_extract,
+        tmp_db,
+        sample_session,
+        sample_summary,
+    ):
+        """Extracted commitments are saved to the database."""
+        mock_extract.return_value = {
+            "commitments": [
+                {
+                    "type": "outgoing",
+                    "who": "SPEAKER_ME",
+                    "to_whom": "SPEAKER_OTHER",
+                    "what": "Send proposal by Friday",
+                    "quote": "I'll send it by Friday",
+                    "timestamp": "00:03:42",
+                    "deadline": "Friday",
+                    "uncertain": False,
+                }
+            ]
+        }
+        transcriber = MagicMock()
+        transcriber.transcribe_separate.return_value = self._make_separate_result()
+        summarizer = MagicMock()
+        summarizer.summarize.return_value = sample_summary
+
+        process_recording(sample_session, transcriber, summarizer, tmp_db)
+
+        commitments = tmp_db.get_commitments(sample_session["session_id"])
+        assert len(commitments) == 1
+        assert commitments[0]["direction"] == "outgoing"
+        assert commitments[0]["text"] == "Send proposal by Friday"
 
 
 # =============================================================================

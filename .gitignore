@@ -20,3 +20,8 @@ bin/
 
 # Temporary
 *.tmp
+.coverage
+
+# Secrets / env
+.env
+.env.*

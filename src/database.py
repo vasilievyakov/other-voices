@@ -104,6 +104,29 @@ class Database:
             )
         """)
 
+        # Commitments table (Phase 7)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS commitments (
+                id             INTEGER PRIMARY KEY AUTOINCREMENT,
+                session_id     TEXT NOT NULL REFERENCES calls(session_id) ON DELETE CASCADE,
+                direction      TEXT NOT NULL CHECK(direction IN ('outgoing','incoming','third_party')),
+                who_label      TEXT NOT NULL,
+                who_name       TEXT,
+                to_label       TEXT,
+                to_name        TEXT,
+                text           TEXT NOT NULL,
+                verbatim_quote TEXT,
+                timestamp      TEXT,
+                deadline_raw   TEXT,
+                deadline_type  TEXT CHECK(deadline_type IN ('explicit_date','relative_day','relative_week','relative_month','implied_urgent','none')),
+                significance   TEXT CHECK(significance IN ('high','medium','low')),
+                uncertain      INTEGER DEFAULT 0,
+                status         TEXT DEFAULT 'open' CHECK(status IN ('open','done','dismissed')),
+                created_at     TEXT DEFAULT (datetime('now')),
+                resolved_at    TEXT
+            )
+        """)
+
     def _conn(self) -> sqlite3.Connection:
         conn = sqlite3.connect(str(self.db_path))
         conn.row_factory = sqlite3.Row
@@ -315,6 +338,167 @@ class Database:
                 )
             else:
                 conn.execute("DELETE FROM chat_messages WHERE scope = 'global'")
+
+    # --- Commitments ---
+
+    def _normalize_commitment(self, raw: dict) -> dict | None:
+        """Normalize commitment from Prompt 3 (Karpathy) or Prompt 1 (Murati) format."""
+        # Prompt 3 (Karpathy) format detection: uses "type" for direction
+        if "type" in raw and "what" in raw:
+            direction = raw.get("type", "")
+            # Map Prompt 3 type values to DB direction
+            direction_map = {
+                "outgoing": "outgoing",
+                "incoming": "incoming",
+                "third_party": "third_party",
+            }
+            direction = direction_map.get(direction, "")
+            if not direction:
+                return None
+            return {
+                "direction": direction,
+                "who_label": raw.get("who", ""),
+                "who_name": raw.get("who_name"),
+                "to_label": raw.get("to_whom"),
+                "to_name": raw.get("to_whom_name"),
+                "text": raw.get("what", ""),
+                "verbatim_quote": raw.get("quote"),
+                "timestamp": raw.get("timestamp"),
+                "deadline_raw": raw.get("deadline"),
+                "deadline_type": None,
+                "significance": None,
+                "uncertain": 1 if raw.get("uncertain") else 0,
+            }
+
+        # Prompt 1 (Murati) format: uses "direction" directly
+        if "direction" in raw and "commitment_text" in raw:
+            direction = raw.get("direction", "")
+            if direction not in ("outgoing", "incoming", "third_party"):
+                return None
+            uncertain = 0
+            confidence = raw.get("commitment_confidence")
+            if confidence is not None and confidence < 0.8:
+                uncertain = 1
+            if raw.get("conditional"):
+                uncertain = 1
+            return {
+                "direction": direction,
+                "who_label": raw.get("committer_label", ""),
+                "who_name": raw.get("committer_name"),
+                "to_label": raw.get("recipient_label"),
+                "to_name": raw.get("recipient_name"),
+                "text": raw.get("commitment_text", ""),
+                "verbatim_quote": raw.get("verbatim_quote"),
+                "timestamp": raw.get("timestamp"),
+                "deadline_raw": raw.get("deadline_raw"),
+                "deadline_type": raw.get("deadline_type"),
+                "significance": None,
+                "uncertain": uncertain,
+            }
+
+        return None
+
+    def insert_commitments(self, session_id: str, commitments: list[dict]):
+        """Insert commitments extracted from a call (bulk)."""
+        if not commitments:
+            return
+
+        rows = []
+        for raw in commitments:
+            normalized = self._normalize_commitment(raw)
+            if normalized is None:
+                continue
+            if not normalized["who_label"] or not normalized["text"]:
+                continue
+            rows.append(
+                (
+                    session_id,
+                    normalized["direction"],
+                    normalized["who_label"],
+                    normalized["who_name"],
+                    normalized["to_label"],
+                    normalized["to_name"],
+                    normalized["text"],
+                    normalized["verbatim_quote"],
+                    normalized["timestamp"],
+                    normalized["deadline_raw"],
+                    normalized["deadline_type"],
+                    normalized["significance"],
+                    normalized["uncertain"],
+                )
+            )
+
+        if not rows:
+            return
+
+        with self._conn() as conn:
+            conn.executemany(
+                """INSERT INTO commitments
+                   (session_id, direction, who_label, who_name, to_label, to_name,
+                    text, verbatim_quote, timestamp, deadline_raw, deadline_type,
+                    significance, uncertain)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                rows,
+            )
+
+    def get_commitments(self, session_id: str) -> list[dict]:
+        """Get all commitments for a specific call."""
+        with self._conn() as conn:
+            rows = conn.execute(
+                """SELECT * FROM commitments
+                   WHERE session_id = ?
+                   ORDER BY id""",
+                (session_id,),
+            ).fetchall()
+        return [dict(r) for r in rows]
+
+    def get_open_commitments(self, direction: str | None = None) -> list[dict]:
+        """Get all open commitments across calls, optionally filtered by direction."""
+        with self._conn() as conn:
+            if direction:
+                rows = conn.execute(
+                    """SELECT cm.*, c.app_name, c.started_at
+                       FROM commitments cm
+                       JOIN calls c ON c.session_id = cm.session_id
+                       WHERE cm.status = 'open' AND cm.direction = ?
+                       ORDER BY cm.created_at DESC""",
+                    (direction,),
+                ).fetchall()
+            else:
+                rows = conn.execute(
+                    """SELECT cm.*, c.app_name, c.started_at
+                       FROM commitments cm
+                       JOIN calls c ON c.session_id = cm.session_id
+                       WHERE cm.status = 'open'
+                       ORDER BY cm.created_at DESC""",
+                ).fetchall()
+        return [dict(r) for r in rows]
+
+    def update_commitment_status(
+        self, commitment_id: int, status: str, resolved_at: str | None = None
+    ):
+        """Mark a commitment as done or dismissed."""
+        with self._conn() as conn:
+            conn.execute(
+                "UPDATE commitments SET status = ?, resolved_at = ? WHERE id = ?",
+                (status, resolved_at, commitment_id),
+            )
+
+    def get_commitment_counts(self) -> dict:
+        """Return open commitment counts by direction (for sidebar badge)."""
+        with self._conn() as conn:
+            rows = conn.execute(
+                """SELECT direction, COUNT(*) as cnt
+                   FROM commitments
+                   WHERE status = 'open'
+                   GROUP BY direction""",
+            ).fetchall()
+        counts = {"outgoing": 0, "incoming": 0}
+        for row in rows:
+            d = row["direction"]
+            if d in counts:
+                counts[d] = row["cnt"]
+        return counts
 
     def get_action_items(self, days: int = 7) -> list[dict]:
         """Get all action items from calls in the last N days."""

@@ -98,8 +98,8 @@ class TestRunRecipe:
     def test_run_recipe_truncates_long_transcript(self, mock_urlopen):
         """Long transcript is truncated."""
         mock_urlopen.return_value = _mock_ollama("OK")
-        run_recipe("tldr", "A" * 20000)
+        run_recipe("tldr", "A" * 60000)
 
         req = mock_urlopen.call_args[0][0]
         payload = json.loads(req.data.decode("utf-8"))
-        assert len(payload["prompt"]) < 20000
+        assert len(payload["prompt"]) < 60000

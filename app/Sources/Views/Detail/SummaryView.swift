@@ -5,25 +5,32 @@ struct SummaryView: View {
     var templateName: String? = nil
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text("Summary")
-                    .font(.headline)
-                    .fontWeight(.bold)
+                Label("Summary", systemImage: "sparkles")
+                    .font(.title3)
+                    .fontWeight(.semibold)
                 Spacer()
-                if let tmpl = templateName, tmpl != "default" {
-                    Text(tmpl.replacingOccurrences(of: "_", with: " ").capitalized)
-                        .font(.caption)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 2)
-                        .background(Color.accentColor.opacity(0.15))
-                        .cornerRadius(4)
-                }
+                templateBadge
+            }
+
+            // Change 7: truncation warning banner
+            if let warning = summary.truncationWarning {
+                Label(warning, systemImage: "exclamationmark.triangle")
+                    .font(.caption)
+                    .foregroundStyle(.orange)
+            }
+
+            // Change 8: call title
+            if let title = summary.title {
+                Text(title)
+                    .font(.headline)
             }
 
             if let text = summary.summary {
                 Text(text)
                     .font(.body)
+                    .textSelection(.enabled)
             }
 
             if let points = summary.keyPoints, !points.isEmpty {
@@ -43,11 +50,14 @@ struct SummaryView: View {
 
                     ForEach(actions, id: \.self) { item in
                         HStack(alignment: .top, spacing: 6) {
-                            Image(systemName: "square")
+                            // Change 6: hide decorative icon from accessibility
+                            Image(systemName: "arrow.right.circle")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                                 .padding(.top, 3)
+                                .accessibilityHidden(true)
                             Text(item)
+                                .textSelection(.enabled)
                         }
                         .font(.body)
                     }
@@ -63,6 +73,14 @@ struct SummaryView: View {
 
                     Text(participants.joined(separator: ", "))
                         .font(.body)
+                        .textSelection(.enabled)
+                }
+            }
+
+            // Change 1: additionalSections with AI-generated visual cue
+            ForEach(sortedAdditionalKeys, id: \.self) { key in
+                if let items = summary.additionalSections[key], !items.isEmpty {
+                    additionalBulletSection(key, items: items)
                 }
             }
 
@@ -88,6 +106,23 @@ struct SummaryView: View {
         }
     }
 
+    private var sortedAdditionalKeys: [String] {
+        summary.additionalSections.keys.sorted()
+    }
+
+    @ViewBuilder
+    private var templateBadge: some View {
+        let name = templateName ?? "default"
+        // Change 4: fontWeight(.medium) and opacity 0.2
+        // Change 2: replace .cornerRadius(4) with background in: syntax
+        Text(name.replacingOccurrences(of: "_", with: " ").capitalized)
+            .font(.caption)
+            .fontWeight(.medium)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 2)
+            .background(Color.accentColor.opacity(0.2), in: RoundedRectangle(cornerRadius: 4))
+    }
+
     private func bulletSection(_ title: String, items: [String]) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(title)
@@ -97,9 +132,39 @@ struct SummaryView: View {
 
             ForEach(items, id: \.self) { item in
                 HStack(alignment: .top, spacing: 6) {
+                    // Change 6: hide decorative bullet from accessibility
                     Text("\u{2022}")
                         .foregroundStyle(.secondary)
+                        .accessibilityHidden(true)
                     Text(item)
+                        .textSelection(.enabled)
+                }
+                .font(.body)
+            }
+        }
+    }
+
+    // Change 1: separate view builder for additionalSections with secondary header + AI-extracted caption
+    private func additionalBulletSection(_ title: String, items: [String]) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.subheadline)
+                    .fontWeight(.semibold)
+                    .foregroundStyle(.secondary)
+                Text("AI-extracted")
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+            }
+
+            ForEach(items, id: \.self) { item in
+                HStack(alignment: .top, spacing: 6) {
+                    // Change 6: hide decorative bullet from accessibility
+                    Text("\u{2022}")
+                        .foregroundStyle(.secondary)
+                        .accessibilityHidden(true)
+                    Text(item)
+                        .textSelection(.enabled)
                 }
                 .font(.body)
             }
@@ -110,15 +175,22 @@ struct SummaryView: View {
         FlowLayout(spacing: 6) {
             ForEach(entities) { entity in
                 HStack(spacing: 4) {
+                    // Change 6: hide decorative entity icons from accessibility
                     Image(systemName: entity.icon)
                         .font(.caption2)
+                        .accessibilityHidden(true)
                     Text(entity.name)
                         .font(.caption)
                 }
                 .padding(.horizontal, 8)
                 .padding(.vertical, 4)
-                .background(entity.isPerson ? Color.blue.opacity(0.1) : Color.orange.opacity(0.1))
-                .cornerRadius(12)
+                // Change 3: semantic colors; Change 2: clipShape instead of .cornerRadius
+                .background(
+                    entity.isPerson
+                        ? Color.accentColor.opacity(0.15)
+                        : Color.secondary.opacity(0.15)
+                )
+                .clipShape(RoundedRectangle(cornerRadius: 12))
             }
         }
     }

@@ -179,13 +179,13 @@ class TestBuildPrompt:
 class TestJsonSchema:
     def test_text_fields_are_strings(self):
         """Text-type sections produce string placeholders."""
-        schema_str = _build_json_schema(TEMPLATES["default"])
+        schema_str = _build_json_schema(TEMPLATES["default"], "en")
         schema = json.loads(schema_str)
         assert isinstance(schema["summary"], str)
 
     def test_list_fields_are_lists(self):
         """List-type sections produce list placeholders."""
-        schema_str = _build_json_schema(TEMPLATES["default"])
+        schema_str = _build_json_schema(TEMPLATES["default"], "en")
         schema = json.loads(schema_str)
         assert isinstance(schema["key_points"], list)
 

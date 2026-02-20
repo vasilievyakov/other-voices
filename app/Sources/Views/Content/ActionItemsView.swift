@@ -2,7 +2,7 @@ import SwiftUI
 
 struct ActionItemsView: View {
     @Environment(CallStore.self) private var store
-    @Binding var selectedCall: Call?
+    @Binding var selectedCallId: String?
     @State private var items: [ActionItem] = []
 
     var body: some View {
@@ -10,20 +10,24 @@ struct ActionItemsView: View {
             if items.isEmpty {
                 ContentUnavailableView("No action items",
                     systemImage: "checklist",
-                    description: Text("Action items from your calls will appear here"))
+                    description: Text("Complete a call to see action items here."))
                 .listRowSeparator(.hidden)
             } else {
                 ForEach(groupedByCall, id: \.0) { sessionId, callItems in
                     Section {
                         ForEach(callItems) { item in
-                            ActionItemRow(item: item)
-                                .onTapGesture {
-                                    selectedCall = store.getCall(item.sessionId).flatMap { $0 }
-                                }
+                            Button {
+                                selectedCallId = item.sessionId
+                            } label: {
+                                ActionItemRow(item: item)
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityHint("Opens the call for this action item")
                         }
                     } header: {
                         if let first = callItems.first {
                             HStack {
+                                // TODO: use Call.iconForApp(name) once a static method is added to Call.swift
                                 Image(systemName: iconForApp(first.appName))
                                     .foregroundStyle(.secondary)
                                 Text(first.appName)
@@ -56,6 +60,8 @@ struct ActionItemsView: View {
         return order.map { ($0, dict[$0]!) }
     }
 
+    // TODO: remove this once Call.swift exposes a static iconForApp(_:) method;
+    // then replace all call sites with Call.iconForApp(name).
     private func iconForApp(_ name: String) -> String {
         switch name {
         case "Zoom": return "video.fill"
@@ -74,10 +80,11 @@ struct ActionItemRow: View {
 
     var body: some View {
         HStack(alignment: .top, spacing: 8) {
-            Image(systemName: "square")
+            Image(systemName: "arrow.right.circle")
                 .font(.system(size: 13))
                 .foregroundStyle(.secondary)
                 .padding(.top, 2)
+                .accessibilityHidden(true)
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(item.text)

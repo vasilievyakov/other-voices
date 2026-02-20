@@ -31,27 +31,27 @@ func runCallTests() {
 
     test("durationFormatted_seconds") {
         let call = makeCall(durationSeconds: 45)
-        expect(call.durationFormatted == "0m45s", "got \(call.durationFormatted)")
+        expect(call.durationFormatted == "0:45", "got \(call.durationFormatted)")
     }
 
     test("durationFormatted_minutes") {
         let call = makeCall(durationSeconds: 125)
-        expect(call.durationFormatted == "2m05s", "got \(call.durationFormatted)")
+        expect(call.durationFormatted == "2:05", "got \(call.durationFormatted)")
     }
 
     test("durationFormatted_exactMinute") {
         let call = makeCall(durationSeconds: 60)
-        expect(call.durationFormatted == "1m00s", "got \(call.durationFormatted)")
+        expect(call.durationFormatted == "1:00", "got \(call.durationFormatted)")
     }
 
     test("durationFormatted_hours") {
         let call = makeCall(durationSeconds: 3661)
-        expect(call.durationFormatted == "1h01m01s", "got \(call.durationFormatted)")
+        expect(call.durationFormatted == "1:01:01", "got \(call.durationFormatted)")
     }
 
     test("durationFormatted_exactHour") {
         let call = makeCall(durationSeconds: 3600)
-        expect(call.durationFormatted == "1h00m00s", "got \(call.durationFormatted)")
+        expect(call.durationFormatted == "1:00:00", "got \(call.durationFormatted)")
     }
 
     test("appIconMapping") {
@@ -138,34 +138,36 @@ func runCallSummaryTests() {
             "participants": ["Вася", "Петя"]
         }
         """.data(using: .utf8)!
-        let s = try JSONDecoder().decode(CallSummary.self, from: json)
-        expect(s.summary == "Обсудили план")
-        expect(s.keyPoints?.count == 2)
-        expect(s.decisions?.first == "Решение 1")
-        expect(s.actionItems?.first == "Задача (@Вася)")
-        expect(s.participants?.count == 2)
+        let s = CallSummary.decode(from: json)
+        expect(s != nil, "should decode")
+        expect(s?.summary == "Обсудили план")
+        expect(s?.keyPoints?.count == 2)
+        expect(s?.decisions?.first == "Решение 1")
+        expect(s?.actionItems?.first == "Задача (@Вася)")
+        expect(s?.participants?.count == 2)
     }
 
     test("decodePartialJSON") {
         let json = """
         {"summary": "Краткий звонок"}
         """.data(using: .utf8)!
-        let s = try JSONDecoder().decode(CallSummary.self, from: json)
-        expect(s.summary == "Краткий звонок")
-        expect(s.keyPoints == nil)
-        expect(s.decisions == nil)
-        expect(s.actionItems == nil)
-        expect(s.participants == nil)
+        let s = CallSummary.decode(from: json)
+        expect(s?.summary == "Краткий звонок")
+        expect(s?.keyPoints == nil)
+        expect(s?.decisions == nil)
+        expect(s?.actionItems == nil)
+        expect(s?.participants == nil)
     }
 
     test("decodeEmptyArrays") {
         let json = """
         {"summary":"X","key_points":[],"decisions":[],"action_items":[],"participants":[]}
         """.data(using: .utf8)!
-        let s = try JSONDecoder().decode(CallSummary.self, from: json)
-        expect(s.keyPoints != nil, "keyPoints should not be nil")
-        expect(s.keyPoints?.count == 0)
-        expect(s.actionItems?.count == 0)
+        let s = CallSummary.decode(from: json)
+        expect(s != nil, "should decode")
+        expect(s?.keyPoints != nil, "keyPoints should not be nil")
+        expect(s?.keyPoints?.count == 0)
+        expect(s?.actionItems?.count == 0)
     }
 
     test("callSummaryProperty") {
@@ -184,9 +186,9 @@ func runCallSummaryTests() {
         let json = """
         {"summary":"Обсудили архитектуру","key_points":["Микросервисы"],"action_items":["Написать RFC (@Вася)"]}
         """.data(using: .utf8)!
-        let s = try JSONDecoder().decode(CallSummary.self, from: json)
-        expect(s.summary == "Обсудили архитектуру")
-        expect(s.actionItems?.first == "Написать RFC (@Вася)")
+        let s = CallSummary.decode(from: json)
+        expect(s?.summary == "Обсудили архитектуру")
+        expect(s?.actionItems?.first == "Написать RFC (@Вася)")
     }
 
     test("decodeWithEntities") {
@@ -199,19 +201,58 @@ func runCallSummaryTests() {
             ]
         }
         """.data(using: .utf8)!
-        let s = try JSONDecoder().decode(CallSummary.self, from: json)
-        expect(s.entities?.count == 2, "entities count")
-        expect(s.entities?.first?.name == "Вася")
-        expect(s.entities?.first?.isPerson == true)
-        expect(s.entities?.last?.isCompany == true)
+        let s = CallSummary.decode(from: json)
+        expect(s?.entities?.count == 2, "entities count")
+        expect(s?.entities?.first?.name == "Вася")
+        expect(s?.entities?.first?.isPerson == true)
+        expect(s?.entities?.last?.isCompany == true)
     }
 
     test("decodeWithoutEntities") {
         let json = """
         {"summary": "No entities here"}
         """.data(using: .utf8)!
-        let s = try JSONDecoder().decode(CallSummary.self, from: json)
-        expect(s.entities == nil, "entities should be nil when not present")
+        let s = CallSummary.decode(from: json)
+        expect(s?.entities == nil, "entities should be nil when not present")
+    }
+
+    // --- Resilient decoder tests ---
+
+    test("decodeSummaryAsDict") {
+        let json = """
+        {"summary": {"key_points": ["Point A"], "topic": "AI Discussion"}}
+        """.data(using: .utf8)!
+        let s = CallSummary.decode(from: json)
+        expect(s != nil, "should decode dict summary")
+        expect(s?.summary == "AI Discussion", "should extract topic as summary, got: \(s?.summary ?? "nil")")
+        expect(s?.keyPoints?.count == 1, "should promote key_points")
+    }
+
+    test("decodeSummaryAsDict_nestedSummary") {
+        let json = """
+        {"summary": {"summary": "Nested text", "recommendations": ["Do X"]}}
+        """.data(using: .utf8)!
+        let s = CallSummary.decode(from: json)
+        expect(s?.summary == "Nested text", "should extract nested summary.summary")
+        expect(s?.additionalSections["Recommendations"]?.count == 1, "should capture recommendations")
+    }
+
+    test("decodeAdditionalSections") {
+        let json = """
+        {"summary": "Test", "objections": ["Too expensive"], "budget_signals": ["$50k budget"]}
+        """.data(using: .utf8)!
+        let s = CallSummary.decode(from: json)
+        expect(s?.additionalSections.count == 2, "should have 2 additional sections, got \(s?.additionalSections.count ?? 0)")
+        expect(s?.additionalSections["Objections"]?.first == "Too expensive")
+        expect(s?.additionalSections["Budget Signals"]?.first == "$50k budget")
+    }
+
+    test("decodeArrayOfDicts") {
+        let json = """
+        {"summary": "Test", "main_topics": [{"topic": "AI", "details": ["ML basics"]}]}
+        """.data(using: .utf8)!
+        let s = CallSummary.decode(from: json)
+        expect(s?.additionalSections["Main Topics"]?.first == "AI: ML basics", "got: \(s?.additionalSections["Main Topics"]?.first ?? "nil")")
     }
 }
 

@@ -11,9 +11,12 @@ package final class CallStore {
     var searchQuery: String = ""
     var selectedFilter: SidebarItem = .allCalls
     var entities: [Entity] = []
+    private var entityCounts: [String: Int] = [:]
+    var commitmentCounts: (outgoing: Int, incoming: Int) = (0, 0)
 
     private let db: SQLiteDatabase
     private var statusMonitor: StatusMonitor?
+    private var refreshTask: Task<Void, Never>?
 
     package init() {
         let dbPath = NSHomeDirectory() + "/call-recorder/data/calls.db"
@@ -41,11 +44,19 @@ package final class CallStore {
             }
         case .entity(let name):
             calls = db.searchByEntity(name: name)
+        case .commitments:
+            calls = []  // Commitments view uses its own data source
         }
 
         appCounts = db.appCounts()
         totalCount = db.totalCount()
         entities = db.allEntities()
+        entityCounts = db.entityCounts()
+        commitmentCounts = db.commitmentCounts()
+    }
+
+    func entityCallCount(_ name: String) -> Int? {
+        entityCounts[name]
     }
 
     func setFilter(_ filter: SidebarItem) {
@@ -81,12 +92,33 @@ package final class CallStore {
         return items
     }
 
+    func getCommitments(sessionId: String) -> [Commitment] {
+        db.getCommitments(sessionId: sessionId)
+    }
+
+    func getOpenCommitments(direction: String? = nil) -> [Commitment] {
+        db.getOpenCommitments(direction: direction)
+    }
+
+    func updateCommitmentStatus(id: Int, status: String) {
+        db.updateCommitmentStatus(commitmentId: id, status: status)
+        commitmentCounts = db.commitmentCounts()
+    }
+
     private func startWatching() {
         let dataDir = NSHomeDirectory() + "/call-recorder/data"
         statusMonitor = StatusMonitor(directoryPath: dataDir) { [weak self] in
-            // Debounce: only refresh if DB changed
-            self?.refresh()
+            self?.debouncedRefresh()
         }
         statusMonitor?.start()
+    }
+
+    private func debouncedRefresh() {
+        refreshTask?.cancel()
+        refreshTask = Task { @MainActor [weak self] in
+            try? await Task.sleep(for: .milliseconds(500))
+            guard !Task.isCancelled else { return }
+            self?.refresh()
+        }
     }
 }

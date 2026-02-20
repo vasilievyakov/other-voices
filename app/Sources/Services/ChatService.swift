@@ -10,9 +10,17 @@ final class ChatService {
     var error: String?
 
     private let basePath: String
+    private var currentProcess: Process?
 
     init() {
         self.basePath = NSHomeDirectory() + "/call-recorder"
+    }
+
+    func cancel() {
+        currentProcess?.terminate()
+        currentProcess = nil
+        isProcessing = false
+        error = nil
     }
 
     func send(question: String, sessionId: String) {
@@ -38,6 +46,9 @@ final class ChatService {
             process.standardError = pipe
 
             do {
+                await MainActor.run {
+                    self?.currentProcess = process
+                }
                 try process.run()
                 process.waitUntilExit()
 
