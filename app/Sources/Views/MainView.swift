@@ -1,12 +1,13 @@
 import SwiftUI
 
-struct MainView: View {
+package struct MainView: View {
+    package init() {}
     @Environment(CallStore.self) private var store
     @State private var selectedSidebarItem: SidebarItem? = .allCalls
     @State private var selectedCall: Call?
     @State private var searchText = ""
 
-    var body: some View {
+    package var body: some View {
         @Bindable var store = store
 
         NavigationSplitView {

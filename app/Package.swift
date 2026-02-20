@@ -6,13 +6,24 @@ let package = Package(
     name: "OtherVoices",
     platforms: [.macOS(.v14)],
     targets: [
-        .executableTarget(
-            name: "OtherVoices",
+        .target(
+            name: "OtherVoicesLib",
             path: "Sources",
+            exclude: ["App"],
             linkerSettings: [
                 .linkedLibrary("sqlite3"),
                 .linkedFramework("AVFoundation"),
             ]
+        ),
+        .executableTarget(
+            name: "OtherVoices",
+            dependencies: ["OtherVoicesLib"],
+            path: "Sources/App"
+        ),
+        .executableTarget(
+            name: "OtherVoicesTests",
+            dependencies: ["OtherVoicesLib"],
+            path: "Tests"
         ),
     ]
 )

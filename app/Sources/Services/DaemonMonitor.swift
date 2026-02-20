@@ -1,7 +1,7 @@
 import Foundation
 
 @Observable
-final class DaemonMonitor {
+package final class DaemonMonitor {
     var status: DaemonStatus?
     var isAvailable: Bool { status != nil && status!.isActive }
 
@@ -16,7 +16,7 @@ final class DaemonMonitor {
     private let statusPath: String
     private let directoryPath: String
 
-    init() {
+    package init() {
         let dataDir = NSHomeDirectory() + "/call-recorder/data"
         self.statusPath = dataDir + "/status.json"
         self.directoryPath = dataDir

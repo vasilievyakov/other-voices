@@ -1,3 +1,4 @@
+import OtherVoicesLib
 import SwiftUI
 
 @main

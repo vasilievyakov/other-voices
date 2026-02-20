@@ -4,7 +4,7 @@ import OSLog
 private let logger = Logger(subsystem: "com.user.other-voices", category: "store")
 
 @Observable
-final class CallStore {
+package final class CallStore {
     var calls: [Call] = []
     var appCounts: [(String, Int)] = []
     var totalCount: Int = 0
@@ -14,7 +14,7 @@ final class CallStore {
     private let db: SQLiteDatabase
     private var statusMonitor: StatusMonitor?
 
-    init() {
+    package init() {
         let dbPath = NSHomeDirectory() + "/call-recorder/data/calls.db"
         self.db = SQLiteDatabase(path: dbPath)
         refresh()

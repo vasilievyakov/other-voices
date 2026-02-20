@@ -1,11 +1,11 @@
 import Foundation
 
-struct CallSummary: Codable {
-    let summary: String?
-    let keyPoints: [String]?
-    let decisions: [String]?
-    let actionItems: [String]?
-    let participants: [String]?
+package struct CallSummary: Codable {
+    package let summary: String?
+    package let keyPoints: [String]?
+    package let decisions: [String]?
+    package let actionItems: [String]?
+    package let participants: [String]?
 
     enum CodingKeys: String, CodingKey {
         case summary
