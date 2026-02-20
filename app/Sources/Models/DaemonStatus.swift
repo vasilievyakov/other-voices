@@ -1,6 +1,6 @@
 import Foundation
 
-package struct DaemonStatus: Codable {
+package struct DaemonStatus: Codable, Equatable {
     package let daemonPid: Int
     package let timestamp: String
     package let state: String

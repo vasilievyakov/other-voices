@@ -60,7 +60,7 @@ struct TranscriptView: View {
     }
 
     private func segmentedView(_ segments: [TranscriptSegment]) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
+        LazyVStack(alignment: .leading, spacing: 2) {
             ForEach(segments) { segment in
                 HStack(alignment: .top, spacing: 8) {
                     Button {

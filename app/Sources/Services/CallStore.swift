@@ -39,13 +39,12 @@ package final class CallStore {
             if searchQuery.isEmpty {
                 calls = db.listByApp(name)
             } else {
-                // Search within app: do full search then filter
                 calls = db.search(query: searchQuery).filter { $0.appName == name }
             }
         case .entity(let name):
             calls = db.searchByEntity(name: name)
         case .commitments:
-            calls = []  // Commitments view uses its own data source
+            calls = []
         }
 
         appCounts = db.appCounts()

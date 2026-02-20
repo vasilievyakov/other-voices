@@ -33,27 +33,32 @@ package final class DaemonMonitor {
         }
         statusMonitor?.start()
 
-        // Timer for live duration updates during recording
+        // Timer for live duration display during recording only
         durationTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
-            guard let self, let status = self.status,
-                  status.isRecording || status.isProcessing else { return }
-            // Trigger observation update by re-reading
+            guard let self, let s = self.status, s.isRecording else { return }
+            // Force @Observable update for recordingDuration (computed from current time)
             self.readStatus()
         }
     }
 
     func readStatus() {
         guard let data = FileManager.default.contents(atPath: statusPath) else {
-            status = nil
+            if status != nil { status = nil }
             return
         }
-        status = try? JSONDecoder().decode(DaemonStatus.self, from: data)
+        let newStatus = try? JSONDecoder().decode(DaemonStatus.self, from: data)
 
         // Check if daemon process is actually alive
-        if let s = status {
-            if !isProcessAlive(pid: s.daemonPid) {
-                status = nil
-            }
+        let resolved: DaemonStatus?
+        if let s = newStatus, isProcessAlive(pid: s.daemonPid) {
+            resolved = s
+        } else {
+            resolved = nil
+        }
+
+        // Only update if changed — prevents @Observable from triggering spurious SwiftUI re-renders
+        if resolved != status {
+            status = resolved
         }
     }
 

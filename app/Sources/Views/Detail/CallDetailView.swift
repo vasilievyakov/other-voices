@@ -38,7 +38,7 @@ struct CallDetailView: View {
             Divider()
 
             ScrollView {
-                VStack(alignment: .leading, spacing: 20) {
+                LazyVStack(alignment: .leading, spacing: 20) {
                     // Audio Player
                     AudioPlayerView(call: call, player: audioPlayer)
 
