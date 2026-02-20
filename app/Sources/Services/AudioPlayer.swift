@@ -1,8 +1,9 @@
 import AVFoundation
 import Foundation
 
+@MainActor
 @Observable
-final class AudioPlayer: NSObject, AVAudioPlayerDelegate {
+final class AudioPlayer: NSObject, @preconcurrency AVAudioPlayerDelegate {
     var isPlaying = false
     var currentTime: TimeInterval = 0
     var duration: TimeInterval = 0
@@ -12,7 +13,7 @@ final class AudioPlayer: NSObject, AVAudioPlayerDelegate {
     private var player: AVAudioPlayer?
     private var timer: Timer?
 
-    private static let speeds: [Float] = [1.0, 1.25, 1.5, 2.0, 0.75]
+    private static let speeds: [Float] = [0.75, 1.0, 1.25, 1.5, 2.0]
 
     var speedLabel: String {
         if playbackSpeed == Float(Int(playbackSpeed)) {
@@ -99,8 +100,10 @@ final class AudioPlayer: NSObject, AVAudioPlayerDelegate {
     private func startTimer() {
         stopTimer()
         timer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
-            guard let self, let player = self.player else { return }
-            self.currentTime = player.currentTime
+            MainActor.assumeIsolated {
+                guard let self, let player = self.player else { return }
+                self.currentTime = player.currentTime
+            }
         }
     }
 

@@ -2,8 +2,8 @@ import Foundation
 import OtherVoicesLib
 
 // Minimal test harness
-var passed = 0
-var failed = 0
+nonisolated(unsafe) var passed = 0
+nonisolated(unsafe) var failed = 0
 
 func expect(_ condition: Bool, _ message: String = "", file: String = #file, line: Int = #line) {
     if condition {
@@ -329,7 +329,7 @@ func runActionItemTests() {
     }
 }
 
-// MARK: - DaemonStatus Tests (8)
+// MARK: - DaemonStatus Tests (14)
 
 func runDaemonStatusTests() {
     print("\n--- DaemonStatus Tests ---")
@@ -374,7 +374,9 @@ func runDaemonStatusTests() {
     test("stateLabel_processing_pipelines") {
         let cases: [(String?, String)] = [
             ("transcribing", "Transcribing"),
+            ("resolving speakers", "Resolving Speakers"),
             ("summarizing", "Summarizing"),
+            ("extracting commitments", "Extracting Commitments"),
             ("saving", "Saving"),
             (nil, "Processing"),
         ]
@@ -397,6 +399,40 @@ func runDaemonStatusTests() {
     test("recordingDuration_nilWhenNoStartedAt") {
         let s = makeDaemonStatus(state: "idle", startedAt: nil)
         expect(s.recordingDuration == nil, "should be nil when no startedAt")
+    }
+
+    test("isOllamaDown_true_when_false") {
+        let s = makeDaemonStatus(state: "idle", ollamaAvailable: false)
+        expect(s.isOllamaDown == true, "should be down when ollama_available=false")
+    }
+
+    test("isOllamaDown_false_when_true") {
+        let s = makeDaemonStatus(state: "idle", ollamaAvailable: true)
+        expect(s.isOllamaDown == false, "should not be down when ollama_available=true")
+    }
+
+    test("isOllamaDown_false_when_nil") {
+        let s = makeDaemonStatus(state: "idle")
+        expect(s.isOllamaDown == false, "should not be down when ollama_available missing")
+    }
+
+    test("ollamaAvailable_decodesFromJSON") {
+        let json = """
+        {"daemon_pid":1,"timestamp":"2025-02-20T12:00:00Z","state":"idle","app_name":null,"session_id":null,"started_at":null,"pipeline":null,"ollama_available":false}
+        """.data(using: .utf8)!
+        let s = try JSONDecoder().decode(DaemonStatus.self, from: json)
+        expect(s.ollamaAvailable == false, "should decode ollama_available=false")
+        expect(s.isOllamaDown == true)
+    }
+
+    test("stateLabel_resolving_speakers") {
+        let s = makeDaemonStatus(state: "processing", pipeline: "resolving speakers")
+        expect(s.stateLabel == "Resolving Speakers", "got \(s.stateLabel)")
+    }
+
+    test("stateLabel_extracting_commitments") {
+        let s = makeDaemonStatus(state: "processing", pipeline: "extracting commitments")
+        expect(s.stateLabel == "Extracting Commitments", "got \(s.stateLabel)")
     }
 }
 
@@ -500,10 +536,12 @@ func makeItem(text: String) -> ActionItem {
 func makeDaemonStatus(
     state: String,
     pipeline: String? = nil,
-    startedAt: String? = nil
+    startedAt: String? = nil,
+    ollamaAvailable: Bool? = nil
 ) -> DaemonStatus {
+    let ollamaValue = ollamaAvailable.map { "\($0)" } ?? "null"
     let json = """
-    {"daemon_pid":1,"timestamp":"2025-02-20T12:00:00Z","state":"\(state)","app_name":null,"session_id":null,"started_at":\(startedAt.map { "\"\($0)\"" } ?? "null"),"pipeline":\(pipeline.map { "\"\($0)\"" } ?? "null")}
+    {"daemon_pid":1,"timestamp":"2025-02-20T12:00:00Z","state":"\(state)","app_name":null,"session_id":null,"started_at":\(startedAt.map { "\"\($0)\"" } ?? "null"),"pipeline":\(pipeline.map { "\"\($0)\"" } ?? "null"),"ollama_available":\(ollamaValue)}
     """.data(using: .utf8)!
     return try! JSONDecoder().decode(DaemonStatus.self, from: json)
 }

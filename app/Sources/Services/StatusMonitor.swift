@@ -5,9 +5,9 @@ import Foundation
 final class StatusMonitor {
     private var source: DispatchSourceFileSystemObject?
     private let directoryPath: String
-    private let onChange: () -> Void
+    private let onChange: @Sendable () -> Void
 
-    init(directoryPath: String, onChange: @escaping () -> Void) {
+    init(directoryPath: String, onChange: @escaping @Sendable () -> Void) {
         self.directoryPath = directoryPath
         self.onChange = onChange
     }

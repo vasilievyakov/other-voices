@@ -1,0 +1,49 @@
+name: Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  python-tests:
+    name: Python Tests
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12", "3.13"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install psutil pytest
+          # mlx-whisper and ollama are not needed — tests mock all external services
+
+      - name: Run Python tests
+        run: pytest tests/ -v --tb=short
+
+  swift-tests:
+    name: Swift Tests
+    runs-on: macos-14
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build Swift package
+        working-directory: app
+        run: swift build
+
+      - name: Run Swift tests
+        working-directory: app
+        run: swift build --product OtherVoicesTests && .build/debug/OtherVoicesTests

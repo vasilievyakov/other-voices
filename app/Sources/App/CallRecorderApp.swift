@@ -5,12 +5,18 @@ import SwiftUI
 struct OtherVoicesApp: App {
     @State private var callStore = CallStore()
     @State private var daemonMonitor = DaemonMonitor()
+    @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
 
     var body: some Scene {
         WindowGroup {
-            MainView()
-                .environment(callStore)
-                .environment(daemonMonitor)
+            if hasCompletedOnboarding {
+                MainView()
+                    .environment(callStore)
+                    .environment(daemonMonitor)
+            } else {
+                WelcomeView(hasCompletedOnboarding: $hasCompletedOnboarding)
+                    .environment(daemonMonitor)
+            }
         }
         .defaultSize(width: 1100, height: 700)
         .commands {

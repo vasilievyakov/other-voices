@@ -79,10 +79,11 @@ struct TemplatePickerView: View {
                 }
 
                 Button("Apply") {
-                    resummarizeService.resummarize(
-                        sessionId: sessionId,
-                        templateName: selectedTemplate
-                    ) {
+                    Task {
+                        await resummarizeService.resummarize(
+                            sessionId: sessionId,
+                            templateName: selectedTemplate
+                        )
                         onResummarize()
                         dismiss()
                     }

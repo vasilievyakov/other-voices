@@ -5,123 +5,198 @@ struct DaemonStatusCard: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            if let status = daemon.status {
+                if status.isRecording {
+                    recordingView(status)
+                } else if status.isProcessing {
+                    processingView(status)
+                } else {
+                    listeningView
+                }
+
+                // Ollama warning — only when daemon is running but AI is unavailable
+                if !daemon.ollamaAvailable {
+                    ollamaWarningView
+                }
+            } else {
+                offlineView
+            }
+        }
+        .padding(10)
+        .background(cardBackground, in: RoundedRectangle(cornerRadius: 8))
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(accessibleDescription)
+    }
+
+    // MARK: - Listening (idle)
+
+    private var listeningView: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "waveform")
+                .foregroundStyle(.secondary)
+                .font(.system(size: 12, weight: .medium))
+                .frame(width: 16)
+
+            Text("Listening for calls")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+
+            Spacer()
+        }
+    }
+
+    // MARK: - Recording (hero state)
+
+    private func recordingView(_ status: DaemonStatus) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 8) {
-                Image(systemName: statusSymbol)
-                    .foregroundStyle(statusColor)
-                    .font(.system(size: 8))
-                    .overlay(
-                        Circle()
-                            .fill(statusColor.opacity(0.4))
-                            .frame(width: 16, height: 16)
-                            .opacity(daemon.status?.isRecording == true ? 1 : 0)
-                            .animation(
-                                reduceMotion ? nil : .easeInOut(duration: 1).repeatForever(autoreverses: true),
-                                value: daemon.status?.isRecording
-                            )
-                    )
+                recordingDot
 
-                Text(statusTitle)
-                    .font(.headline)
-                    .fontWeight(.medium)
-
-                Spacer()
-            }
-
-            if let status = daemon.status {
-                if status.isRecording, let app = status.appName {
-                    HStack {
-                        Text("Recording: \(app)")
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                    }
+                VStack(alignment: .leading, spacing: 1) {
+                    Text("Recording \(status.appName ?? "call")")
+                        .font(.subheadline)
+                        .fontWeight(.medium)
+                        .foregroundStyle(.primary)
 
                     if let dur = daemon.recordingDuration {
-                        Text("Duration: \(formatDuration(dur))")
+                        Text(formatDuration(dur))
                             .font(.caption)
-                            .foregroundStyle(.secondary)
+                            .fontWeight(.medium)
+                            .foregroundStyle(.red.opacity(0.8))
                             .monospacedDigit()
                     }
                 }
 
-                if status.isProcessing {
-                    HStack(spacing: 4) {
-                        ProgressView()
-                            .controlSize(.small)
-                        Text(status.stateLabel)
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                    }
-                }
-            } else {
-                Text("Start the daemon to record calls automatically.")
-                    .font(.caption)
-                    .foregroundStyle(.tertiary)
-
-                Button {
-                    NSWorkspace.shared.open(URL(string: "https://github.com/vasilievyakov/other-voices#setup")!)
-                } label: {
-                    Label("How to start", systemImage: "questionmark.circle")
-                        .font(.caption)
-                }
-                .buttonStyle(.borderless)
+                Spacer()
             }
         }
-        .padding(10)
-        .background(.quaternary.opacity(0.5), in: RoundedRectangle(cornerRadius: 8))
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(accessibleStatusDescription)
     }
 
-    private var statusSymbol: String {
-        switch daemon.status?.state {
-        case "recording": return "record.circle.fill"
-        case "processing": return "gearshape.fill"
-        case "idle": return "checkmark.circle.fill"
-        default: return "xmark.circle.fill"
+    private var recordingDot: some View {
+        Circle()
+            .fill(.red)
+            .frame(width: 8, height: 8)
+            .overlay(
+                Circle()
+                    .fill(.red.opacity(0.4))
+                    .frame(width: 16, height: 16)
+                    .opacity(reduceMotion ? 0 : 1)
+                    .animation(
+                        .easeInOut(duration: 1.0).repeatForever(autoreverses: true),
+                        value: daemon.status?.isRecording
+                    )
+            )
+            .frame(width: 16)
+    }
+
+    // MARK: - Processing
+
+    private func processingView(_ status: DaemonStatus) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 8) {
+                ProgressView()
+                    .controlSize(.small)
+
+                Text("Processing your call\u{2026}")
+                    .font(.subheadline)
+                    .foregroundStyle(.primary)
+
+                Spacer()
+            }
+
+            // Pipeline stage indicator
+            VStack(alignment: .leading, spacing: 4) {
+                ProgressView(value: status.pipelineProgress)
+                    .tint(.orange)
+
+                Text(status.pipelineUserLabel)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
         }
     }
 
-    private var accessibleStatusDescription: String {
+    // MARK: - Offline (daemon not running)
+
+    private var offlineView: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 8) {
+                Image(systemName: "exclamationmark.triangle.fill")
+                    .foregroundStyle(.yellow)
+                    .font(.system(size: 12))
+                    .frame(width: 16)
+
+                Text("Not monitoring")
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+                    .foregroundStyle(.primary)
+
+                Spacer()
+            }
+
+            Text("Calls won\u{2019}t be recorded. Start the daemon with **launchctl**.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .lineLimit(2)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    // MARK: - Ollama warning
+
+    private var ollamaWarningView: some View {
+        HStack(spacing: 6) {
+            Image(systemName: "brain")
+                .foregroundStyle(.orange)
+                .font(.system(size: 10))
+
+            Text("AI unavailable \u{2014} calls recorded, not summarized")
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+        }
+        .padding(.top, 6)
+    }
+
+    // MARK: - Card background
+
+    private var cardBackground: some ShapeStyle {
+        if let status = daemon.status, status.isRecording {
+            return AnyShapeStyle(.red.opacity(0.06))
+        }
+        return AnyShapeStyle(.quaternary.opacity(0.5))
+    }
+
+    // MARK: - Accessibility
+
+    private var accessibleDescription: String {
         guard let status = daemon.status else {
-            return "Daemon offline"
+            return "Not monitoring calls. Start the daemon to record automatically."
         }
         switch status.state {
         case "recording":
-            return "Recording \(status.appName ?? "call")"
+            let app = status.appName ?? "call"
+            let dur = daemon.recordingDuration.map { formatDuration($0) } ?? ""
+            return "Recording \(app). \(dur)"
         case "processing":
-            return "Processing: \(status.stateLabel)"
+            return "Processing your call. \(status.pipelineUserLabel)."
         case "idle":
-            return "Daemon active, idle"
+            return "Listening for calls."
         default:
-            return "Daemon status: \(status.stateLabel)"
+            return "Status: \(status.stateLabel)"
         }
     }
 
-    private var statusColor: Color {
-        guard let status = daemon.status else { return .gray }
-        switch status.state {
-        case "recording": return .red
-        case "processing": return .orange
-        case "idle": return .green
-        default: return .gray
-        }
-    }
-
-    private var statusTitle: String {
-        guard let status = daemon.status else { return "Daemon Offline" }
-        switch status.state {
-        case "recording": return "Recording"
-        case "processing": return "Processing"
-        case "idle": return "Daemon Active"
-        default: return "Daemon Stopped"
-        }
-    }
+    // MARK: - Helpers
 
     private func formatDuration(_ interval: TimeInterval) -> String {
         let total = Int(interval)
-        let minutes = total / 60
+        let hours = total / 3600
+        let minutes = (total % 3600) / 60
         let seconds = total % 60
+        if hours > 0 {
+            return String(format: "%d:%02d:%02d", hours, minutes, seconds)
+        }
         return String(format: "%02d:%02d", minutes, seconds)
     }
 }

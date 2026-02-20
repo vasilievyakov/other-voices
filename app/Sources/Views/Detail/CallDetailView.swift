@@ -10,6 +10,7 @@ struct CallDetailView: View {
     @State private var commitments: [Commitment] = []
     @State private var audioPlayer = AudioPlayer()
     @State private var showTemplatePicker = false
+    @State private var toastMessage: String?
     @Environment(CallStore.self) private var store
     @Environment(DaemonMonitor.self) private var daemon
 
@@ -66,6 +67,9 @@ struct CallDetailView: View {
         .navigationSubtitle(call.startedAtFormatted)
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
+                exportMenu(call)
+            }
+            ToolbarItem(placement: .primaryAction) {
                 Button { showTemplatePicker = true } label: {
                     Label("Template", systemImage: "doc.text")
                 }
@@ -80,12 +84,68 @@ struct CallDetailView: View {
                 }
             }
         }
+        .overlay(alignment: .bottom) {
+            if let message = toastMessage {
+                Text(message)
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 10)
+                    .background(.ultraThinMaterial, in: Capsule())
+                    .shadow(radius: 4)
+                    .padding(.bottom, 24)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
+        }
+        .animation(.easeInOut(duration: 0.25), value: toastMessage)
         .onDisappear {
             audioPlayer.stop()
         }
         .onReceive(NotificationCenter.default.publisher(for: .togglePlayback)) { _ in
             if let path = call.systemWavPath ?? call.micWavPath {
                 audioPlayer.toggle(path: path)
+            }
+        }
+    }
+
+    // MARK: - Export Menu
+
+    private func exportMenu(_ call: Call) -> some View {
+        Menu {
+            Button {
+                let md = ExportService.exportAsMarkdown(call: call, commitments: commitments)
+                ExportService.copyToClipboard(md)
+                showToast("Copied as Markdown")
+            } label: {
+                Label("Copy as Markdown", systemImage: "doc.richtext")
+            }
+
+            Button {
+                let text = ExportService.exportAsText(call: call, commitments: commitments)
+                ExportService.copyToClipboard(text)
+                showToast("Copied as Text")
+            } label: {
+                Label("Copy as Text", systemImage: "doc.plaintext")
+            }
+
+            Divider()
+
+            Button {
+                ExportService.saveMarkdownFile(call: call, commitments: commitments)
+            } label: {
+                Label("Save as Markdown File...", systemImage: "square.and.arrow.down")
+            }
+        } label: {
+            Label("Export", systemImage: "square.and.arrow.up")
+        }
+        .help("Export call data")
+    }
+
+    private func showToast(_ message: String) {
+        toastMessage = message
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+            if toastMessage == message {
+                toastMessage = nil
             }
         }
     }

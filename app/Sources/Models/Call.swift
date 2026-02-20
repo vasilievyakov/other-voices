@@ -82,13 +82,13 @@ package struct Call: Identifiable {
         Self.dateFormatter.string(from: startedAt)
     }
 
-    package static let iso8601: ISO8601DateFormatter = {
+    nonisolated(unsafe) package static let iso8601: ISO8601DateFormatter = {
         let f = ISO8601DateFormatter()
         f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
         return f
     }()
 
-    package static let iso8601Basic: ISO8601DateFormatter = {
+    nonisolated(unsafe) package static let iso8601Basic: ISO8601DateFormatter = {
         let f = ISO8601DateFormatter()
         f.formatOptions = [.withInternetDateTime]
         return f

@@ -1,7 +1,13 @@
 """Call Recorder — configuration."""
 
+import json
+import logging
 import os
+import urllib.request
+import urllib.error
 from pathlib import Path
+
+log = logging.getLogger("call-recorder")
 
 # Paths
 BASE_DIR = Path.home() / "call-recorder"
@@ -10,6 +16,8 @@ RECORDINGS_DIR = DATA_DIR / "recordings"
 DB_PATH = DATA_DIR / "calls.db"
 STATUS_PATH = DATA_DIR / "status.json"
 LOG_PATH = BASE_DIR / "logs" / "call-recorder.log"
+LOG_MAX_BYTES = 5 * 1024 * 1024  # 5MB per log file
+LOG_BACKUP_COUNT = 3  # keep 3 rotated backups
 AUDIO_CAPTURE_BIN = BASE_DIR / "bin" / "audio-capture"
 
 # Detector
@@ -55,8 +63,32 @@ WHISPER_LANGUAGE = "ru"
 FFMPEG_BIN = "ffmpeg"
 
 # Summarization
-OLLAMA_URL = "http://localhost:11434/api/generate"
+OLLAMA_BASE_URL = "http://localhost:11434"
+OLLAMA_URL = f"{OLLAMA_BASE_URL}/api/generate"
 OLLAMA_MODEL = "qwen3:14b"
+OLLAMA_HEALTH_TIMEOUT = 5  # seconds for health check
 
 # Notifications
 NOTIFY_ENABLED = True
+
+
+def check_ollama() -> bool:
+    """Ping Ollama /api/tags to verify it's running and responsive.
+
+    Returns True if Ollama is available, False otherwise.
+    """
+    url = f"{OLLAMA_BASE_URL}/api/tags"
+    req = urllib.request.Request(url, method="GET")
+    try:
+        with urllib.request.urlopen(req, timeout=OLLAMA_HEALTH_TIMEOUT) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+            models = data.get("models", [])
+            model_names = [m.get("name", "") for m in models]
+            log.info(
+                f"Ollama health check OK: {len(models)} models available "
+                f"({', '.join(model_names[:5])})"
+            )
+            return True
+    except (urllib.error.URLError, TimeoutError, OSError) as e:
+        log.warning(f"Ollama health check FAILED: {e}")
+        return False

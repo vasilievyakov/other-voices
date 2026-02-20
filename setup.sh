@@ -63,7 +63,8 @@ PLIST_DST="$HOME/Library/LaunchAgents/com.user.call-recorder.plist"
 launchctl bootout gui/$(id -u) "$PLIST_DST" 2>/dev/null || true
 
 cp "$PLIST_SRC" "$PLIST_DST"
-echo "  Plist copied to $PLIST_DST"
+sed -i '' "s|__HOME__|$HOME|g" "$PLIST_DST"
+echo "  Plist copied to $PLIST_DST (with __HOME__ → $HOME)"
 
 # 6. Verify mlx_whisper
 echo "[6/6] Checking mlx_whisper..."

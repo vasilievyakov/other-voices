@@ -1,0 +1,53 @@
+{
+  "_instructions": [
+    "This file is a template for human annotation of commitments.",
+    "For each session_id, read the full transcript and fill in the commitments array.",
+    "See DEFINITION.md for what counts as a commitment and how to fill each field.",
+    "",
+    "Fields per commitment:",
+    "  who       - Speaker label (SPEAKER_ME, SPEAKER_OTHER_1) or resolved name",
+    "  to_whom   - Recipient label or name",
+    "  text      - Clean action description: [Verb] [object] [to recipient]",
+    "  direction - outgoing | incoming | third_party",
+    "  deadline  - Exact words from transcript, or null if none",
+    "  quote     - Verbatim quote from transcript containing the commitment",
+    "  uncertain - true if the commitment is weak/hedged (optional, default false)",
+    "  conditional - true if depends on a condition (optional, default false)",
+    "",
+    "Steps:",
+    "  1. Run: python3 -c \"import sqlite3; c=sqlite3.connect('data/calls.db'); print(c.execute('SELECT transcript FROM calls WHERE session_id=?', ('SESSION_ID',)).fetchone()[0])\"",
+    "  2. Read the transcript carefully",
+    "  3. Fill in commitments following DEFINITION.md",
+    "  4. Save as ground_truth.json (same format, remove _instructions)"
+  ],
+  "20260215_132438": {
+    "app_name": "Google Meet",
+    "duration_seconds": 6174,
+    "description": "Long Google Meet call (~103 min). Group discussion.",
+    "commitments": []
+  },
+  "20260219_171539": {
+    "app_name": "Zoom",
+    "duration_seconds": 5407,
+    "description": "Zoom call (~90 min). Multi-participant conversation.",
+    "commitments": []
+  },
+  "20251229_091715": {
+    "app_name": "Google Meet",
+    "duration_seconds": 3804,
+    "description": "Google Meet (~63 min). Agency/brand discussion with Lera.",
+    "commitments": []
+  },
+  "20260114_134426": {
+    "app_name": "Zoom",
+    "duration_seconds": 3500,
+    "description": "Zoom call (~58 min). Tech demo, transcription workflow discussion.",
+    "commitments": []
+  },
+  "20260128_101151": {
+    "app_name": "Telegram",
+    "duration_seconds": 3277,
+    "description": "Telegram call (~55 min). Business meeting with Vera, Timur, Evgenia about digitalization.",
+    "commitments": []
+  }
+}

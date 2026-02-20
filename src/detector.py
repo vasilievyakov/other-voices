@@ -2,6 +2,8 @@
 
 import psutil
 
+from .settings import is_app_enabled
+
 
 class CallDetector:
     """Detects active voice/video calls by checking running processes and UDP connections."""
@@ -30,21 +32,25 @@ class CallDetector:
 
         Returns:
             (is_active, app_name) — e.g. (True, "Zoom") or (False, None)
+        Respects per-app toggles from user settings.
         """
         # 1. Zoom — just check for CptHost process
-        if self._process_exists(self.ZOOM_PROCESS):
+        if is_app_enabled("Zoom") and self._process_exists(self.ZOOM_PROCESS):
             return True, "Zoom"
 
         # 2. Native apps — check process + UDP connections
         for app_name, info in self.UDP_APPS.items():
+            if not is_app_enabled(app_name):
+                continue
             for proc_name in info["processes"]:
                 if self._has_udp_connections(proc_name, info["min_udp"]):
                     return True, app_name
 
         # 3. Google Meet (browser) — browser helper with multiple UDP connections
-        for helper in self.BROWSER_HELPERS:
-            if self._has_udp_connections(helper, 2):
-                return True, "Google Meet"
+        if is_app_enabled("Google Meet"):
+            for helper in self.BROWSER_HELPERS:
+                if self._has_udp_connections(helper, 2):
+                    return True, "Google Meet"
 
         return False, None
 

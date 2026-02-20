@@ -3,6 +3,7 @@ import OSLog
 
 private let logger = Logger(subsystem: "com.user.other-voices", category: "chat")
 
+@MainActor
 @Observable
 final class ChatService {
     var messages: [ChatMessage] = []
@@ -32,7 +33,9 @@ final class ChatService {
         let userMsg = ChatMessage(role: "user", content: question)
         messages.append(userMsg)
 
-        Task.detached { [weak self, basePath] in
+        let basePath = self.basePath
+
+        Task.detached {
             let venvPython = basePath + "/.venv/bin/python"
             let chatCli = basePath + "/chat_cli.py"
 
@@ -47,28 +50,30 @@ final class ChatService {
 
             do {
                 await MainActor.run {
-                    self?.currentProcess = process
+                    self.currentProcess = process
                 }
                 try process.run()
                 process.waitUntilExit()
 
                 let data = pipe.fileHandleForReading.readDataToEndOfFile()
                 let output = String(data: data, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+                let status = process.terminationStatus
 
                 await MainActor.run {
-                    if process.terminationStatus == 0 && !output.isEmpty {
+                    if status == 0 && !output.isEmpty {
                         let assistantMsg = ChatMessage(role: "assistant", content: output)
-                        self?.messages.append(assistantMsg)
+                        self.messages.append(assistantMsg)
                     } else {
-                        self?.error = output.isEmpty ? "No response" : output
+                        self.error = output.isEmpty ? "No response" : output
                     }
-                    self?.isProcessing = false
+                    self.isProcessing = false
                 }
             } catch {
-                logger.error("Chat process failed: \(error.localizedDescription)")
+                let desc = error.localizedDescription
+                logger.error("Chat process failed: \(desc)")
                 await MainActor.run {
-                    self?.error = error.localizedDescription
-                    self?.isProcessing = false
+                    self.error = desc
+                    self.isProcessing = false
                 }
             }
         }

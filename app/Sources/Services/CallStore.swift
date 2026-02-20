@@ -3,6 +3,7 @@ import OSLog
 
 private let logger = Logger(subsystem: "com.user.other-voices", category: "store")
 
+@MainActor
 @Observable
 package final class CallStore {
     var calls: [Call] = []
@@ -104,10 +105,26 @@ package final class CallStore {
         commitmentCounts = db.commitmentCounts()
     }
 
+    // MARK: - Person Detail
+
+    func commitmentsByPerson(name: String) -> [Commitment] {
+        db.commitmentsByPerson(name: name)
+    }
+
+    func personStats(name: String) -> SQLiteDatabase.PersonStats {
+        db.personStats(name: name)
+    }
+
+    func callsByEntity(name: String) -> [Call] {
+        db.searchByEntity(name: name)
+    }
+
     private func startWatching() {
         let dataDir = NSHomeDirectory() + "/call-recorder/data"
         statusMonitor = StatusMonitor(directoryPath: dataDir) { [weak self] in
-            self?.debouncedRefresh()
+            MainActor.assumeIsolated {
+                self?.debouncedRefresh()
+            }
         }
         statusMonitor?.start()
     }

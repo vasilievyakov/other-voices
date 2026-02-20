@@ -335,6 +335,101 @@ final class SQLiteDatabase {
         sqlite3_step(stmt)
     }
 
+    // MARK: - Person Detail (cross-call temporal connections)
+
+    /// All commitments where who_name or to_name matches person name, with call info
+    func commitmentsByPerson(name: String) -> [Commitment] {
+        guard let db = ensureOpen() else { return [] }
+
+        let sql = """
+            SELECT cm.id, cm.session_id, cm.direction, cm.who_label, cm.who_name,
+                   cm.to_label, cm.to_name, cm.text, cm.verbatim_quote, cm.timestamp,
+                   cm.deadline_raw, cm.deadline_type, cm.significance, cm.uncertain,
+                   cm.status, cm.created_at, cm.resolved_at,
+                   c.app_name, c.started_at
+            FROM commitments cm
+            JOIN calls c ON c.session_id = cm.session_id
+            WHERE cm.who_name = ? OR cm.to_name = ?
+            ORDER BY cm.created_at DESC
+            """
+        var stmt: OpaquePointer?
+        guard sqlite3_prepare_v2(db, sql, -1, &stmt, nil) == SQLITE_OK else { return [] }
+        defer { sqlite3_finalize(stmt) }
+
+        sqlite3_bind_text(stmt, 1, (name as NSString).utf8String, -1, nil)
+        sqlite3_bind_text(stmt, 2, (name as NSString).utf8String, -1, nil)
+        return readCommitments(stmt: stmt!, includeCallInfo: true)
+    }
+
+    /// Person stats: first/last call date, total duration, app breakdown
+    struct PersonStats {
+        let totalCalls: Int
+        let firstCallDate: Date?
+        let lastCallDate: Date?
+        let totalDuration: Double
+        let appBreakdown: [(String, Int)]  // (appName, count)
+    }
+
+    func personStats(name: String) -> PersonStats {
+        guard let db = ensureOpen() else {
+            return PersonStats(totalCalls: 0, firstCallDate: nil, lastCallDate: nil,
+                             totalDuration: 0, appBreakdown: [])
+        }
+
+        // Aggregate stats
+        let sql = """
+            SELECT COUNT(*), MIN(c.started_at), MAX(c.started_at), SUM(c.duration_seconds)
+            FROM calls c
+            JOIN entities e ON e.session_id = c.session_id
+            WHERE e.name = ?
+            """
+        var stmt: OpaquePointer?
+        guard sqlite3_prepare_v2(db, sql, -1, &stmt, nil) == SQLITE_OK else {
+            return PersonStats(totalCalls: 0, firstCallDate: nil, lastCallDate: nil,
+                             totalDuration: 0, appBreakdown: [])
+        }
+        defer { sqlite3_finalize(stmt) }
+
+        sqlite3_bind_text(stmt, 1, (name as NSString).utf8String, -1, nil)
+
+        var totalCalls = 0
+        var firstDate: Date?
+        var lastDate: Date?
+        var totalDuration: Double = 0
+
+        if sqlite3_step(stmt) == SQLITE_ROW {
+            totalCalls = Int(sqlite3_column_int(stmt, 0))
+            firstDate = columnText(stmt!, 1).map { Call.parseDate($0) }
+            lastDate = columnText(stmt!, 2).map { Call.parseDate($0) }
+            totalDuration = sqlite3_column_double(stmt, 3)
+        }
+
+        // App breakdown
+        let appSql = """
+            SELECT c.app_name, COUNT(*) as cnt
+            FROM calls c
+            JOIN entities e ON e.session_id = c.session_id
+            WHERE e.name = ?
+            GROUP BY c.app_name
+            ORDER BY cnt DESC
+            """
+        var appStmt: OpaquePointer?
+        var apps: [(String, Int)] = []
+        if sqlite3_prepare_v2(db, appSql, -1, &appStmt, nil) == SQLITE_OK {
+            defer { sqlite3_finalize(appStmt) }
+            sqlite3_bind_text(appStmt, 1, (name as NSString).utf8String, -1, nil)
+            while sqlite3_step(appStmt) == SQLITE_ROW {
+                let appName = String(cString: sqlite3_column_text(appStmt, 0))
+                let count = Int(sqlite3_column_int(appStmt, 1))
+                apps.append((appName, count))
+            }
+        }
+
+        return PersonStats(totalCalls: totalCalls, firstCallDate: firstDate,
+                          lastCallDate: lastDate, totalDuration: totalDuration,
+                          appBreakdown: apps)
+    }
+
     // MARK: - Private
 
     private func readCommitments(stmt: OpaquePointer, includeCallInfo: Bool = false) -> [Commitment] {
