@@ -4,6 +4,12 @@ import SQLite3
 
 private let logger = Logger(subsystem: "com.user.other-voices", category: "database")
 
+private let callColumns = """
+    session_id, app_name, started_at, ended_at, duration_seconds,
+    system_wav_path, mic_wav_path, transcript, summary_json,
+    template_name, notes, transcript_segments
+    """
+
 final class SQLiteDatabase {
     private let path: String
 
@@ -31,11 +37,7 @@ final class SQLiteDatabase {
         guard let db = open() else { return [] }
         defer { sqlite3_close(db) }
 
-        let sql = """
-            SELECT session_id, app_name, started_at, ended_at, duration_seconds,
-                   system_wav_path, mic_wav_path, transcript, summary_json
-            FROM calls ORDER BY started_at DESC LIMIT ?
-            """
+        let sql = "SELECT \(callColumns) FROM calls ORDER BY started_at DESC LIMIT ?"
         var stmt: OpaquePointer?
         guard sqlite3_prepare_v2(db, sql, -1, &stmt, nil) == SQLITE_OK else { return [] }
         defer { sqlite3_finalize(stmt) }
@@ -48,11 +50,7 @@ final class SQLiteDatabase {
         guard let db = open() else { return [] }
         defer { sqlite3_close(db) }
 
-        let sql = """
-            SELECT session_id, app_name, started_at, ended_at, duration_seconds,
-                   system_wav_path, mic_wav_path, transcript, summary_json
-            FROM calls WHERE app_name = ? ORDER BY started_at DESC LIMIT ?
-            """
+        let sql = "SELECT \(callColumns) FROM calls WHERE app_name = ? ORDER BY started_at DESC LIMIT ?"
         var stmt: OpaquePointer?
         guard sqlite3_prepare_v2(db, sql, -1, &stmt, nil) == SQLITE_OK else { return [] }
         defer { sqlite3_finalize(stmt) }
@@ -66,11 +64,7 @@ final class SQLiteDatabase {
         guard let db = open() else { return nil }
         defer { sqlite3_close(db) }
 
-        let sql = """
-            SELECT session_id, app_name, started_at, ended_at, duration_seconds,
-                   system_wav_path, mic_wav_path, transcript, summary_json
-            FROM calls WHERE session_id = ?
-            """
+        let sql = "SELECT \(callColumns) FROM calls WHERE session_id = ?"
         var stmt: OpaquePointer?
         guard sqlite3_prepare_v2(db, sql, -1, &stmt, nil) == SQLITE_OK else { return nil }
         defer { sqlite3_finalize(stmt) }
@@ -86,7 +80,8 @@ final class SQLiteDatabase {
 
         let sql = """
             SELECT c.session_id, c.app_name, c.started_at, c.ended_at, c.duration_seconds,
-                   c.system_wav_path, c.mic_wav_path, c.transcript, c.summary_json
+                   c.system_wav_path, c.mic_wav_path, c.transcript, c.summary_json,
+                   c.template_name, c.notes, c.transcript_segments
             FROM calls_fts fts
             JOIN calls c ON c.rowid = fts.rowid
             WHERE calls_fts MATCH ?
@@ -100,6 +95,63 @@ final class SQLiteDatabase {
         sqlite3_bind_text(stmt, 1, (query as NSString).utf8String, -1, nil)
         sqlite3_bind_int(stmt, 2, Int32(limit))
         return readCalls(stmt: stmt!)
+    }
+
+    func searchByEntity(name: String) -> [Call] {
+        guard let db = open() else { return [] }
+        defer { sqlite3_close(db) }
+
+        let sql = """
+            SELECT c.session_id, c.app_name, c.started_at, c.ended_at, c.duration_seconds,
+                   c.system_wav_path, c.mic_wav_path, c.transcript, c.summary_json,
+                   c.template_name, c.notes, c.transcript_segments
+            FROM calls c
+            JOIN entities e ON e.session_id = c.session_id
+            WHERE e.name = ?
+            ORDER BY c.started_at DESC
+            """
+        var stmt: OpaquePointer?
+        guard sqlite3_prepare_v2(db, sql, -1, &stmt, nil) == SQLITE_OK else { return [] }
+        defer { sqlite3_finalize(stmt) }
+
+        sqlite3_bind_text(stmt, 1, (name as NSString).utf8String, -1, nil)
+        return readCalls(stmt: stmt!)
+    }
+
+    func allEntities() -> [Entity] {
+        guard let db = open() else { return [] }
+        defer { sqlite3_close(db) }
+
+        let sql = "SELECT DISTINCT name, type FROM entities ORDER BY type, name"
+        var stmt: OpaquePointer?
+        guard sqlite3_prepare_v2(db, sql, -1, &stmt, nil) == SQLITE_OK else { return [] }
+        defer { sqlite3_finalize(stmt) }
+
+        var results: [Entity] = []
+        while sqlite3_step(stmt) == SQLITE_ROW {
+            let name = String(cString: sqlite3_column_text(stmt, 0))
+            let type = String(cString: sqlite3_column_text(stmt, 1))
+            results.append(Entity(name: name, type: type))
+        }
+        return results
+    }
+
+    func updateNotes(sessionId: String, notes: String?) {
+        guard let db = open() else { return }
+        defer { sqlite3_close(db) }
+
+        let sql = "UPDATE calls SET notes = ? WHERE session_id = ?"
+        var stmt: OpaquePointer?
+        guard sqlite3_prepare_v2(db, sql, -1, &stmt, nil) == SQLITE_OK else { return }
+        defer { sqlite3_finalize(stmt) }
+
+        if let notes = notes {
+            sqlite3_bind_text(stmt, 1, (notes as NSString).utf8String, -1, nil)
+        } else {
+            sqlite3_bind_null(stmt, 1)
+        }
+        sqlite3_bind_text(stmt, 2, (sessionId as NSString).utf8String, -1, nil)
+        sqlite3_step(stmt)
     }
 
     func appCounts() -> [(String, Int)] {
@@ -140,8 +192,7 @@ final class SQLiteDatabase {
         defer { sqlite3_close(db) }
 
         let sql = """
-            SELECT session_id, app_name, started_at, ended_at, duration_seconds,
-                   system_wav_path, mic_wav_path, transcript, summary_json
+            SELECT \(callColumns)
             FROM calls
             WHERE summary_json IS NOT NULL
               AND started_at >= datetime('now', ?)
@@ -174,7 +225,10 @@ final class SQLiteDatabase {
                 systemWavPath: columnText(stmt, 5),
                 micWavPath: columnText(stmt, 6),
                 transcript: columnText(stmt, 7),
-                summaryJson: columnText(stmt, 8)
+                summaryJson: columnText(stmt, 8),
+                templateName: columnText(stmt, 9),
+                notes: columnText(stmt, 10),
+                transcriptSegmentsJson: columnText(stmt, 11)
             )
             calls.append(call)
         }

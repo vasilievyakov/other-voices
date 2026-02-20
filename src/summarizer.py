@@ -6,33 +6,32 @@ import urllib.request
 import urllib.error
 
 from .config import OLLAMA_MODEL, OLLAMA_URL
+from .templates import build_prompt
 
 log = logging.getLogger("call-recorder")
-
-SUMMARY_PROMPT = """\
-Ты анализируешь транскрипт звонка. Извлеки структурированную информацию.
-
-Ответь строго в JSON формате (без markdown):
-{
-  "summary": "краткое описание звонка в 2-3 предложения",
-  "key_points": ["ключевой момент 1", "ключевой момент 2"],
-  "decisions": ["решение 1", "решение 2"],
-  "action_items": ["задача 1 (@кто, дедлайн если есть)", "задача 2"],
-  "participants": ["имя1", "имя2"]
-}
-
-Если какое-то поле не определяется из транскрипта, используй пустой список [].
-Отвечай на том же языке, что и транскрипт.
-
-ТРАНСКРИПТ:
-"""
 
 
 class Summarizer:
     """Summarizes call transcripts using Ollama."""
 
-    def summarize(self, transcript: str) -> dict | None:
-        """Generate summary from transcript. Returns dict or None if Ollama unavailable."""
+    def summarize(
+        self,
+        transcript: str,
+        template_name: str = "default",
+        notes: str | None = None,
+        segments: list[dict] | None = None,
+    ) -> dict | None:
+        """Generate summary from transcript using a template.
+
+        Args:
+            transcript: Call transcript text.
+            template_name: Template to use for structuring the output.
+            notes: Optional user notes to steer the summary.
+            segments: Optional transcript segments with timestamps for citations.
+
+        Returns:
+            Parsed summary dict, or None if Ollama unavailable / input too short.
+        """
         if not transcript or len(transcript.strip()) < 50:
             log.info("Transcript too short for summarization")
             return None
@@ -41,7 +40,10 @@ class Summarizer:
         max_chars = 12000
         text = transcript[:max_chars] if len(transcript) > max_chars else transcript
 
-        prompt = SUMMARY_PROMPT + text
+        prompt = build_prompt(template_name, text, notes, segments=segments)
+
+        # More sections → more tokens needed
+        num_predict = 2048 if template_name != "default" else 1024
 
         payload = json.dumps(
             {
@@ -50,7 +52,7 @@ class Summarizer:
                 "stream": False,
                 "options": {
                     "temperature": 0.3,
-                    "num_predict": 1024,
+                    "num_predict": num_predict,
                 },
             }
         ).encode("utf-8")
@@ -62,7 +64,7 @@ class Summarizer:
         )
 
         try:
-            log.info(f"Calling Ollama ({OLLAMA_MODEL})...")
+            log.info(f"Calling Ollama ({OLLAMA_MODEL}), template={template_name}...")
             with urllib.request.urlopen(req, timeout=120) as resp:
                 result = json.loads(resp.read().decode("utf-8"))
         except (urllib.error.URLError, TimeoutError) as e:

@@ -10,11 +10,12 @@ import time
 from datetime import datetime, timezone
 from pathlib import Path
 
-from .config import MIN_CALL_DURATION, POLL_INTERVAL, LOG_PATH, STATUS_PATH
+from .config import MIN_CALL_DURATION, POLL_INTERVAL, LOG_PATH, STATUS_PATH, DATA_DIR
 from .database import Database
 from .detector import CallDetector
 from .recorder import AudioRecorder
 from .summarizer import Summarizer
+from .templates import export_templates_json
 from .transcriber import Transcriber
 
 # Logging setup
@@ -96,9 +97,9 @@ def process_recording(
     write_status(
         "processing", app_name, session_id, session["started_at"], "transcribing"
     )
-    transcript = transcriber.transcribe(session["session_dir"])
+    transcribe_result = transcriber.transcribe(session["session_dir"])
 
-    if not transcript:
+    if not transcribe_result:
         log.warning(f"Transcription failed for {session_id}")
         notify("Call Recorder", f"Ошибка транскрипции {app_name}")
         # Still save the record without transcript
@@ -115,12 +116,38 @@ def process_recording(
         )
         return
 
+    # Handle both dict (with segments) and str (plain text) return
+    import json as _json
+
+    transcript_segments = None
+    if isinstance(transcribe_result, dict):
+        transcript = transcribe_result["text"]
+        transcript_segments = _json.dumps(
+            transcribe_result["segments"], ensure_ascii=False
+        )
+    else:
+        transcript = transcribe_result
+
     # Summarize
     log.info(f"Summarizing {session_id}...")
     write_status(
         "processing", app_name, session_id, session["started_at"], "summarizing"
     )
-    summary = summarizer.summarize(transcript)
+    template_name = session.get("template_name", "default")
+    # Pass segments for timestamp-aware citation in summary
+    segments_list = (
+        transcribe_result.get("segments")
+        if isinstance(transcribe_result, dict)
+        else None
+    )
+    summary = summarizer.summarize(
+        transcript, template_name=template_name, segments=segments_list
+    )
+
+    # Extract entities from summary response
+    entities = []
+    if summary and isinstance(summary.get("entities"), list):
+        entities = summary.pop("entities")
 
     # Save to database
     write_status("processing", app_name, session_id, session["started_at"], "saving")
@@ -134,7 +161,12 @@ def process_recording(
         mic_wav_path=session["mic_wav"],
         transcript=transcript,
         summary=summary,
+        template_name=template_name,
+        transcript_segments=transcript_segments,
     )
+
+    if entities:
+        db.insert_entities(session_id, entities)
 
     summary_text = ""
     if summary and summary.get("summary"):
@@ -151,6 +183,14 @@ def main():
     log.info("Call Recorder daemon starting")
     log.info(f"Poll interval: {POLL_INTERVAL}s, Min duration: {MIN_CALL_DURATION}s")
     log.info("=" * 50)
+
+    # Export templates for Swift app
+    try:
+        templates_path = DATA_DIR / "templates.json"
+        templates_path.write_text(export_templates_json(), encoding="utf-8")
+        log.info(f"Templates exported to {templates_path}")
+    except Exception as e:
+        log.warning(f"Failed to export templates: {e}")
 
     detector = CallDetector()
     recorder = AudioRecorder()

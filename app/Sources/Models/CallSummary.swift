@@ -6,6 +6,7 @@ package struct CallSummary: Codable {
     package let decisions: [String]?
     package let actionItems: [String]?
     package let participants: [String]?
+    package let entities: [Entity]?
 
     enum CodingKeys: String, CodingKey {
         case summary
@@ -13,5 +14,6 @@ package struct CallSummary: Codable {
         case decisions
         case actionItems = "action_items"
         case participants
+        case entities
     }
 }

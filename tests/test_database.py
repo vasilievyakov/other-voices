@@ -465,3 +465,364 @@ class TestDatabaseSecurity:
             summary=None,
         )
         assert db.get_call("deep1") is not None
+
+
+# =============================================================================
+# Migration & New Columns (6 tests)
+# =============================================================================
+
+
+class TestMigrationAndNewColumns:
+    def test_template_name_default(self, tmp_db):
+        """New calls get template_name='default' by default."""
+        tmp_db.insert_call(
+            session_id="m1",
+            app_name="Zoom",
+            started_at="2025-02-20T10:00:00",
+            ended_at="2025-02-20T10:30:00",
+            duration_seconds=1800.0,
+            system_wav_path=None,
+            mic_wav_path=None,
+            transcript="Test",
+            summary=None,
+        )
+        call = tmp_db.get_call("m1")
+        assert call["template_name"] == "default"
+
+    def test_template_name_custom(self, tmp_db):
+        """Custom template_name is stored and retrieved."""
+        tmp_db.insert_call(
+            session_id="m2",
+            app_name="Zoom",
+            started_at="2025-02-20T10:00:00",
+            ended_at="2025-02-20T10:30:00",
+            duration_seconds=1800.0,
+            system_wav_path=None,
+            mic_wav_path=None,
+            transcript="Test",
+            summary=None,
+            template_name="sales_call",
+        )
+        call = tmp_db.get_call("m2")
+        assert call["template_name"] == "sales_call"
+
+    def test_notes_stored(self, tmp_db):
+        """Notes are stored on insert."""
+        tmp_db.insert_call(
+            session_id="m3",
+            app_name="Zoom",
+            started_at="2025-02-20T10:00:00",
+            ended_at="2025-02-20T10:30:00",
+            duration_seconds=1800.0,
+            system_wav_path=None,
+            mic_wav_path=None,
+            transcript="Test",
+            summary=None,
+            notes="Important meeting notes",
+        )
+        call = tmp_db.get_call("m3")
+        assert call["notes"] == "Important meeting notes"
+
+    def test_notes_default_none(self, tmp_db):
+        """Notes default to None when not provided."""
+        tmp_db.insert_call(
+            session_id="m4",
+            app_name="Zoom",
+            started_at="2025-02-20T10:00:00",
+            ended_at="2025-02-20T10:30:00",
+            duration_seconds=1800.0,
+            system_wav_path=None,
+            mic_wav_path=None,
+            transcript="Test",
+            summary=None,
+        )
+        call = tmp_db.get_call("m4")
+        assert call["notes"] is None
+
+    def test_update_notes(self, tmp_db):
+        """update_notes updates the notes column."""
+        tmp_db.insert_call(
+            session_id="m5",
+            app_name="Zoom",
+            started_at="2025-02-20T10:00:00",
+            ended_at="2025-02-20T10:30:00",
+            duration_seconds=1800.0,
+            system_wav_path=None,
+            mic_wav_path=None,
+            transcript="Test",
+            summary=None,
+        )
+        tmp_db.update_notes("m5", "Updated notes here")
+        call = tmp_db.get_call("m5")
+        assert call["notes"] == "Updated notes here"
+
+    def test_transcript_segments_stored(self, tmp_db):
+        """Transcript segments JSON is stored and retrieved."""
+        import json as _json
+
+        segments = [{"start": 0.0, "end": 2.5, "text": "Hello"}]
+        segments_json = _json.dumps(segments, ensure_ascii=False)
+        tmp_db.insert_call(
+            session_id="m6",
+            app_name="Zoom",
+            started_at="2025-02-20T10:00:00",
+            ended_at="2025-02-20T10:30:00",
+            duration_seconds=1800.0,
+            system_wav_path=None,
+            mic_wav_path=None,
+            transcript="Hello",
+            summary=None,
+            transcript_segments=segments_json,
+        )
+        call = tmp_db.get_call("m6")
+        assert call["transcript_segments"] is not None
+        parsed = _json.loads(call["transcript_segments"])
+        assert len(parsed) == 1
+        assert parsed[0]["text"] == "Hello"
+
+    def test_transcript_segments_default_none(self, tmp_db):
+        """Transcript segments default to None."""
+        tmp_db.insert_call(
+            session_id="m7",
+            app_name="Zoom",
+            started_at="2025-02-20T10:00:00",
+            ended_at="2025-02-20T10:30:00",
+            duration_seconds=1800.0,
+            system_wav_path=None,
+            mic_wav_path=None,
+            transcript="Test",
+            summary=None,
+        )
+        call = tmp_db.get_call("m7")
+        assert call["transcript_segments"] is None
+
+    def test_migrate_existing_db(self, tmp_path):
+        """Migration adds columns to a DB created without them."""
+        import sqlite3
+
+        db_path = tmp_path / "old.db"
+        # Create a DB with old schema (no template_name, notes, transcript_segments)
+        conn = sqlite3.connect(str(db_path))
+        conn.executescript("""
+            CREATE TABLE calls (
+                session_id TEXT PRIMARY KEY,
+                app_name TEXT NOT NULL,
+                started_at TEXT NOT NULL,
+                ended_at TEXT NOT NULL,
+                duration_seconds REAL NOT NULL,
+                system_wav_path TEXT,
+                mic_wav_path TEXT,
+                transcript TEXT,
+                summary_json TEXT
+            );
+        """)
+        conn.execute(
+            """INSERT INTO calls (session_id, app_name, started_at, ended_at,
+               duration_seconds, transcript) VALUES (?, ?, ?, ?, ?, ?)""",
+            (
+                "old1",
+                "Zoom",
+                "2025-01-01T10:00:00",
+                "2025-01-01T10:30:00",
+                1800.0,
+                "Old data",
+            ),
+        )
+        conn.commit()
+        conn.close()
+
+        # Now open with our Database class (triggers migration)
+        db = Database(db_path=db_path)
+        call = db.get_call("old1")
+        assert call is not None
+        assert call["transcript"] == "Old data"
+        assert call["template_name"] == "default"
+        assert call["notes"] is None
+
+
+# =============================================================================
+# Entities (8 tests)
+# =============================================================================
+
+
+class TestEntities:
+    def _insert_call(self, db, session_id="e1"):
+        db.insert_call(
+            session_id=session_id,
+            app_name="Zoom",
+            started_at="2025-02-20T10:00:00",
+            ended_at="2025-02-20T10:30:00",
+            duration_seconds=1800.0,
+            system_wav_path=None,
+            mic_wav_path=None,
+            transcript="Test",
+            summary=None,
+        )
+
+    def test_insert_and_get_entities(self, tmp_db):
+        """Insert entities and retrieve them."""
+        self._insert_call(tmp_db)
+        entities = [
+            {"name": "Вася", "type": "person"},
+            {"name": "Acme Corp", "type": "company"},
+        ]
+        tmp_db.insert_entities("e1", entities)
+        result = tmp_db.get_entities("e1")
+        assert len(result) == 2
+        names = {r["name"] for r in result}
+        assert "Вася" in names
+        assert "Acme Corp" in names
+
+    def test_insert_entities_dedup(self, tmp_db):
+        """Duplicate entities are ignored (UNIQUE constraint)."""
+        self._insert_call(tmp_db)
+        entities = [{"name": "Вася", "type": "person"}]
+        tmp_db.insert_entities("e1", entities)
+        tmp_db.insert_entities("e1", entities)  # duplicate
+        result = tmp_db.get_entities("e1")
+        assert len(result) == 1
+
+    def test_insert_entities_skips_invalid(self, tmp_db):
+        """Invalid entities (no name, bad type) are skipped."""
+        self._insert_call(tmp_db)
+        entities = [
+            {"name": "", "type": "person"},  # empty name
+            {"name": "X", "type": "alien"},  # invalid type
+            {"name": "Valid", "type": "person"},  # valid
+        ]
+        tmp_db.insert_entities("e1", entities)
+        result = tmp_db.get_entities("e1")
+        assert len(result) == 1
+        assert result[0]["name"] == "Valid"
+
+    def test_search_entities(self, tmp_db):
+        """Search entities by partial name."""
+        self._insert_call(tmp_db)
+        tmp_db.insert_entities(
+            "e1",
+            [
+                {"name": "Василий Петров", "type": "person"},
+                {"name": "Acme Corp", "type": "company"},
+            ],
+        )
+        result = tmp_db.search_entities("Васил")
+        assert len(result) == 1
+        assert result[0]["name"] == "Василий Петров"
+
+    def test_get_calls_by_entity(self, tmp_db):
+        """Find calls mentioning a specific entity."""
+        self._insert_call(tmp_db, "e1")
+        self._insert_call(tmp_db, "e2")
+        tmp_db.insert_entities("e1", [{"name": "Вася", "type": "person"}])
+        tmp_db.insert_entities("e2", [{"name": "Вася", "type": "person"}])
+        result = tmp_db.get_calls_by_entity("Вася")
+        assert len(result) == 2
+
+    def test_get_calls_by_entity_with_type(self, tmp_db):
+        """Filter by entity type."""
+        self._insert_call(tmp_db)
+        tmp_db.insert_entities(
+            "e1",
+            [
+                {"name": "Вася", "type": "person"},
+                {"name": "Вася", "type": "company"},  # hypothetical
+            ],
+        )
+        result = tmp_db.get_calls_by_entity("Вася", entity_type="person")
+        assert len(result) == 1
+
+    def test_get_all_entities(self, tmp_db):
+        """Get all entities with call counts."""
+        self._insert_call(tmp_db, "e1")
+        self._insert_call(tmp_db, "e2")
+        tmp_db.insert_entities("e1", [{"name": "Вася", "type": "person"}])
+        tmp_db.insert_entities("e2", [{"name": "Вася", "type": "person"}])
+        tmp_db.insert_entities("e2", [{"name": "Acme", "type": "company"}])
+        result = tmp_db.get_all_entities()
+        assert len(result) == 2
+        # Вася appears in 2 calls
+        vasya = next(r for r in result if r["name"] == "Вася")
+        assert vasya["call_count"] == 2
+
+    def test_entities_empty(self, tmp_db):
+        """No entities returns empty list."""
+        assert tmp_db.get_all_entities() == []
+        assert tmp_db.get_entities("nonexistent") == []
+
+
+# =============================================================================
+# Chat Messages (6 tests)
+# =============================================================================
+
+
+class TestChatMessages:
+    def _insert_call(self, db, session_id="cm1"):
+        db.insert_call(
+            session_id=session_id,
+            app_name="Zoom",
+            started_at="2025-02-20T10:00:00",
+            ended_at="2025-02-20T10:30:00",
+            duration_seconds=1800.0,
+            system_wav_path=None,
+            mic_wav_path=None,
+            transcript="Test",
+            summary=None,
+        )
+
+    def test_insert_and_get_messages(self, tmp_db):
+        """Insert messages and retrieve them in chronological order."""
+        self._insert_call(tmp_db)
+        tmp_db.insert_chat_message("cm1", "user", "What happened?", "call")
+        tmp_db.insert_chat_message("cm1", "assistant", "Meeting about X.", "call")
+
+        messages = tmp_db.get_chat_messages("cm1", "call")
+        assert len(messages) == 2
+        assert messages[0]["role"] == "user"
+        assert messages[1]["role"] == "assistant"
+        assert messages[1]["content"] == "Meeting about X."
+
+    def test_get_messages_empty(self, tmp_db):
+        """No messages returns empty list."""
+        messages = tmp_db.get_chat_messages("nonexistent", "call")
+        assert messages == []
+
+    def test_global_messages(self, tmp_db):
+        """Global scope messages are stored and retrieved."""
+        tmp_db.insert_chat_message(None, "user", "Global Q", "global")
+        tmp_db.insert_chat_message(None, "assistant", "Global A", "global")
+
+        messages = tmp_db.get_chat_messages(None, "global")
+        assert len(messages) == 2
+        assert messages[0]["content"] == "Global Q"
+
+    def test_clear_chat_per_session(self, tmp_db):
+        """Clear chat removes messages for specific session."""
+        self._insert_call(tmp_db, "cm1")
+        self._insert_call(tmp_db, "cm2")
+        tmp_db.insert_chat_message("cm1", "user", "Q1", "call")
+        tmp_db.insert_chat_message("cm2", "user", "Q2", "call")
+
+        tmp_db.clear_chat("cm1")
+        assert tmp_db.get_chat_messages("cm1", "call") == []
+        assert len(tmp_db.get_chat_messages("cm2", "call")) == 1
+
+    def test_clear_global_chat(self, tmp_db):
+        """Clear global chat removes only global messages."""
+        self._insert_call(tmp_db)
+        tmp_db.insert_chat_message("cm1", "user", "Per-call Q", "call")
+        tmp_db.insert_chat_message(None, "user", "Global Q", "global")
+
+        tmp_db.clear_chat()  # clears global
+        assert tmp_db.get_chat_messages(None, "global") == []
+        assert len(tmp_db.get_chat_messages("cm1", "call")) == 1
+
+    def test_messages_limit(self, tmp_db):
+        """Limit parameter works correctly."""
+        self._insert_call(tmp_db)
+        for i in range(10):
+            tmp_db.insert_chat_message("cm1", "user", f"Q{i}", "call")
+
+        messages = tmp_db.get_chat_messages("cm1", "call", limit=3)
+        assert len(messages) == 3
+        # Should be the most recent 3, in chronological order
+        assert messages[-1]["content"] == "Q9"

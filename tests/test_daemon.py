@@ -127,7 +127,9 @@ class TestProcessRecording:
         process_recording(sample_session, transcriber, summarizer, tmp_db)
 
         transcriber.transcribe.assert_called_once_with(sample_session["session_dir"])
-        summarizer.summarize.assert_called_once_with("Full transcript text here")
+        summarizer.summarize.assert_called_once_with(
+            "Full transcript text here", template_name="default", segments=None
+        )
         call_record = tmp_db.get_call(sample_session["session_id"])
         assert call_record is not None
         assert call_record["transcript"] == "Full transcript text here"

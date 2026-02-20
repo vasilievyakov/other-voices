@@ -11,12 +11,20 @@ package struct Call: Identifiable, Hashable {
     package let micWavPath: String?
     package let transcript: String?
     package let summaryJson: String?
+    package let templateName: String?
+    package let notes: String?
+    package let transcriptSegmentsJson: String?
 
     package var id: String { sessionId }
 
     package var summary: CallSummary? {
         guard let json = summaryJson, let data = json.data(using: .utf8) else { return nil }
         return try? JSONDecoder().decode(CallSummary.self, from: data)
+    }
+
+    package var transcriptSegments: [TranscriptSegment]? {
+        guard let json = transcriptSegmentsJson, let data = json.data(using: .utf8) else { return nil }
+        return try? JSONDecoder().decode([TranscriptSegment].self, from: data)
     }
 
     package var durationFormatted: String {
@@ -74,7 +82,9 @@ package struct Call: Identifiable, Hashable {
     package init(
         sessionId: String, appName: String, startedAt: Date, endedAt: Date,
         durationSeconds: Double, systemWavPath: String?, micWavPath: String?,
-        transcript: String?, summaryJson: String?
+        transcript: String?, summaryJson: String?,
+        templateName: String? = "default", notes: String? = nil,
+        transcriptSegmentsJson: String? = nil
     ) {
         self.sessionId = sessionId
         self.appName = appName
@@ -85,5 +95,8 @@ package struct Call: Identifiable, Hashable {
         self.micWavPath = micWavPath
         self.transcript = transcript
         self.summaryJson = summaryJson
+        self.templateName = templateName
+        self.notes = notes
+        self.transcriptSegmentsJson = transcriptSegmentsJson
     }
 }

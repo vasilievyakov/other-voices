@@ -10,6 +10,7 @@ package final class CallStore {
     var totalCount: Int = 0
     var searchQuery: String = ""
     var selectedFilter: SidebarItem = .allCalls
+    var entities: [Entity] = []
 
     private let db: SQLiteDatabase
     private var statusMonitor: StatusMonitor?
@@ -38,10 +39,13 @@ package final class CallStore {
                 // Search within app: do full search then filter
                 calls = db.search(query: searchQuery).filter { $0.appName == name }
             }
+        case .entity(let name):
+            calls = db.searchByEntity(name: name)
         }
 
         appCounts = db.appCounts()
         totalCount = db.totalCount()
+        entities = db.allEntities()
     }
 
     func setFilter(_ filter: SidebarItem) {

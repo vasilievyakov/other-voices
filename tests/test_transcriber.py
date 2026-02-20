@@ -188,8 +188,9 @@ class TestMergeAudio:
 
 class TestTranscribe:
     @patch("src.transcriber.subprocess.run")
-    def test_transcribe_success(self, mock_run, transcriber, session_both):
-        """merge → whisper → .txt → transcript text returned."""
+    def test_transcribe_json_success(self, mock_run, transcriber, session_both):
+        """merge → whisper → .json → dict with text and segments returned."""
+        import json as _json
 
         def run_side_effect(cmd, **kwargs):
             result = MagicMock(returncode=0, stderr="")
@@ -198,8 +199,19 @@ class TestTranscribe:
                 for i, arg in enumerate(cmd):
                     if str(arg) == "--output-dir" and i + 1 < len(cmd):
                         out_dir = Path(cmd[i + 1])
-                        (out_dir / "combined.txt").write_text(
-                            "Привет, это тестовый транскрипт"
+                        whisper_output = {
+                            "text": "Привет, это тестовый транскрипт",
+                            "segments": [
+                                {"start": 0.0, "end": 2.5, "text": "Привет"},
+                                {
+                                    "start": 2.5,
+                                    "end": 5.0,
+                                    "text": "это тестовый транскрипт",
+                                },
+                            ],
+                        }
+                        (out_dir / "combined.json").write_text(
+                            _json.dumps(whisper_output, ensure_ascii=False)
                         )
                         break
             return result
@@ -207,13 +219,17 @@ class TestTranscribe:
         mock_run.side_effect = run_side_effect
         result = transcriber.transcribe(str(session_both))
 
-        assert result is not None
-        assert "тестовый транскрипт" in result
+        assert isinstance(result, dict)
+        assert "тестовый транскрипт" in result["text"]
+        assert len(result["segments"]) == 2
+        assert result["segments"][0]["start"] == 0.0
+        assert result["segments"][0]["text"] == "Привет"
         assert (session_both / "transcript.txt").exists()
 
     @patch("src.transcriber.subprocess.run")
-    def test_transcribe_saves_to_file(self, mock_run, transcriber, session_both):
-        """Transcript is saved as transcript.txt in session dir."""
+    def test_transcribe_json_saves_text(self, mock_run, transcriber, session_both):
+        """JSON transcription saves plain text as transcript.txt."""
+        import json as _json
 
         def run_side_effect(cmd, **kwargs):
             result = MagicMock(returncode=0, stderr="")
@@ -222,7 +238,19 @@ class TestTranscribe:
                 for i, arg in enumerate(cmd):
                     if str(arg) == "--output-dir" and i + 1 < len(cmd):
                         out_dir = Path(cmd[i + 1])
-                        (out_dir / "combined.txt").write_text("Saved text")
+                        whisper_output = {
+                            "text": "Saved text from JSON",
+                            "segments": [
+                                {
+                                    "start": 0.0,
+                                    "end": 1.0,
+                                    "text": "Saved text from JSON",
+                                }
+                            ],
+                        }
+                        (out_dir / "combined.json").write_text(
+                            _json.dumps(whisper_output, ensure_ascii=False)
+                        )
                         break
             return result
 
@@ -230,7 +258,29 @@ class TestTranscribe:
         transcriber.transcribe(str(session_both))
 
         saved = (session_both / "transcript.txt").read_text()
-        assert saved == "Saved text"
+        assert saved == "Saved text from JSON"
+
+    @patch("src.transcriber.subprocess.run")
+    def test_transcribe_txt_fallback(self, mock_run, transcriber, session_both):
+        """Falls back to .txt when no JSON output."""
+
+        def run_side_effect(cmd, **kwargs):
+            result = MagicMock(returncode=0, stderr="")
+            cmd_str = " ".join(str(c) for c in cmd)
+            if "mlx_whisper" in cmd_str:
+                for i, arg in enumerate(cmd):
+                    if str(arg) == "--output-dir" and i + 1 < len(cmd):
+                        out_dir = Path(cmd[i + 1])
+                        (out_dir / "combined.txt").write_text("Fallback text only")
+                        break
+            return result
+
+        mock_run.side_effect = run_side_effect
+        result = transcriber.transcribe(str(session_both))
+
+        assert isinstance(result, str)
+        assert "Fallback text only" in result
+        assert (session_both / "transcript.txt").exists()
 
     @patch("src.transcriber.subprocess.run")
     def test_transcribe_merge_failure(self, mock_run, transcriber, session_both):
@@ -292,8 +342,8 @@ class TestTranscriberEdgeCases:
         assert result is False
 
     @patch("src.transcriber.subprocess.run")
-    def test_transcribe_no_txt_produced(self, mock_run, transcriber, session_both):
-        """Whisper succeeds but produces no .txt file → None."""
+    def test_transcribe_no_output_produced(self, mock_run, transcriber, session_both):
+        """Whisper succeeds but produces no output files → None."""
 
         def run_side_effect(cmd, **kwargs):
             # Both commands succeed but whisper doesn't create output
@@ -312,7 +362,8 @@ class TestTranscriberEdgeCases:
 
     @patch("src.transcriber.subprocess.run")
     def test_whisper_model_in_command(self, mock_run, transcriber, session_both):
-        """Whisper command includes model and language settings."""
+        """Whisper command includes model, language, and json output format."""
+        import json as _json
 
         def run_side_effect(cmd, **kwargs):
             result = MagicMock(returncode=0, stderr="")
@@ -321,7 +372,9 @@ class TestTranscriberEdgeCases:
                 for i, arg in enumerate(cmd):
                     if str(arg) == "--output-dir" and i + 1 < len(cmd):
                         out_dir = Path(cmd[i + 1])
-                        (out_dir / "combined.txt").write_text("Test")
+                        (out_dir / "combined.json").write_text(
+                            _json.dumps({"text": "Test", "segments": []})
+                        )
                         break
             return result
 
@@ -334,4 +387,30 @@ class TestTranscriberEdgeCases:
             if "mlx_whisper" in cmd_str:
                 assert "--model" in cmd_str
                 assert "--language" in cmd_str
+                assert "--output-format" in cmd_str
+                assert "json" in cmd_str
                 break
+
+    @patch("src.transcriber.subprocess.run")
+    def test_transcribe_json_fallback_on_bad_json(
+        self, mock_run, transcriber, session_both
+    ):
+        """If JSON file is malformed, falls back to txt."""
+
+        def run_side_effect(cmd, **kwargs):
+            result = MagicMock(returncode=0, stderr="")
+            cmd_str = " ".join(str(c) for c in cmd)
+            if "mlx_whisper" in cmd_str:
+                for i, arg in enumerate(cmd):
+                    if str(arg) == "--output-dir" and i + 1 < len(cmd):
+                        out_dir = Path(cmd[i + 1])
+                        (out_dir / "combined.json").write_text("not valid json{{{")
+                        (out_dir / "combined.txt").write_text("Fallback from bad json")
+                        break
+            return result
+
+        mock_run.side_effect = run_side_effect
+        result = transcriber.transcribe(str(session_both))
+
+        assert isinstance(result, str)
+        assert "Fallback from bad json" in result

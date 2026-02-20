@@ -3,6 +3,8 @@ import SwiftUI
 struct CallDetailView: View {
     let call: Call
     @State private var audioPlayer = AudioPlayer()
+    @State private var showTemplatePicker = false
+    @Environment(CallStore.self) private var store
 
     var body: some View {
         ScrollView {
@@ -16,6 +18,22 @@ struct CallDetailView: View {
                             .font(.title2)
                             .fontWeight(.semibold)
                         Spacer()
+
+                        Button {
+                            showTemplatePicker = true
+                        } label: {
+                            Label("Template", systemImage: "doc.text")
+                                .font(.caption)
+                        }
+                        .popover(isPresented: $showTemplatePicker) {
+                            TemplatePickerView(
+                                sessionId: call.sessionId,
+                                currentTemplate: call.templateName
+                            ) {
+                                store.refresh()
+                            }
+                        }
+
                         Text(call.durationFormatted)
                             .font(.title3)
                             .foregroundStyle(.secondary)
@@ -32,14 +50,32 @@ struct CallDetailView: View {
                 // Audio Player
                 AudioPlayerView(call: call, player: audioPlayer)
 
+                // Notes
+                NotesView(sessionId: call.sessionId, initialNotes: call.notes)
+
                 // Summary
                 if let summary = call.summary {
-                    SummaryView(summary: summary)
+                    SummaryView(summary: summary, templateName: call.templateName)
                 }
 
                 // Transcript
                 if let transcript = call.transcript, !transcript.isEmpty {
-                    TranscriptView(transcript: transcript)
+                    TranscriptView(
+                        transcript: transcript,
+                        segments: call.transcriptSegments,
+                        onSeek: { time in
+                            if let path = call.systemWavPath ?? call.micWavPath {
+                                audioPlayer.play(path: path)
+                                audioPlayer.seek(to: time)
+                            }
+                        }
+                    )
+                }
+
+                // Chat
+                if call.transcript != nil {
+                    Divider()
+                    ChatView(sessionId: call.sessionId)
                 }
             }
             .padding(20)

@@ -4,12 +4,14 @@ package enum SidebarItem: Hashable {
     case allCalls
     case actionItems
     case app(String)
+    case entity(String)
 
     package var label: String {
         switch self {
         case .allCalls: return "All Calls"
         case .actionItems: return "Action Items"
         case .app(let name): return name
+        case .entity(let name): return name
         }
     }
 
@@ -17,6 +19,7 @@ package enum SidebarItem: Hashable {
         switch self {
         case .allCalls: return "phone.fill"
         case .actionItems: return "checklist"
+        case .entity: return "person.fill"
         case .app(let name):
             switch name {
             case "Zoom": return "video.fill"

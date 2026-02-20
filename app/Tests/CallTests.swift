@@ -101,6 +101,26 @@ func runCallTests() {
         let call = makeCall(summaryJson: "not json at all")
         expect(call.summary == nil, "summary should be nil for invalid JSON")
     }
+
+    test("templateName_default") {
+        let call = makeCall()
+        expect(call.templateName == "default", "templateName should default to 'default'")
+    }
+
+    test("templateName_custom") {
+        let call = makeCall(templateName: "sales_call")
+        expect(call.templateName == "sales_call", "got \(call.templateName ?? "nil")")
+    }
+
+    test("notes_nil_by_default") {
+        let call = makeCall()
+        expect(call.notes == nil, "notes should be nil by default")
+    }
+
+    test("notes_stored") {
+        let call = makeCall(notes: "Important notes here")
+        expect(call.notes == "Important notes here", "got \(call.notes ?? "nil")")
+    }
 }
 
 // MARK: - CallSummary Tests (5)
@@ -167,6 +187,68 @@ func runCallSummaryTests() {
         let s = try JSONDecoder().decode(CallSummary.self, from: json)
         expect(s.summary == "Обсудили архитектуру")
         expect(s.actionItems?.first == "Написать RFC (@Вася)")
+    }
+
+    test("decodeWithEntities") {
+        let json = """
+        {
+            "summary": "Met with team",
+            "entities": [
+                {"name": "Вася", "type": "person"},
+                {"name": "Acme Corp", "type": "company"}
+            ]
+        }
+        """.data(using: .utf8)!
+        let s = try JSONDecoder().decode(CallSummary.self, from: json)
+        expect(s.entities?.count == 2, "entities count")
+        expect(s.entities?.first?.name == "Вася")
+        expect(s.entities?.first?.isPerson == true)
+        expect(s.entities?.last?.isCompany == true)
+    }
+
+    test("decodeWithoutEntities") {
+        let json = """
+        {"summary": "No entities here"}
+        """.data(using: .utf8)!
+        let s = try JSONDecoder().decode(CallSummary.self, from: json)
+        expect(s.entities == nil, "entities should be nil when not present")
+    }
+}
+
+// MARK: - Entity Tests (4)
+
+func runEntityTests() {
+    print("\n--- Entity Tests ---")
+
+    test("entity_person") {
+        let e = Entity(name: "Вася", type: "person")
+        expect(e.isPerson == true)
+        expect(e.isCompany == false)
+        expect(e.icon == "person.fill")
+        expect(e.id == "person:Вася")
+    }
+
+    test("entity_company") {
+        let e = Entity(name: "Acme Corp", type: "company")
+        expect(e.isPerson == false)
+        expect(e.isCompany == true)
+        expect(e.icon == "building.2.fill")
+        expect(e.id == "company:Acme Corp")
+    }
+
+    test("entity_hashable") {
+        let a = Entity(name: "Вася", type: "person")
+        let b = Entity(name: "Вася", type: "person")
+        expect(a == b, "same entity should be equal")
+    }
+
+    test("entity_codable") {
+        let json = """
+        {"name": "Test Corp", "type": "company"}
+        """.data(using: .utf8)!
+        let e = try JSONDecoder().decode(Entity.self, from: json)
+        expect(e.name == "Test Corp")
+        expect(e.type == "company")
     }
 }
 
@@ -315,6 +397,12 @@ func runSidebarItemTests() {
         }
     }
 
+    test("entity_label_icon") {
+        let item = SidebarItem.entity("Вася")
+        expect(item.label == "Вася", "label: \(item.label)")
+        expect(item.icon == "person.fill", "icon: \(item.icon)")
+    }
+
     test("hashable_equality") {
         let a = SidebarItem.allCalls
         let b = SidebarItem.allCalls
@@ -335,7 +423,10 @@ func runSidebarItemTests() {
 func makeCall(
     durationSeconds: Double = 600,
     appName: String = "Zoom",
-    summaryJson: String? = nil
+    summaryJson: String? = nil,
+    templateName: String? = "default",
+    notes: String? = nil,
+    transcriptSegmentsJson: String? = nil
 ) -> Call {
     let now = Date()
     return Call(
@@ -347,7 +438,10 @@ func makeCall(
         systemWavPath: nil,
         micWavPath: nil,
         transcript: nil,
-        summaryJson: summaryJson
+        summaryJson: summaryJson,
+        templateName: templateName,
+        notes: notes,
+        transcriptSegmentsJson: transcriptSegmentsJson
     )
 }
 
@@ -373,6 +467,136 @@ func makeDaemonStatus(
     return try! JSONDecoder().decode(DaemonStatus.self, from: json)
 }
 
+// MARK: - TranscriptSegment Tests (5)
+
+func runTranscriptSegmentTests() {
+    print("\n--- TranscriptSegment Tests ---")
+
+    test("segment_startFormatted") {
+        let seg = TranscriptSegment(start: 0.0, end: 5.2, text: "Hello")
+        expect(seg.startFormatted == "0:00", "got \(seg.startFormatted)")
+    }
+
+    test("segment_endFormatted") {
+        let seg = TranscriptSegment(start: 0.0, end: 65.0, text: "Hello")
+        expect(seg.endFormatted == "1:05", "got \(seg.endFormatted)")
+    }
+
+    test("segment_rangeFormatted") {
+        let seg = TranscriptSegment(start: 5.0, end: 12.0, text: "Test")
+        expect(seg.rangeFormatted == "0:05-0:12", "got \(seg.rangeFormatted)")
+    }
+
+    test("segment_codable") {
+        let json = """
+        {"start": 1.5, "end": 3.0, "text": "Привет"}
+        """.data(using: .utf8)!
+        let seg = try JSONDecoder().decode(TranscriptSegment.self, from: json)
+        expect(seg.start == 1.5, "start")
+        expect(seg.end == 3.0, "end")
+        expect(seg.text == "Привет", "text")
+    }
+
+    test("segment_array_codable") {
+        let json = """
+        [
+            {"start": 0.0, "end": 2.5, "text": "Hello"},
+            {"start": 2.5, "end": 5.0, "text": "World"}
+        ]
+        """.data(using: .utf8)!
+        let segs = try JSONDecoder().decode([TranscriptSegment].self, from: json)
+        expect(segs.count == 2, "count")
+        expect(segs[0].text == "Hello")
+        expect(segs[1].start == 2.5)
+    }
+}
+
+// MARK: - Call.transcriptSegments Tests (3)
+
+func runCallSegmentTests() {
+    print("\n--- Call Transcript Segments Tests ---")
+
+    test("transcriptSegments_nil_when_no_json") {
+        let call = makeCall()
+        expect(call.transcriptSegments == nil, "should be nil when no json")
+    }
+
+    test("transcriptSegments_parsed") {
+        let segJson = """
+        [{"start":0.0,"end":2.5,"text":"Hello"},{"start":2.5,"end":5.0,"text":"World"}]
+        """
+        let call = makeCall(transcriptSegmentsJson: segJson)
+        let segs = call.transcriptSegments
+        expect(segs != nil, "should not be nil")
+        expect(segs?.count == 2, "count \(segs?.count ?? -1)")
+        expect(segs?.first?.text == "Hello")
+    }
+
+    test("transcriptSegments_nil_on_invalid_json") {
+        let call = makeCall(transcriptSegmentsJson: "not json")
+        expect(call.transcriptSegments == nil, "invalid json should return nil")
+    }
+}
+
+// MARK: - ChatMessage Tests (4)
+
+func runChatMessageTests() {
+    print("\n--- ChatMessage Tests ---")
+
+    test("chatMessage_user") {
+        let msg = ChatMessage(role: "user", content: "What happened?")
+        expect(msg.isUser == true)
+        expect(msg.isAssistant == false)
+        expect(msg.content == "What happened?")
+    }
+
+    test("chatMessage_assistant") {
+        let msg = ChatMessage(role: "assistant", content: "Meeting summary.")
+        expect(msg.isUser == false)
+        expect(msg.isAssistant == true)
+    }
+
+    test("chatMessage_identifiable") {
+        let a = ChatMessage(role: "user", content: "Q")
+        let b = ChatMessage(role: "user", content: "Q")
+        // Different UUIDs
+        expect(a.id != b.id, "different messages should have different IDs")
+    }
+
+    test("chatMessage_hashable") {
+        let msg = ChatMessage(id: "test-id", role: "user", content: "Q")
+        let copy = ChatMessage(id: "test-id", role: "user", content: "Q")
+        expect(msg == copy, "same id should be equal")
+    }
+}
+
+// MARK: - Template Tests (3)
+
+func runTemplateTests() {
+    print("\n--- Template Tests ---")
+
+    test("defaultTemplates_notEmpty") {
+        let templates = Template.defaultTemplates
+        expect(templates.count >= 6, "at least 6 built-in templates, got \(templates.count)")
+    }
+
+    test("template_codable") {
+        let json = """
+        {"name": "sales_call", "display_name": "Sales Call", "description": "Sales"}
+        """.data(using: .utf8)!
+        let t = try JSONDecoder().decode(Template.self, from: json)
+        expect(t.name == "sales_call")
+        expect(t.displayName == "Sales Call")
+        expect(t.id == "sales_call")
+    }
+
+    test("template_hashable") {
+        let a = Template(name: "default", displayName: "Default", description: "Std")
+        let b = Template(name: "default", displayName: "Default", description: "Std")
+        expect(a == b, "same template should be equal")
+    }
+}
+
 // MARK: - Main
 
 @main
@@ -381,9 +605,14 @@ struct TestRunner {
         print("Other Voices — Enterprise Swift Tests")
         runCallTests()
         runCallSummaryTests()
+        runEntityTests()
         runActionItemTests()
         runDaemonStatusTests()
         runSidebarItemTests()
+        runTranscriptSegmentTests()
+        runCallSegmentTests()
+        runChatMessageTests()
+        runTemplateTests()
 
         print("\n=============================")
         print("\(passed) passed, \(failed) failed")

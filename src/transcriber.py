@@ -1,5 +1,6 @@
 """Call Recorder — audio merge + mlx_whisper transcription."""
 
+import json
 import logging
 import subprocess
 import tempfile
@@ -85,8 +86,12 @@ class Transcriber:
             return False
         return True
 
-    def transcribe(self, session_dir: str) -> str | None:
-        """Merge audio and transcribe. Returns transcript text or None."""
+    def transcribe(self, session_dir: str) -> dict | str | None:
+        """Merge audio and transcribe.
+
+        Returns a dict with 'text' and 'segments' if JSON output available,
+        or a plain string for backward compat, or None on failure.
+        """
         session_path = Path(session_dir)
         system_wav = str(session_path / "system.wav")
         mic_wav = str(session_path / "mic.wav")
@@ -96,7 +101,7 @@ class Transcriber:
         if not self.merge_audio(system_wav, mic_wav, combined_wav):
             return None
 
-        # Step 2: Transcribe with mlx_whisper
+        # Step 2: Transcribe with mlx_whisper (JSON for segments)
         log.info("Running mlx_whisper...")
 
         with tempfile.TemporaryDirectory() as tmp_dir:
@@ -110,7 +115,7 @@ class Transcriber:
                 "--output-dir",
                 tmp_dir,
                 "--output-format",
-                "txt",
+                "json",
                 "--condition-on-previous-text",
                 "False",
                 "--hallucination-silence-threshold",
@@ -128,10 +133,41 @@ class Transcriber:
                 log.error(f"mlx_whisper failed: {result.stderr}")
                 return None
 
-            # mlx_whisper outputs <filename>.txt
+            # Try JSON output first (contains segments with timestamps)
+            json_file = Path(tmp_dir) / "combined.json"
+            if not json_file.exists():
+                json_files = list(Path(tmp_dir).glob("*.json"))
+                if json_files:
+                    json_file = json_files[0]
+
+            if json_file.exists():
+                try:
+                    whisper_data = json.loads(json_file.read_text(encoding="utf-8"))
+                    full_text = whisper_data.get("text", "").strip()
+                    segments = []
+                    for seg in whisper_data.get("segments", []):
+                        segments.append(
+                            {
+                                "start": seg.get("start", 0.0),
+                                "end": seg.get("end", 0.0),
+                                "text": seg.get("text", "").strip(),
+                            }
+                        )
+
+                    # Save text transcript alongside recordings
+                    if full_text:
+                        transcript_path = session_path / "transcript.txt"
+                        transcript_path.write_text(full_text, encoding="utf-8")
+                        log.info(
+                            f"Transcript: {len(full_text)} chars, {len(segments)} segments"
+                        )
+                        return {"text": full_text, "segments": segments}
+                except (json.JSONDecodeError, KeyError) as e:
+                    log.warning(f"Failed to parse JSON transcript: {e}")
+
+            # Fallback: try txt output
             txt_file = Path(tmp_dir) / "combined.txt"
             if not txt_file.exists():
-                # Try alternate name
                 txt_files = list(Path(tmp_dir).glob("*.txt"))
                 if txt_files:
                     txt_file = txt_files[0]
@@ -145,5 +181,5 @@ class Transcriber:
             transcript_path = session_path / "transcript.txt"
             transcript_path.write_text(transcript, encoding="utf-8")
 
-            log.info(f"Transcript: {len(transcript)} chars")
+            log.info(f"Transcript: {len(transcript)} chars (text only)")
             return transcript

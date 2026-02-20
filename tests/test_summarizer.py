@@ -1,6 +1,6 @@
 """Tests for src.summarizer — mock urllib.request.urlopen.
 
-Enterprise coverage: input validation, output parsing, resilience.
+Enterprise coverage: input validation, output parsing, resilience, templates.
 """
 
 import json
@@ -257,3 +257,84 @@ class TestSummarizerResilience:
 
         req = mock_urlopen.call_args[0][0]
         assert req.get_header("Content-type") == "application/json"
+
+
+# =============================================================================
+# Template Integration (5 tests)
+# =============================================================================
+
+
+class TestSummarizerTemplates:
+    def setup_method(self):
+        self.summarizer = Summarizer()
+
+    @patch("src.summarizer.urllib.request.urlopen")
+    def test_backward_compat_default(self, mock_urlopen):
+        """summarize(transcript) still works without template_name."""
+        valid = json.dumps(
+            {
+                "summary": "ok",
+                "key_points": [],
+                "decisions": [],
+                "action_items": [],
+                "participants": [],
+            }
+        )
+        mock_urlopen.return_value = _mock_ollama(valid)
+        result = self.summarizer.summarize("A" * 100)
+        assert result is not None
+        assert result["summary"] == "ok"
+
+    @patch("src.summarizer.urllib.request.urlopen")
+    def test_sales_template_sends_prompt(self, mock_urlopen):
+        """Sales template changes the prompt sent to Ollama."""
+        valid = json.dumps(
+            {
+                "summary": "ok",
+                "objections": [],
+                "budget_signals": [],
+                "decision_makers": [],
+                "next_steps": [],
+                "participants": [],
+            }
+        )
+        mock_urlopen.return_value = _mock_ollama(valid)
+        result = self.summarizer.summarize("A" * 100, template_name="sales_call")
+        assert result is not None
+
+        req = mock_urlopen.call_args[0][0]
+        payload = json.loads(req.data.decode("utf-8"))
+        assert "objections" in payload["prompt"]
+
+    @patch("src.summarizer.urllib.request.urlopen")
+    def test_non_default_template_higher_num_predict(self, mock_urlopen):
+        """Non-default templates use num_predict=2048."""
+        valid = json.dumps({"summary": "ok", "participants": []})
+        mock_urlopen.return_value = _mock_ollama(valid)
+        self.summarizer.summarize("A" * 100, template_name="sales_call")
+
+        req = mock_urlopen.call_args[0][0]
+        payload = json.loads(req.data.decode("utf-8"))
+        assert payload["options"]["num_predict"] == 2048
+
+    @patch("src.summarizer.urllib.request.urlopen")
+    def test_default_template_standard_num_predict(self, mock_urlopen):
+        """Default template uses num_predict=1024."""
+        valid = json.dumps({"summary": "ok", "participants": []})
+        mock_urlopen.return_value = _mock_ollama(valid)
+        self.summarizer.summarize("A" * 100)
+
+        req = mock_urlopen.call_args[0][0]
+        payload = json.loads(req.data.decode("utf-8"))
+        assert payload["options"]["num_predict"] == 1024
+
+    @patch("src.summarizer.urllib.request.urlopen")
+    def test_notes_included_in_prompt(self, mock_urlopen):
+        """Notes parameter is included in the prompt."""
+        valid = json.dumps({"summary": "ok", "participants": []})
+        mock_urlopen.return_value = _mock_ollama(valid)
+        self.summarizer.summarize("A" * 100, notes="Focus on deadlines")
+
+        req = mock_urlopen.call_args[0][0]
+        payload = json.loads(req.data.decode("utf-8"))
+        assert "Focus on deadlines" in payload["prompt"]

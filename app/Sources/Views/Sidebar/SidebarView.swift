@@ -60,6 +60,19 @@ struct SidebarView: View {
                     }
                 }
             }
+
+            if !store.entities.isEmpty {
+                Section("People") {
+                    ForEach(store.entities, id: \.name) { entity in
+                        Label {
+                            Text(entity.name)
+                        } icon: {
+                            Image(systemName: entity.icon)
+                        }
+                        .tag(SidebarItem.entity(entity.name))
+                    }
+                }
+            }
         }
         .listStyle(.sidebar)
         .navigationTitle("Other Voices")

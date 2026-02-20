@@ -1,4 +1,10 @@
-"""Re-summarize all calls in DB using Ollama to extract real action items."""
+"""Re-summarize calls in DB using Ollama.
+
+Usage:
+    python resummarize.py                         # re-summarize all calls
+    python resummarize.py --session <id>          # re-summarize a specific call
+    python resummarize.py --session <id> --template <name>  # with template
+"""
 
 import json
 import sqlite3
@@ -8,9 +14,16 @@ import urllib.request
 import urllib.error
 from pathlib import Path
 
+# Use the project's template system when available
+try:
+    from src.templates import build_prompt
+    from src.config import OLLAMA_URL, OLLAMA_MODEL
+except ImportError:
+    build_prompt = None
+    OLLAMA_URL = "http://localhost:11434/api/generate"
+    OLLAMA_MODEL = "qwen2.5:7b"
+
 DB_PATH = Path.home() / "call-recorder" / "data" / "calls.db"
-OLLAMA_URL = "http://localhost:11434/api/generate"
-OLLAMA_MODEL = "qwen2.5:7b"
 MAX_CHARS = 12000
 
 SUMMARY_PROMPT = """\
@@ -32,16 +45,22 @@ SUMMARY_PROMPT = """\
 """
 
 
-def summarize(transcript: str) -> dict | None:
+def summarize(transcript: str, template_name: str = "default") -> dict | None:
     text = transcript[:MAX_CHARS] if len(transcript) > MAX_CHARS else transcript
-    prompt = SUMMARY_PROMPT + text
+
+    if build_prompt and template_name:
+        prompt = build_prompt(template_name, text)
+        num_predict = 2048 if template_name != "default" else 1024
+    else:
+        prompt = SUMMARY_PROMPT + text
+        num_predict = 1024
 
     payload = json.dumps(
         {
             "model": OLLAMA_MODEL,
             "prompt": prompt,
             "stream": False,
-            "options": {"temperature": 0.3, "num_predict": 1024},
+            "options": {"temperature": 0.3, "num_predict": num_predict},
         }
     ).encode("utf-8")
 
@@ -75,7 +94,74 @@ def summarize(transcript: str) -> dict | None:
         }
 
 
+def resummarize_single(session_id: str, template_name: str = "default"):
+    """Re-summarize a single call by session_id."""
+    conn = sqlite3.connect(str(DB_PATH))
+    conn.row_factory = sqlite3.Row
+
+    row = conn.execute(
+        "SELECT session_id, app_name, transcript FROM calls WHERE session_id = ?",
+        (session_id,),
+    ).fetchone()
+
+    if not row:
+        print(f"Call not found: {session_id}")
+        conn.close()
+        sys.exit(1)
+
+    transcript = row["transcript"]
+    if not transcript or len(transcript.strip()) < 50:
+        print(f"Transcript too short for {session_id}")
+        conn.close()
+        sys.exit(1)
+
+    print(
+        f"Re-summarizing {session_id} ({row['app_name']}) with template={template_name}...",
+        flush=True,
+    )
+    t0 = time.time()
+    summary = summarize(transcript, template_name)
+    elapsed = time.time() - t0
+
+    if not summary:
+        print(f"FAILED ({elapsed:.1f}s)")
+        conn.close()
+        sys.exit(1)
+
+    summary_json = json.dumps(summary, ensure_ascii=False)
+    conn.execute(
+        "UPDATE calls SET summary_json = ?, template_name = ? WHERE session_id = ?",
+        (summary_json, template_name, session_id),
+    )
+    conn.commit()
+    conn.close()
+
+    ai_count = len(summary.get("action_items", []))
+    print(f"OK ({elapsed:.1f}s) — {ai_count} action items")
+
+
 def main():
+    # Parse args
+    args = sys.argv[1:]
+    session_id = None
+    template_name = "default"
+
+    i = 0
+    while i < len(args):
+        if args[i] == "--session" and i + 1 < len(args):
+            session_id = args[i + 1]
+            i += 2
+        elif args[i] == "--template" and i + 1 < len(args):
+            template_name = args[i + 1]
+            i += 2
+        else:
+            i += 1
+
+    if session_id:
+        resummarize_single(session_id, template_name)
+        return
+
+    # Batch mode: re-summarize all
     conn = sqlite3.connect(str(DB_PATH))
     conn.row_factory = sqlite3.Row
 
@@ -100,7 +186,7 @@ def main():
 
         print(f"[{i + 1}/{total}] {sid} ({app}) — summarizing...", end=" ", flush=True)
         t0 = time.time()
-        summary = summarize(transcript)
+        summary = summarize(transcript, template_name)
         elapsed = time.time() - t0
 
         if not summary:
@@ -112,8 +198,8 @@ def main():
         summary_json = json.dumps(summary, ensure_ascii=False)
 
         conn.execute(
-            "UPDATE calls SET summary_json = ? WHERE session_id = ?",
-            (summary_json, sid),
+            "UPDATE calls SET summary_json = ?, template_name = ? WHERE session_id = ?",
+            (summary_json, template_name, sid),
         )
         conn.commit()
         updated += 1
