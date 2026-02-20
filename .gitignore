@@ -15,5 +15,8 @@ app/.build/
 app/Other Voices.app/
 app/icon/AppIcon.iconset/
 
+# Compiled binary (setup.sh rebuilds from source)
+bin/
+
 # Temporary
 *.tmp

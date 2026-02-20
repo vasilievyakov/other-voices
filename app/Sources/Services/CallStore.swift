@@ -16,12 +16,8 @@ final class CallStore {
 
     init() {
         let dbPath = NSHomeDirectory() + "/call-recorder/data/calls.db"
-        let logMsg = "Home: \(NSHomeDirectory())\nDB: \(dbPath)\nExists: \(FileManager.default.fileExists(atPath: dbPath))"
-        try? logMsg.write(toFile: "/tmp/ov-debug-init.txt", atomically: true, encoding: .utf8)
         self.db = SQLiteDatabase(path: dbPath)
         refresh()
-        let logMsg2 = "Calls: \(calls.count), Total: \(totalCount), Apps: \(appCounts)"
-        try? logMsg2.write(toFile: "/tmp/ov-debug-refresh.txt", atomically: true, encoding: .utf8)
         startWatching()
     }
 
