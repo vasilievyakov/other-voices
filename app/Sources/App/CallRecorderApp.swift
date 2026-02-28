@@ -28,10 +28,6 @@ struct OtherVoicesApp: App {
             }
         }
 
-        Settings {
-            SettingsView()
-        }
-
         MenuBarExtra("Other Voices", systemImage: "waveform.circle") {
             if let status = daemonMonitor.status {
                 Text("Status: \(status.stateLabel)")

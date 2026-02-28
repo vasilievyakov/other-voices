@@ -6,7 +6,6 @@ import sys
 from datetime import datetime
 
 from src.database import Database
-from src.recipes import list_recipes, run_recipe
 
 
 def fmt_duration(seconds: float) -> str:
@@ -222,76 +221,6 @@ def cmd_entities(db: Database, args: list[str]):
             )
 
 
-def cmd_recipes(db: Database, args: list[str]):
-    """List available recipes."""
-    recipes = list_recipes()
-    print("Available recipes:\n")
-    for r in recipes:
-        print(f"  {r['name']:20s}  {r['description']}")
-
-
-def cmd_recipe(db: Database, args: list[str]):
-    """Run a recipe on a specific call."""
-    if len(args) < 2:
-        print("Usage: cli.py recipe <session_id> <recipe_name>")
-        sys.exit(1)
-
-    session_id, recipe_name = args[0], args[1]
-    call = db.get_call(session_id)
-    if not call:
-        print(f"Call not found: {session_id}")
-        sys.exit(1)
-
-    transcript = call.get("transcript")
-    if not transcript:
-        print(f"No transcript for call {session_id}")
-        sys.exit(1)
-
-    summary = None
-    if call.get("summary_json"):
-        try:
-            summary = json.loads(call["summary_json"])
-        except (json.JSONDecodeError, TypeError):
-            pass
-
-    result = run_recipe(recipe_name, transcript, summary)
-    if result:
-        print(result)
-    else:
-        print(f"Recipe '{recipe_name}' failed or returned no output.")
-
-
-def cmd_chat(db: Database, args: list[str]):
-    """Ask a question about a specific call or globally."""
-    from src.chat import ChatEngine
-
-    if not args:
-        print("Usage: cli.py chat <session_id> <question>")
-        print("       cli.py chat --global <question>")
-        sys.exit(1)
-
-    if args[0] == "--global":
-        if len(args) < 2:
-            print("Usage: cli.py chat --global <question>")
-            sys.exit(1)
-        engine = ChatEngine(db)
-        answer = engine.ask(" ".join(args[1:]))
-    else:
-        if len(args) < 2:
-            print("Usage: cli.py chat <session_id> <question>")
-            sys.exit(1)
-        session_id = args[0]
-        question = " ".join(args[1:])
-        engine = ChatEngine(db)
-        answer = engine.ask(question, session_id=session_id)
-
-    if answer:
-        print(answer)
-    else:
-        print("Error: Could not get response", file=sys.stderr)
-        sys.exit(1)
-
-
 def main():
     if len(sys.argv) < 2:
         print("Call Recorder CLI")
@@ -304,10 +233,6 @@ def main():
         print("  show <session_id>           Show full details of a call")
         print("  actions [days]              Show action items (default: 7 days)")
         print("  entities                    List all people and companies")
-        print("  recipes                     List available recipes")
-        print("  recipe <session_id> <name>  Run a recipe on a call")
-        print("  chat <session_id> <question>  Ask about a specific call")
-        print("  chat --global <question>      Ask across all calls")
         sys.exit(0)
 
     db = Database()
@@ -320,9 +245,6 @@ def main():
         "show": cmd_show,
         "actions": cmd_actions,
         "entities": cmd_entities,
-        "recipes": cmd_recipes,
-        "recipe": cmd_recipe,
-        "chat": cmd_chat,
     }
 
     if cmd not in commands:

@@ -16,21 +16,6 @@ import pytest
 from src.daemon import write_status, process_recording, notify, _Timer, _log
 
 
-# Helper: mock all settings to return defaults (enabled)
-_SETTINGS_DEFAULTS = {
-    "src.daemon.get_min_call_duration": 30,
-    "src.daemon.should_transcribe": True,
-    "src.daemon.should_summarize": True,
-    "src.daemon.should_extract_commitments": True,
-    "src.daemon.get_default_template": "default",
-}
-
-
-def _patch_settings():
-    """Return a list of patch context managers for all settings functions."""
-    return [patch(k, return_value=v) for k, v in _SETTINGS_DEFAULTS.items()]
-
-
 # =============================================================================
 # Write Status (6 tests)
 # =============================================================================
@@ -121,7 +106,7 @@ class TestProcessRecording:
     """Tests for process_recording pipeline.
 
     The pipeline is: check_ollama -> transcribe_separate -> fallback(transcribe)
-    -> resolve_speakers -> summarize -> extract_commitments -> save.
+    -> summarize -> save.
     """
 
     def _make_separate_result(self, text="Full transcript text here"):
@@ -136,16 +121,12 @@ class TestProcessRecording:
         }
 
     @patch("src.daemon.check_ollama", return_value=True)
-    @patch("src.daemon.should_transcribe", return_value=True)
-    @patch("src.daemon.get_min_call_duration", return_value=30)
     @patch("src.daemon.notify")
     @patch("src.daemon.write_status")
     def test_short_call_skipped(
         self,
         mock_status,
         mock_notify,
-        mock_min_dur,
-        mock_transcribe_setting,
         mock_check,
         tmp_db,
         sample_session,
@@ -162,26 +143,12 @@ class TestProcessRecording:
         summarizer.summarize.assert_not_called()
 
     @patch("src.daemon.check_ollama", return_value=True)
-    @patch("src.daemon.should_transcribe", return_value=True)
-    @patch("src.daemon.should_summarize", return_value=True)
-    @patch("src.daemon.should_extract_commitments", return_value=True)
-    @patch("src.daemon.get_min_call_duration", return_value=30)
-    @patch("src.daemon.get_default_template", return_value="default")
-    @patch("src.daemon.extract_commitments")
-    @patch("src.daemon.resolve_speakers")
     @patch("src.daemon.notify")
     @patch("src.daemon.write_status")
     def test_no_transcript_saves_without_summary(
         self,
         mock_status,
         mock_notify,
-        mock_resolve,
-        mock_extract,
-        mock_template,
-        mock_min_dur,
-        mock_extract_setting,
-        mock_summarize_setting,
-        mock_transcribe_setting,
         mock_check,
         tmp_db,
         sample_session,
@@ -195,43 +162,24 @@ class TestProcessRecording:
         process_recording(sample_session, transcriber, summarizer, tmp_db)
 
         summarizer.summarize.assert_not_called()
-        mock_resolve.assert_not_called()
-        mock_extract.assert_not_called()
         call_record = tmp_db.get_call(sample_session["session_id"])
         assert call_record is not None
         assert call_record["transcript"] is None
         assert call_record["summary_json"] is None
 
     @patch("src.daemon.check_ollama", return_value=True)
-    @patch("src.daemon.should_transcribe", return_value=True)
-    @patch("src.daemon.should_summarize", return_value=True)
-    @patch("src.daemon.should_extract_commitments", return_value=True)
-    @patch("src.daemon.get_min_call_duration", return_value=30)
-    @patch("src.daemon.get_default_template", return_value="default")
-    @patch("src.daemon.extract_commitments", return_value={"commitments": []})
-    @patch(
-        "src.daemon.resolve_speakers",
-        return_value={"SPEAKER_ME": {"confirmed": True}},
-    )
     @patch("src.daemon.notify")
     @patch("src.daemon.write_status")
     def test_full_pipeline(
         self,
         mock_status,
         mock_notify,
-        mock_resolve,
-        mock_extract,
-        mock_template,
-        mock_min_dur,
-        mock_extract_setting,
-        mock_summarize_setting,
-        mock_transcribe_setting,
         mock_check,
         tmp_db,
         sample_session,
         sample_summary,
     ):
-        """transcribe_separate -> resolve -> summarize -> extract -> save."""
+        """transcribe_separate -> summarize -> save."""
         transcriber = MagicMock()
         separate = self._make_separate_result()
         transcriber.transcribe_separate.return_value = separate
@@ -243,9 +191,7 @@ class TestProcessRecording:
         transcriber.transcribe_separate.assert_called_once_with(
             sample_session["session_dir"]
         )
-        mock_resolve.assert_called_once()
         summarizer.summarize.assert_called_once()
-        mock_extract.assert_called_once()
         call_record = tmp_db.get_call(sample_session["session_id"])
         assert call_record is not None
         assert call_record["transcript"] == separate["text"]
@@ -253,29 +199,12 @@ class TestProcessRecording:
         assert parsed["summary"] == sample_summary["summary"]
 
     @patch("src.daemon.check_ollama", return_value=True)
-    @patch("src.daemon.should_transcribe", return_value=True)
-    @patch("src.daemon.should_summarize", return_value=True)
-    @patch("src.daemon.should_extract_commitments", return_value=True)
-    @patch("src.daemon.get_min_call_duration", return_value=30)
-    @patch("src.daemon.get_default_template", return_value="default")
-    @patch("src.daemon.extract_commitments", return_value={"commitments": []})
-    @patch(
-        "src.daemon.resolve_speakers",
-        return_value={"SPEAKER_ME": {"confirmed": True}},
-    )
     @patch("src.daemon.notify")
     @patch("src.daemon.write_status")
     def test_fallback_to_merged_transcribe(
         self,
         mock_status,
         mock_notify,
-        mock_resolve,
-        mock_extract,
-        mock_template,
-        mock_min_dur,
-        mock_extract_setting,
-        mock_summarize_setting,
-        mock_transcribe_setting,
         mock_check,
         tmp_db,
         sample_session,
@@ -290,37 +219,17 @@ class TestProcessRecording:
 
         process_recording(sample_session, transcriber, summarizer, tmp_db)
 
-        # Fallback path: no speaker resolution or commitment extraction
-        mock_resolve.assert_not_called()
-        mock_extract.assert_not_called()
         summarizer.summarize.assert_called_once()
         call_record = tmp_db.get_call(sample_session["session_id"])
         assert call_record["transcript"] == "Merged transcript text"
 
     @patch("src.daemon.check_ollama", return_value=True)
-    @patch("src.daemon.should_transcribe", return_value=True)
-    @patch("src.daemon.should_summarize", return_value=True)
-    @patch("src.daemon.should_extract_commitments", return_value=True)
-    @patch("src.daemon.get_min_call_duration", return_value=30)
-    @patch("src.daemon.get_default_template", return_value="default")
-    @patch("src.daemon.extract_commitments", return_value={"commitments": []})
-    @patch(
-        "src.daemon.resolve_speakers",
-        return_value={"SPEAKER_ME": {"confirmed": True}},
-    )
     @patch("src.daemon.notify")
     @patch("src.daemon.write_status")
     def test_no_summary_saves_transcript(
         self,
         mock_status,
         mock_notify,
-        mock_resolve,
-        mock_extract,
-        mock_template,
-        mock_min_dur,
-        mock_extract_setting,
-        mock_summarize_setting,
-        mock_transcribe_setting,
         mock_check,
         tmp_db,
         sample_session,
@@ -340,29 +249,12 @@ class TestProcessRecording:
         assert call_record["summary_json"] is None
 
     @patch("src.daemon.check_ollama", return_value=True)
-    @patch("src.daemon.should_transcribe", return_value=True)
-    @patch("src.daemon.should_summarize", return_value=True)
-    @patch("src.daemon.should_extract_commitments", return_value=True)
-    @patch("src.daemon.get_min_call_duration", return_value=30)
-    @patch("src.daemon.get_default_template", return_value="default")
-    @patch("src.daemon.extract_commitments", return_value={"commitments": []})
-    @patch(
-        "src.daemon.resolve_speakers",
-        return_value={"SPEAKER_ME": {"confirmed": True}},
-    )
     @patch("src.daemon.notify")
     @patch("src.daemon.write_status")
     def test_write_status_pipeline_stages(
         self,
         mock_status,
         mock_notify,
-        mock_resolve,
-        mock_extract,
-        mock_template,
-        mock_min_dur,
-        mock_extract_setting,
-        mock_summarize_setting,
-        mock_transcribe_setting,
         mock_check,
         tmp_db,
         sample_session,
@@ -383,20 +275,16 @@ class TestProcessRecording:
         ]
         pipelines = [c[0][4] for c in pipeline_calls]
         assert "transcribing" in pipelines
-        assert "resolving speakers" in pipelines
         assert "summarizing" in pipelines
-        assert "extracting commitments" in pipelines
         assert "saving" in pipelines
 
     @patch("src.daemon.check_ollama", return_value=True)
-    @patch("src.daemon.get_min_call_duration", return_value=30)
     @patch("src.daemon.notify")
     @patch("src.daemon.write_status")
     def test_short_call_notifies(
         self,
         mock_status,
         mock_notify,
-        mock_min_dur,
         mock_check,
         tmp_db,
         sample_session,
@@ -407,29 +295,12 @@ class TestProcessRecording:
         mock_notify.assert_called()
 
     @patch("src.daemon.check_ollama", return_value=True)
-    @patch("src.daemon.should_transcribe", return_value=True)
-    @patch("src.daemon.should_summarize", return_value=True)
-    @patch("src.daemon.should_extract_commitments", return_value=True)
-    @patch("src.daemon.get_min_call_duration", return_value=30)
-    @patch("src.daemon.get_default_template", return_value="default")
-    @patch("src.daemon.extract_commitments", return_value={"commitments": []})
-    @patch(
-        "src.daemon.resolve_speakers",
-        return_value={"SPEAKER_ME": {"confirmed": True}},
-    )
     @patch("src.daemon.notify")
     @patch("src.daemon.write_status")
     def test_full_pipeline_notifies(
         self,
         mock_status,
         mock_notify,
-        mock_resolve,
-        mock_extract,
-        mock_template,
-        mock_min_dur,
-        mock_extract_setting,
-        mock_summarize_setting,
-        mock_transcribe_setting,
         mock_check,
         tmp_db,
         sample_session,
@@ -446,90 +317,20 @@ class TestProcessRecording:
         # At least 2 notify calls: processing start + saved
         assert mock_notify.call_count >= 2
 
-    @patch("src.daemon.check_ollama", return_value=True)
-    @patch("src.daemon.should_transcribe", return_value=True)
-    @patch("src.daemon.should_summarize", return_value=True)
-    @patch("src.daemon.should_extract_commitments", return_value=True)
-    @patch("src.daemon.get_min_call_duration", return_value=30)
-    @patch("src.daemon.get_default_template", return_value="default")
-    @patch("src.daemon.extract_commitments")
-    @patch(
-        "src.daemon.resolve_speakers",
-        return_value={"SPEAKER_ME": {"confirmed": True}},
-    )
-    @patch("src.daemon.notify")
-    @patch("src.daemon.write_status")
-    def test_commitments_saved_to_db(
-        self,
-        mock_status,
-        mock_notify,
-        mock_resolve,
-        mock_extract,
-        mock_template,
-        mock_min_dur,
-        mock_extract_setting,
-        mock_summarize_setting,
-        mock_transcribe_setting,
-        mock_check,
-        tmp_db,
-        sample_session,
-        sample_summary,
-    ):
-        """Extracted commitments are saved to the database."""
-        mock_extract.return_value = {
-            "commitments": [
-                {
-                    "type": "outgoing",
-                    "who": "SPEAKER_ME",
-                    "to_whom": "SPEAKER_OTHER",
-                    "what": "Send proposal by Friday",
-                    "quote": "I'll send it by Friday",
-                    "timestamp": "00:03:42",
-                    "deadline": "Friday",
-                    "uncertain": False,
-                }
-            ]
-        }
-        transcriber = MagicMock()
-        transcriber.transcribe_separate.return_value = self._make_separate_result()
-        summarizer = MagicMock()
-        summarizer.summarize.return_value = sample_summary
-
-        process_recording(sample_session, transcriber, summarizer, tmp_db)
-
-        commitments = tmp_db.get_commitments(sample_session["session_id"])
-        assert len(commitments) == 1
-        assert commitments[0]["direction"] == "outgoing"
-        assert commitments[0]["text"] == "Send proposal by Friday"
-
     # ── Ollama unavailability tests ──
 
     @patch("src.daemon.check_ollama", return_value=False)
-    @patch("src.daemon.should_transcribe", return_value=True)
-    @patch("src.daemon.should_summarize", return_value=True)
-    @patch("src.daemon.should_extract_commitments", return_value=True)
-    @patch("src.daemon.get_min_call_duration", return_value=30)
-    @patch("src.daemon.get_default_template", return_value="default")
-    @patch("src.daemon.extract_commitments")
-    @patch("src.daemon.resolve_speakers")
     @patch("src.daemon.notify")
     @patch("src.daemon.write_status")
     def test_ollama_down_skips_ai_stages(
         self,
         mock_status,
         mock_notify,
-        mock_resolve,
-        mock_extract,
-        mock_template,
-        mock_min_dur,
-        mock_extract_setting,
-        mock_summarize_setting,
-        mock_transcribe_setting,
         mock_check,
         tmp_db,
         sample_session,
     ):
-        """When Ollama is down: transcribe runs, but summarize/resolve/extract skip."""
+        """When Ollama is down: transcribe runs, but summarize skips."""
         transcriber = MagicMock()
         transcriber.transcribe_separate.return_value = self._make_separate_result(
             "Transcript from call"
@@ -542,9 +343,7 @@ class TestProcessRecording:
         transcriber.transcribe_separate.assert_called_once()
 
         # AI stages are skipped
-        mock_resolve.assert_not_called()
         summarizer.summarize.assert_not_called()
-        mock_extract.assert_not_called()
 
         # Call is still saved with transcript but no summary
         call_record = tmp_db.get_call(sample_session["session_id"])
@@ -698,11 +497,6 @@ class TestMainLoop:
         assert callable(main)
 
     @patch("src.daemon.check_ollama", return_value=True)
-    @patch("src.daemon.should_transcribe", return_value=True)
-    @patch("src.daemon.should_summarize", return_value=True)
-    @patch("src.daemon.should_extract_commitments", return_value=True)
-    @patch("src.daemon.get_min_call_duration", return_value=30)
-    @patch("src.daemon.get_default_template", return_value="default")
     @patch("src.daemon.time.sleep", side_effect=KeyboardInterrupt)
     @patch("src.daemon.write_status")
     @patch("src.daemon.notify")
@@ -721,11 +515,6 @@ class TestMainLoop:
         mock_notify,
         mock_status,
         mock_sleep,
-        mock_template,
-        mock_min_dur,
-        mock_extract_setting,
-        mock_summarize_setting,
-        mock_transcribe_setting,
         mock_check,
     ):
         """main() handles KeyboardInterrupt gracefully via signal."""

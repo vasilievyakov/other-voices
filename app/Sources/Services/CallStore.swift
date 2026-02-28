@@ -13,7 +13,6 @@ package final class CallStore {
     var selectedFilter: SidebarItem = .allCalls
     var entities: [Entity] = []
     private var entityCounts: [String: Int] = [:]
-    var commitmentCounts: (outgoing: Int, incoming: Int) = (0, 0)
 
     private let db: SQLiteDatabase
     private var statusMonitor: StatusMonitor?
@@ -44,15 +43,12 @@ package final class CallStore {
             }
         case .entity(let name):
             calls = db.searchByEntity(name: name)
-        case .commitments:
-            calls = []
         }
 
         appCounts = db.appCounts()
         totalCount = db.totalCount()
         entities = db.allEntities()
         entityCounts = db.entityCounts()
-        commitmentCounts = db.commitmentCounts()
     }
 
     func entityCallCount(_ name: String) -> Int? {
@@ -90,29 +86,6 @@ package final class CallStore {
             }
         }
         return items
-    }
-
-    func getCommitments(sessionId: String) -> [Commitment] {
-        db.getCommitments(sessionId: sessionId)
-    }
-
-    func getOpenCommitments(direction: String? = nil) -> [Commitment] {
-        db.getOpenCommitments(direction: direction)
-    }
-
-    func updateCommitmentStatus(id: Int, status: String) {
-        db.updateCommitmentStatus(commitmentId: id, status: status)
-        commitmentCounts = db.commitmentCounts()
-    }
-
-    // MARK: - Person Detail
-
-    func commitmentsByPerson(name: String) -> [Commitment] {
-        db.commitmentsByPerson(name: name)
-    }
-
-    func personStats(name: String) -> SQLiteDatabase.PersonStats {
-        db.personStats(name: name)
     }
 
     func callsByEntity(name: String) -> [Call] {

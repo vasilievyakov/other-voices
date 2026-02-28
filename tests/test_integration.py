@@ -42,13 +42,9 @@ class TestIntegration:
         summarizer.summarize.return_value = sample_summary
 
         with (
+            patch("src.daemon.check_ollama", return_value=True),
             patch("src.daemon.notify"),
             patch("src.daemon.write_status"),
-            patch(
-                "src.daemon.resolve_speakers",
-                return_value={"SPEAKER_ME": {"confirmed": True}},
-            ),
-            patch("src.daemon.extract_commitments", return_value={"commitments": []}),
         ):
             process_recording(sample_session, transcriber, summarizer, tmp_db)
 
@@ -71,13 +67,9 @@ class TestIntegration:
         summarizer.summarize.return_value = sample_summary
 
         with (
+            patch("src.daemon.check_ollama", return_value=True),
             patch("src.daemon.notify"),
             patch("src.daemon.write_status"),
-            patch(
-                "src.daemon.resolve_speakers",
-                return_value={"SPEAKER_ME": {"confirmed": True}},
-            ),
-            patch("src.daemon.extract_commitments", return_value={"commitments": []}),
         ):
             process_recording(sample_session, transcriber, summarizer, tmp_db)
 
@@ -95,13 +87,9 @@ class TestIntegration:
         summarizer.summarize.return_value = sample_summary
 
         with (
+            patch("src.daemon.check_ollama", return_value=True),
             patch("src.daemon.notify"),
             patch("src.daemon.write_status"),
-            patch(
-                "src.daemon.resolve_speakers",
-                return_value={"SPEAKER_ME": {"confirmed": True}},
-            ),
-            patch("src.daemon.extract_commitments", return_value={"commitments": []}),
         ):
             process_recording(sample_session, transcriber, summarizer, tmp_db)
 
@@ -146,15 +134,9 @@ class TestIntegration:
                 "participants": [],
             }
             with (
+                patch("src.daemon.check_ollama", return_value=True),
                 patch("src.daemon.notify"),
                 patch("src.daemon.write_status"),
-                patch(
-                    "src.daemon.resolve_speakers",
-                    return_value={"SPEAKER_ME": {"confirmed": True}},
-                ),
-                patch(
-                    "src.daemon.extract_commitments", return_value={"commitments": []}
-                ),
             ):
                 process_recording(session, transcriber, summarizer, tmp_db)
 

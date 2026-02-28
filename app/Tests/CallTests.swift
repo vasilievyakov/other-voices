@@ -374,9 +374,7 @@ func runDaemonStatusTests() {
     test("stateLabel_processing_pipelines") {
         let cases: [(String?, String)] = [
             ("transcribing", "Transcribing"),
-            ("resolving speakers", "Resolving Speakers"),
             ("summarizing", "Summarizing"),
-            ("extracting commitments", "Extracting Commitments"),
             ("saving", "Saving"),
             (nil, "Processing"),
         ]
@@ -425,15 +423,6 @@ func runDaemonStatusTests() {
         expect(s.isOllamaDown == true)
     }
 
-    test("stateLabel_resolving_speakers") {
-        let s = makeDaemonStatus(state: "processing", pipeline: "resolving speakers")
-        expect(s.stateLabel == "Resolving Speakers", "got \(s.stateLabel)")
-    }
-
-    test("stateLabel_extracting_commitments") {
-        let s = makeDaemonStatus(state: "processing", pipeline: "extracting commitments")
-        expect(s.stateLabel == "Extracting Commitments", "got \(s.stateLabel)")
-    }
 }
 
 // MARK: - SidebarItem Tests (5)
@@ -617,38 +606,6 @@ func runCallSegmentTests() {
     }
 }
 
-// MARK: - ChatMessage Tests (4)
-
-func runChatMessageTests() {
-    print("\n--- ChatMessage Tests ---")
-
-    test("chatMessage_user") {
-        let msg = ChatMessage(role: "user", content: "What happened?")
-        expect(msg.isUser == true)
-        expect(msg.isAssistant == false)
-        expect(msg.content == "What happened?")
-    }
-
-    test("chatMessage_assistant") {
-        let msg = ChatMessage(role: "assistant", content: "Meeting summary.")
-        expect(msg.isUser == false)
-        expect(msg.isAssistant == true)
-    }
-
-    test("chatMessage_identifiable") {
-        let a = ChatMessage(role: "user", content: "Q")
-        let b = ChatMessage(role: "user", content: "Q")
-        // Different UUIDs
-        expect(a.id != b.id, "different messages should have different IDs")
-    }
-
-    test("chatMessage_hashable") {
-        let msg = ChatMessage(id: "test-id", role: "user", content: "Q")
-        let copy = ChatMessage(id: "test-id", role: "user", content: "Q")
-        expect(msg == copy, "same id should be equal")
-    }
-}
-
 // MARK: - Template Tests (3)
 
 func runTemplateTests() {
@@ -690,7 +647,6 @@ struct TestRunner {
         runSidebarItemTests()
         runTranscriptSegmentTests()
         runCallSegmentTests()
-        runChatMessageTests()
         runTemplateTests()
 
         print("\n=============================")

@@ -18,20 +18,12 @@ from .config import (
     LOG_BACKUP_COUNT,
     STATUS_PATH,
     DATA_DIR,
+    MIN_CALL_DURATION,
     check_ollama,
 )
-from .commitment_extractor import extract_commitments
 from .database import Database
 from .detector import CallDetector
 from .recorder import AudioRecorder
-from .settings import (
-    get_min_call_duration,
-    should_transcribe,
-    should_summarize,
-    should_extract_commitments,
-    get_default_template,
-)
-from .speaker_resolver import resolve_speakers, format_transcript_for_prompt
 from .summarizer import Summarizer
 from .templates import export_templates_json
 from .transcriber import Transcriber
@@ -170,14 +162,12 @@ class _Timer:
 def process_recording(
     session: dict, transcriber: Transcriber, summarizer: Summarizer, db: Database
 ):
-    """Post-process a completed recording: transcribe, summarize, extract commitments.
+    """Post-process a completed recording: transcribe and summarize.
 
     Pipeline stages (each timed):
         1. transcription (separate channels, fallback to merged)
-        2. speaker_resolution (Ollama — skipped if unavailable)
-        3. summarization (Ollama — skipped if unavailable)
-        4. commitment_extraction (Ollama — skipped if unavailable)
-        5. save (SQLite)
+        2. summarization (Ollama — skipped if unavailable)
+        3. save (SQLite)
 
     If Ollama is unavailable, recording and transcription still proceed.
     """
@@ -188,12 +178,11 @@ def process_recording(
     duration = session["duration_seconds"]
     app_name = session["app_name"]
 
-    min_duration = get_min_call_duration()
-    if duration < min_duration:
+    if duration < MIN_CALL_DURATION:
         _log(
             logging.INFO,
             "pipeline",
-            f"Call too short ({duration:.0f}s < {min_duration}s), skipping "
+            f"Call too short ({duration:.0f}s < {MIN_CALL_DURATION}s), skipping "
             f"[session={session_id}, app={app_name}]",
         )
         notify(
@@ -217,8 +206,7 @@ def process_recording(
             logging.WARNING,
             "pipeline",
             f"Ollama unavailable — will record and transcribe but skip "
-            f"AI stages (speaker resolution, summarization, commitments) "
-            f"[session={session_id}]",
+            f"summarization [session={session_id}]",
         )
         _notify_error(
             "Ollama",
@@ -226,31 +214,7 @@ def process_recording(
             "not running. Transcription will proceed, but no summary.",
         )
 
-    # ── Step 1: Transcription (respects user settings) ──
-    if not should_transcribe():
-        _log(
-            logging.INFO,
-            "pipeline",
-            f"Transcription DISABLED by user settings [session={session_id}]",
-        )
-        # Save call record without transcription
-        db.insert_call(
-            session_id=session_id,
-            app_name=app_name,
-            started_at=session["started_at"],
-            ended_at=session["ended_at"],
-            duration_seconds=duration,
-            system_wav_path=session["system_wav"],
-            mic_wav_path=session["mic_wav"],
-            transcript=None,
-            summary=None,
-        )
-        notify(
-            "Call Recorder",
-            f"Звонок {app_name} ({duration:.0f}с) записан (без транскрипции).",
-        )
-        return
-
+    # ── Step 1: Transcription ──
     write_status(
         "processing", app_name, session_id, session["started_at"], "transcribing"
     )
@@ -272,10 +236,11 @@ def process_recording(
             f"[session={session_id}]",
             duration_ms=t_transcribe.elapsed_ms,
         )
-        unified_segments = separate_result["segments"]
         transcript = separate_result["text"]
-        transcript_segments = json.dumps(unified_segments, ensure_ascii=False)
-        segments_list = unified_segments
+        transcript_segments = json.dumps(
+            separate_result["segments"], ensure_ascii=False
+        )
+        segments_list = separate_result["segments"]
     else:
         _log(
             logging.WARNING,
@@ -326,51 +291,15 @@ def process_recording(
             transcript = transcribe_result
             transcript_segments = None
             segments_list = None
-        unified_segments = None
-        speaker_map = None
 
-    # ── Step 2: Speaker resolution (requires Ollama) ──
-    if unified_segments and _ollama_available:
-        write_status(
-            "processing",
-            app_name,
-            session_id,
-            session["started_at"],
-            "resolving speakers",
-        )
-        with _Timer() as t_speakers:
-            _log(
-                logging.INFO,
-                "speaker_resolution",
-                f"Resolving speakers [session={session_id}, "
-                f"segments={len(unified_segments)}]",
-            )
-            speaker_map = resolve_speakers(unified_segments)
-
-        _log(
-            logging.INFO,
-            "speaker_resolution",
-            f"Speaker map: {json.dumps(speaker_map, ensure_ascii=False)} "
-            f"[session={session_id}]",
-            duration_ms=t_speakers.elapsed_ms,
-        )
-    elif unified_segments and not _ollama_available:
-        _log(
-            logging.WARNING,
-            "speaker_resolution",
-            f"SKIPPED — Ollama unavailable [session={session_id}]",
-        )
-        speaker_map = {"SPEAKER_ME": {"confirmed": True, "source": "mic_channel"}}
-    # else: speaker_map already set to None in merged-fallback branch above
-
-    # ── Step 3: Summarize (requires Ollama + user setting) ──
+    # ── Step 2: Summarize (requires Ollama) ──
     summary = None
     entities = []
-    if _ollama_available and should_summarize():
+    template_name = session.get("template_name", "default")
+    if _ollama_available:
         write_status(
             "processing", app_name, session_id, session["started_at"], "summarizing"
         )
-        template_name = session.get("template_name", get_default_template())
         with _Timer() as t_summary:
             _log(
                 logging.INFO,
@@ -400,81 +329,14 @@ def process_recording(
                 duration_ms=t_summary.elapsed_ms,
             )
             _notify_error("Summarization", app_name, "returned empty result")
-    elif not _ollama_available:
-        _log(
-            logging.WARNING,
-            "summarization",
-            f"SKIPPED — Ollama unavailable [session={session_id}]",
-        )
-        template_name = session.get("template_name", get_default_template())
     else:
         _log(
-            logging.INFO,
-            "summarization",
-            f"SKIPPED — disabled by user settings [session={session_id}]",
-        )
-        template_name = session.get("template_name", get_default_template())
-
-    # ── Step 4: Extract commitments (requires Ollama + speaker-resolved transcript + user setting) ──
-    commitments_data = None
-    if (
-        unified_segments
-        and speaker_map
-        and _ollama_available
-        and should_extract_commitments()
-    ):
-        write_status(
-            "processing",
-            app_name,
-            session_id,
-            session["started_at"],
-            "extracting commitments",
-        )
-        with _Timer() as t_commitments:
-            _log(
-                logging.INFO,
-                "commitment_extraction",
-                f"Extracting commitments [session={session_id}]",
-            )
-            resolved_transcript = format_transcript_for_prompt(
-                unified_segments, speaker_map
-            )
-            call_date = session.get("started_at", "")[:10]
-            commitments_data = extract_commitments(
-                resolved_transcript, speaker_map, call_date
-            )
-
-        n_commitments = len(commitments_data.get("commitments", []))
-        if n_commitments > 0:
-            _log(
-                logging.INFO,
-                "commitment_extraction",
-                f"Extracted {n_commitments} commitments [session={session_id}]",
-                duration_ms=t_commitments.elapsed_ms,
-            )
-        else:
-            _log(
-                logging.WARNING,
-                "commitment_extraction",
-                f"No commitments extracted "
-                f"(notes: {commitments_data.get('extraction_notes', 'none')}) "
-                f"[session={session_id}]",
-                duration_ms=t_commitments.elapsed_ms,
-            )
-    elif unified_segments and not _ollama_available:
-        _log(
             logging.WARNING,
-            "commitment_extraction",
+            "summarization",
             f"SKIPPED — Ollama unavailable [session={session_id}]",
         )
-    elif unified_segments and not should_extract_commitments():
-        _log(
-            logging.INFO,
-            "commitment_extraction",
-            f"SKIPPED — disabled by user settings [session={session_id}]",
-        )
 
-    # ── Step 5: Save to database ──
+    # ── Step 3: Save to database ──
     write_status("processing", app_name, session_id, session["started_at"], "saving")
     with _Timer() as t_save:
         db.insert_call(
@@ -494,9 +356,6 @@ def process_recording(
         if entities:
             db.insert_entities(session_id, entities)
 
-        if commitments_data and commitments_data.get("commitments"):
-            db.insert_commitments(session_id, commitments_data["commitments"])
-
     _log(
         logging.INFO,
         "save",
@@ -511,11 +370,6 @@ def process_recording(
     if summary and summary.get("summary"):
         summary_text = f"\n{summary['summary'][:100]}"
 
-    commitment_text = ""
-    if commitments_data and commitments_data.get("commitments"):
-        n = len(commitments_data["commitments"])
-        commitment_text = f" | {n} обязательств"
-
     skipped_text = ""
     if not _ollama_available:
         skipped_text = " [AI skipped: Ollama offline]"
@@ -523,7 +377,7 @@ def process_recording(
     notify(
         "Call Recorder",
         f"Звонок {app_name} ({duration:.0f}с) записан."
-        f"{summary_text}{commitment_text}{skipped_text}",
+        f"{summary_text}{skipped_text}",
     )
     _log(
         logging.INFO,
@@ -531,7 +385,6 @@ def process_recording(
         f"Pipeline complete: session={session_id}, app={app_name}, "
         f"transcript={len(transcript)} chars, "
         f"summary={'yes' if summary else 'no'}, "
-        f"commitments={len(commitments_data.get('commitments', [])) if commitments_data else 0}, "
         f"ollama={'up' if _ollama_available else 'DOWN'}",
         duration_ms=total_ms,
     )
@@ -550,14 +403,7 @@ def main():
     _log(
         logging.INFO,
         "startup",
-        f"Poll interval: {POLL_INTERVAL}s, Min duration: {get_min_call_duration()}s",
-    )
-    _log(
-        logging.INFO,
-        "startup",
-        f"User settings: transcribe={should_transcribe()}, "
-        f"summarize={should_summarize()}, commitments={should_extract_commitments()}, "
-        f"template={get_default_template()}",
+        f"Poll interval: {POLL_INTERVAL}s, Min duration: {MIN_CALL_DURATION}s",
     )
     _log(
         logging.INFO,
@@ -574,11 +420,11 @@ def main():
             logging.WARNING,
             "startup",
             "Ollama health check: FAILED — daemon will record and transcribe "
-            "but skip AI features (summarization, speaker resolution, commitments)",
+            "but skip AI features (summarization)",
         )
         notify(
             "Other Voices",
-            "Ollama not running. Recording works, but no AI summary/commitments.",
+            "Ollama not running. Recording works, but no AI summary.",
         )
 
     # Export templates for Swift app

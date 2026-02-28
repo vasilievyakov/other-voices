@@ -16,10 +16,6 @@ package struct MainView: View {
             switch selectedSidebarItem {
             case .actionItems:
                 ActionItemsView(selectedCallId: $selectedCallId)
-            case .commitments:
-                CommitmentsView(selectedCallId: $selectedCallId)
-            case .entity(let name):
-                PersonDetailView(personName: name, selectedCallId: $selectedCallId)
             default:
                 CallListView(selectedCallId: $selectedCallId)
             }

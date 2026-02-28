@@ -43,14 +43,6 @@ struct SidebarView: View {
             .accessibilityLabel("Action Items")
             .tag(SidebarItem.actionItems)
 
-            Label {
-                Text("Commitments")
-            } icon: {
-                Image(systemName: SidebarItem.commitments.icon)
-            }
-            .badge(store.commitmentCounts.outgoing + store.commitmentCounts.incoming)
-            .accessibilityLabel("Commitments, \(store.commitmentCounts.outgoing + store.commitmentCounts.incoming) open")
-            .tag(SidebarItem.commitments)
         }
     }
 

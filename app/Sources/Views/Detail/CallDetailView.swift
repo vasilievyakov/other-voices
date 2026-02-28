@@ -7,7 +7,6 @@ package extension Notification.Name {
 struct CallDetailView: View {
     let sessionId: String
     @State private var call: Call?
-    @State private var commitments: [Commitment] = []
     @State private var audioPlayer = AudioPlayer()
     @State private var showTemplatePicker = false
     @State private var toastMessage: String?
@@ -24,7 +23,6 @@ struct CallDetailView: View {
         }
         .task(id: sessionId) {
             call = store.getCall(sessionId)
-            commitments = store.getCommitments(sessionId: sessionId)
         }
     }
 
@@ -49,14 +47,9 @@ struct CallDetailView: View {
                     // Summary
                     summarySection(call)
 
-                    // Commitments
-                    commitmentsSection
-
                     // Transcript
                     transcriptSection(call)
 
-                    // Chat
-                    chatSection(call)
                 }
                 .padding(20)
                 .frame(maxWidth: 720, alignment: .leading)
@@ -113,27 +106,30 @@ struct CallDetailView: View {
     private func exportMenu(_ call: Call) -> some View {
         Menu {
             Button {
-                let md = ExportService.exportAsMarkdown(call: call, commitments: commitments)
-                ExportService.copyToClipboard(md)
+                var text = "# \(call.appName) — \(call.startedAtFormatted)\n\n"
+                if let summary = call.summary {
+                    text += "## Summary\n\(summary.summary ?? "")\n\n"
+                }
+                if let transcript = call.transcript {
+                    text += "## Transcript\n\(transcript)\n"
+                }
+                NSPasteboard.general.clearContents()
+                NSPasteboard.general.setString(text, forType: .string)
                 showToast("Copied as Markdown")
             } label: {
                 Label("Copy as Markdown", systemImage: "doc.richtext")
             }
 
             Button {
-                let text = ExportService.exportAsText(call: call, commitments: commitments)
-                ExportService.copyToClipboard(text)
+                var text = "\(call.appName) — \(call.startedAtFormatted)\n\n"
+                if let transcript = call.transcript {
+                    text += transcript
+                }
+                NSPasteboard.general.clearContents()
+                NSPasteboard.general.setString(text, forType: .string)
                 showToast("Copied as Text")
             } label: {
                 Label("Copy as Text", systemImage: "doc.plaintext")
-            }
-
-            Divider()
-
-            Button {
-                ExportService.saveMarkdownFile(call: call, commitments: commitments)
-            } label: {
-                Label("Save as Markdown File...", systemImage: "square.and.arrow.down")
             }
         } label: {
             Label("Export", systemImage: "square.and.arrow.up")
@@ -267,62 +263,4 @@ struct CallDetailView: View {
         }
     }
 
-    // MARK: - Commitments Section
-
-    @ViewBuilder
-    private var commitmentsSection: some View {
-        if !commitments.isEmpty {
-            VStack(alignment: .leading, spacing: 8) {
-                Label("Commitments", systemImage: "handshake.fill")
-                    .font(.title3)
-                    .fontWeight(.semibold)
-
-                ForEach(commitments) { commitment in
-                    HStack(spacing: 8) {
-                        Image(systemName: commitment.directionIcon)
-                            .foregroundStyle(commitment.isOutgoing ? .orange : .blue)
-                            .font(.caption)
-
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(commitment.text)
-                                .font(.subheadline)
-                            if let deadline = commitment.deadlineRaw {
-                                Text("Deadline: \(deadline)")
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                            }
-                        }
-
-                        Spacer()
-
-                        if commitment.isOpen {
-                            Button {
-                                store.updateCommitmentStatus(id: commitment.id, status: "done")
-                                commitments = store.getCommitments(sessionId: sessionId)
-                            } label: {
-                                Image(systemName: "checkmark.circle")
-                            }
-                            .buttonStyle(.borderless)
-                            .foregroundStyle(.green)
-                            .help("Mark as done")
-                        } else {
-                            Image(systemName: commitment.statusIcon)
-                                .foregroundStyle(.secondary)
-                        }
-                    }
-                    .padding(.vertical, 2)
-                }
-            }
-        }
-    }
-
-    // MARK: - Chat Section
-
-    @ViewBuilder
-    private func chatSection(_ call: Call) -> some View {
-        if call.transcript != nil {
-            Divider()
-            ChatView(sessionId: call.sessionId)
-        }
-    }
 }

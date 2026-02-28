@@ -3,6 +3,7 @@
 import json
 import logging
 import re
+import sqlite3
 import urllib.request
 import urllib.error
 
@@ -303,3 +304,145 @@ class Summarizer:
             merged["_chunks"] = len(chunks)
             log.info(f"Summary generated successfully ({len(chunks)} chunks merged)")
         return merged
+
+    # =========================================================================
+    # Re-summarization — replaces standalone resummarize.py logic
+    # =========================================================================
+
+    def resummarize_single(
+        self,
+        session_id: str,
+        db_path: str,
+        template_name: str = "default",
+    ) -> dict | None:
+        """Re-summarize a single call from the database.
+
+        Reads the transcript from DB, runs it through self.summarize()
+        (which uses num_predict=16384 and chunked processing), and writes
+        the result back to the DB.
+
+        Args:
+            session_id: The session ID of the call to re-summarize.
+            db_path: Path to the SQLite database file.
+            template_name: Template to use for structuring the output.
+
+        Returns:
+            Parsed summary dict, or None if call not found / transcript
+            too short / summarization failed.
+        """
+        conn = sqlite3.connect(db_path)
+        conn.row_factory = sqlite3.Row
+
+        row = conn.execute(
+            "SELECT session_id, app_name, transcript FROM calls WHERE session_id = ?",
+            (session_id,),
+        ).fetchone()
+
+        if not row:
+            log.warning(f"Call not found: {session_id}")
+            conn.close()
+            return None
+
+        transcript = row["transcript"]
+        if not transcript or len(transcript.strip()) < 50:
+            log.info(f"Transcript too short for {session_id}")
+            conn.close()
+            return None
+
+        log.info(
+            f"Re-summarizing {session_id} ({row['app_name']}) "
+            f"with template={template_name}..."
+        )
+
+        summary = self.summarize(transcript, template_name)
+
+        if not summary:
+            log.warning(f"Summarization failed for {session_id}")
+            conn.close()
+            return None
+
+        summary_json = json.dumps(summary, ensure_ascii=False)
+        conn.execute(
+            "UPDATE calls SET summary_json = ?, template_name = ? WHERE session_id = ?",
+            (summary_json, template_name, session_id),
+        )
+        conn.commit()
+        conn.close()
+
+        ai_count = len(summary.get("action_items", []))
+        log.info(f"Re-summarized {session_id}: {ai_count} action items")
+        return summary
+
+    def resummarize_batch(
+        self,
+        db_path: str,
+        template_name: str = "default",
+        limit: int | None = None,
+    ) -> dict:
+        """Re-summarize all calls in the database.
+
+        Iterates over all calls, runs each through self.summarize()
+        (which uses num_predict=16384 and chunked processing), and writes
+        results back to DB.
+
+        Args:
+            db_path: Path to the SQLite database file.
+            template_name: Template to use for structuring the output.
+            limit: Maximum number of calls to process. None = all.
+
+        Returns:
+            Stats dict with keys: total, updated, skipped, failed.
+        """
+        conn = sqlite3.connect(db_path)
+        conn.row_factory = sqlite3.Row
+
+        query = "SELECT session_id, app_name, transcript FROM calls ORDER BY started_at"
+        if limit is not None:
+            query += f" LIMIT {int(limit)}"
+
+        rows = conn.execute(query).fetchall()
+        total = len(rows)
+        updated = 0
+        skipped = 0
+        failed = 0
+
+        log.info(f"Batch re-summarize: {total} calls to process")
+
+        for row in rows:
+            sid = row["session_id"]
+            transcript = row["transcript"]
+
+            if not transcript or len(transcript.strip()) < 50:
+                log.info(f"Skipping {sid}: transcript too short")
+                skipped += 1
+                continue
+
+            log.info(f"Re-summarizing {sid} ({row['app_name']})...")
+            summary = self.summarize(transcript, template_name)
+
+            if not summary:
+                log.warning(f"Summarization failed for {sid}")
+                failed += 1
+                continue
+
+            summary_json = json.dumps(summary, ensure_ascii=False)
+            conn.execute(
+                "UPDATE calls SET summary_json = ?, template_name = ? WHERE session_id = ?",
+                (summary_json, template_name, sid),
+            )
+            conn.commit()
+            updated += 1
+
+        conn.close()
+
+        stats = {
+            "total": total,
+            "updated": updated,
+            "skipped": skipped,
+            "failed": failed,
+        }
+        log.info(
+            f"Batch complete: {updated}/{total} updated, "
+            f"{skipped} skipped, {failed} failed"
+        )
+        return stats

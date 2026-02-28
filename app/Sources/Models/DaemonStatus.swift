@@ -43,9 +43,7 @@ package struct DaemonStatus: Codable, Equatable {
         case "processing":
             switch pipeline {
             case "transcribing": return "Transcribing"
-            case "resolving speakers": return "Resolving Speakers"
             case "summarizing": return "Summarizing"
-            case "extracting commitments": return "Extracting Commitments"
             case "saving": return "Saving"
             default: return "Processing"
             }
@@ -62,9 +60,7 @@ package struct DaemonStatus: Codable, Equatable {
     package var pipelineUserLabel: String {
         switch pipeline {
         case "transcribing": return "Transcribing"
-        case "resolving speakers": return "Identifying speakers"
         case "summarizing": return "Summarizing"
-        case "extracting commitments": return "Extracting action items"
         case "saving": return "Saving"
         default: return "Processing"
         }
@@ -72,8 +68,7 @@ package struct DaemonStatus: Codable, Equatable {
 
     /// Pipeline stages in order, for progress visualization.
     package static let pipelineStages = [
-        "transcribing", "resolving speakers", "summarizing",
-        "extracting commitments", "saving"
+        "transcribing", "summarizing", "saving"
     ]
 
     /// Fraction (0..1) representing how far through the pipeline we are.
