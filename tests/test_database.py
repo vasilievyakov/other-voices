@@ -9,6 +9,8 @@ import threading
 
 import pytest
 
+from tests.conftest import SID1, SID2, SID3
+
 from src.database import Database
 
 
@@ -145,8 +147,8 @@ class TestCRUD:
         """Sorted by started_at DESC, limit works."""
         results = populated_db.list_recent(limit=2)
         assert len(results) == 2
-        assert results[0]["session_id"] == "20250220_140000"
-        assert results[1]["session_id"] == "20250220_100000"
+        assert results[0]["session_id"] == SID2
+        assert results[1]["session_id"] == SID1
 
     def test_list_recent_empty(self, tmp_db):
         """Empty DB returns empty list."""
@@ -168,19 +170,19 @@ class TestFTS5:
         """FTS5 MATCH finds text in transcript."""
         results = populated_db.search("deployment")
         assert len(results) == 1
-        assert results[0]["session_id"] == "20250220_140000"
+        assert results[0]["session_id"] == SID2
 
     def test_search_summary_json(self, populated_db):
         """FTS5 MATCH finds text in summary_json."""
         results = populated_db.search("Альфа")
         assert len(results) == 1
-        assert results[0]["session_id"] == "20250220_100000"
+        assert results[0]["session_id"] == SID1
 
     def test_search_app_name(self, populated_db):
         """FTS5 MATCH finds text in app_name field."""
         results = populated_db.search("Telegram")
         assert len(results) == 1
-        assert results[0]["session_id"] == "20250219_090000"
+        assert results[0]["session_id"] == SID3
 
     def test_search_no_results(self, populated_db):
         """No matches returns empty list."""
@@ -262,15 +264,15 @@ class TestActionItems:
         """Filters by date window, parses action_items."""
         results = populated_db.get_action_items(days=365)
         assert len(results) >= 1
-        item = next(r for r in results if r["session_id"] == "20250220_100000")
+        item = next(r for r in results if r["session_id"] == SID1)
         assert "Написать ТЗ (@Вася, пятница)" in item["action_items"]
 
     def test_get_action_items_skips_empty(self, populated_db):
         """Calls with empty action_items are not returned."""
         results = populated_db.get_action_items(days=365)
         session_ids = [r["session_id"] for r in results]
-        assert "20250220_140000" not in session_ids
-        assert "20250219_090000" not in session_ids
+        assert SID2 not in session_ids
+        assert SID3 not in session_ids
 
     def test_get_action_items_returns_app_name(self, populated_db):
         """Each result includes app_name and started_at."""
@@ -323,7 +325,7 @@ class TestDatabaseSecurity:
         except sqlite3.OperationalError:
             pass  # FTS5 syntax error is acceptable — no injection occurred
         # Table still intact regardless
-        assert populated_db.get_call("20250220_100000") is not None
+        assert populated_db.get_call(SID1) is not None
 
     def test_sql_injection_in_session_id(self, tmp_db):
         """SQL injection in session_id is safely handled."""

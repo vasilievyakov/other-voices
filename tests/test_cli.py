@@ -10,6 +10,8 @@ from unittest.mock import patch, MagicMock
 
 import pytest
 
+from tests.conftest import SID1, SID2
+
 from cli import (
     fmt_duration,
     fmt_date,
@@ -96,7 +98,7 @@ class TestCmdSearch:
         cmd_search(populated_db, ["deployment"])
         output = capsys.readouterr().out
         assert "1 result" in output
-        assert "20250220_140000" in output
+        assert SID2 in output
 
     def test_search_no_results(self, capsys, populated_db):
         """Search with no results prints message."""
@@ -116,7 +118,7 @@ class TestCmdList:
         cmd_list(populated_db, [])
         output = capsys.readouterr().out
         assert "Session ID" in output
-        assert "20250220_100000" in output
+        assert SID1 in output
         assert "Zoom" in output
 
     def test_list_empty_db(self, capsys, tmp_db):
@@ -134,7 +136,7 @@ class TestCmdList:
 class TestCmdShow:
     def test_show_existing_call(self, capsys, populated_db):
         """Show existing call prints all details."""
-        cmd_show(populated_db, ["20250220_100000"])
+        cmd_show(populated_db, [SID1])
         output = capsys.readouterr().out
         assert "Zoom" in output
         assert "SUMMARY" in output
