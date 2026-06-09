@@ -25,6 +25,20 @@ package struct DaemonStatus: Codable, Equatable {
         state != "stopped"
     }
 
+    /// Seconds since the daemon last refreshed status.json (heartbeat).
+    /// nil if the timestamp can't be parsed (pre-heartbeat status files).
+    package var heartbeatAge: TimeInterval? {
+        guard let date = parseDate(timestamp) else { return nil }
+        return Date().timeIntervalSince(date)
+    }
+
+    /// The daemon refreshes status.json every 60s; 3 missed beats means
+    /// the process is hung even if the PID is still alive.
+    package var isStale: Bool {
+        guard let age = heartbeatAge else { return false }
+        return age > 180
+    }
+
     package var isRecording: Bool {
         state == "recording"
     }

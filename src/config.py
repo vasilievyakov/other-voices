@@ -23,6 +23,7 @@ AUDIO_CAPTURE_BIN = BASE_DIR / "bin" / "audio-capture"
 # Detector
 POLL_INTERVAL = 3  # seconds between checks
 MIN_CALL_DURATION = 30  # ignore calls shorter than this (seconds)
+HEARTBEAT_INTERVAL = 60  # refresh status.json at least this often (seconds)
 
 # Apps to detect — process names and detection strategy
 CALL_APPS = {

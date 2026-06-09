@@ -4,12 +4,16 @@ import Foundation
 @Observable
 package final class DaemonMonitor {
     package var status: DaemonStatus?
-    package var isAvailable: Bool { status != nil && status!.isActive }
+    package var isAvailable: Bool {
+        guard let status else { return false }
+        return status.isActive && !status.isStale
+    }
     package var ollamaAvailable: Bool = true  // Assume available until proven otherwise
 
     private var statusMonitor: StatusMonitor?
     private var durationTimer: Timer?
     private var ollamaTimer: Timer?
+    private var lastReportedStale = false
 
     // Exposed for live duration display
     var recordingDuration: TimeInterval? {
@@ -52,6 +56,9 @@ package final class DaemonMonitor {
         ollamaTimer = Timer.scheduledTimer(withTimeInterval: 30.0, repeats: true) { [weak self] _ in
             MainActor.assumeIsolated {
                 self?.checkOllamaAvailability()
+                // Re-read status even without file events: staleness can flip
+                // when a hung daemon stops writing heartbeats.
+                self?.readStatus()
             }
         }
     }
@@ -80,9 +87,14 @@ package final class DaemonMonitor {
             resolved = nil
         }
 
-        // Only update if changed — prevents @Observable from triggering spurious SwiftUI re-renders
-        if resolved != status {
+        // Only update if changed — prevents @Observable from triggering spurious
+        // SwiftUI re-renders. Staleness is computed from wall-clock, so it can
+        // flip while the struct stays equal — track it separately to force the
+        // update through.
+        let resolvedStale = resolved?.isStale ?? false
+        if resolved != status || resolvedStale != lastReportedStale {
             status = resolved
+            lastReportedStale = resolvedStale
         }
 
         // Prefer daemon's Ollama status (from status.json) when daemon is alive

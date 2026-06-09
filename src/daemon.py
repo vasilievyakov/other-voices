@@ -13,6 +13,7 @@ from pathlib import Path
 
 from .config import (
     POLL_INTERVAL,
+    HEARTBEAT_INTERVAL,
     LOG_PATH,
     LOG_MAX_BYTES,
     LOG_BACKUP_COUNT,
@@ -101,6 +102,26 @@ def _notify_error(stage: str, app_name: str, error: str):
     notify("Other Voices", f"{stage} failed for {app_name}: {error}")
 
 
+def _ollama_rss_mb() -> float | None:
+    """Best-effort total RSS of ollama processes, in MB.
+
+    Summarization runs out-of-process, so the daemon's own RSS says nothing
+    about inference cost. Logged per call to ground the mlx-lm migration
+    decision in real numbers.
+    """
+    try:
+        import psutil
+
+        total = 0
+        for p in psutil.process_iter(["name", "memory_info"]):
+            name = p.info.get("name") or ""
+            if "ollama" in name.lower():
+                total += p.info["memory_info"].rss
+        return total / (1024 * 1024) if total else None
+    except Exception:
+        return None
+
+
 # ---------------------------------------------------------------------------
 # Status file — read by SwiftUI app
 # ---------------------------------------------------------------------------
@@ -119,7 +140,9 @@ def write_status(
     """Write daemon status to status.json atomically via os.replace."""
     status = {
         "daemon_pid": os.getpid(),
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        # timespec="milliseconds": Swift's ISO8601DateFormatter cannot parse
+        # Python's default 6-digit microseconds.
+        "timestamp": datetime.now(timezone.utc).isoformat(timespec="milliseconds"),
         "state": state,
         "app_name": app_name,
         "session_id": session_id,
@@ -312,11 +335,13 @@ def process_recording(
             )
 
         if summary:
+            rss = _ollama_rss_mb()
             _log(
                 logging.INFO,
                 "summarization",
                 f"Summary generated: {len(json.dumps(summary))} chars JSON "
-                f"[session={session_id}]",
+                f"[session={session_id}, chars_in={len(transcript)}, "
+                f"ollama_rss={f'{rss:.0f}MB' if rss else 'n/a'}]",
                 duration_ms=t_summary.elapsed_ms,
             )
             if isinstance(summary.get("entities"), list):
@@ -376,8 +401,7 @@ def process_recording(
 
     notify(
         "Call Recorder",
-        f"Звонок {app_name} ({duration:.0f}с) записан."
-        f"{summary_text}{skipped_text}",
+        f"Звонок {app_name} ({duration:.0f}с) записан.{summary_text}{skipped_text}",
     )
     _log(
         logging.INFO,
@@ -453,12 +477,30 @@ def main():
 
     notify("Call Recorder", "Демон запущен, мониторинг звонков активен")
     write_status("idle")
+    last_heartbeat = time.monotonic()
 
     _log(logging.INFO, "startup", "=" * 50)
 
     try:
         while running:
             in_call, app_name = detector.check()
+
+            # Heartbeat: refresh status.json timestamp even when nothing
+            # changes, so a hung or silently dead daemon is detectable
+            # by timestamp staleness.
+            if time.monotonic() - last_heartbeat >= HEARTBEAT_INTERVAL:
+                if recorder.is_recording:
+                    write_status(
+                        "recording",
+                        recorder.app_name,
+                        recorder.session_id,
+                        recorder.started_at.isoformat()
+                        if recorder.started_at
+                        else None,
+                    )
+                else:
+                    write_status("idle")
+                last_heartbeat = time.monotonic()
 
             if in_call and not recorder.is_recording:
                 # Call started — re-check Ollama each time
