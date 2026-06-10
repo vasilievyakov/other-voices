@@ -41,13 +41,13 @@ else
 fi
 
 # 4. Pull Ollama model
-echo "[4/6] Pulling Ollama model (qwen2.5:7b)..."
+echo "[4/6] Pulling Ollama model (qwen3:14b)..."
 if command -v ollama &>/dev/null; then
-    if ollama list | grep -q "qwen2.5:7b"; then
-        echo "  qwen2.5:7b already available"
+    if ollama list | grep -q "qwen3:14b"; then
+        echo "  qwen3:14b already available"
     else
-        echo "  Downloading qwen2.5:7b (~4.7 GB)..."
-        ollama pull qwen2.5:7b
+        echo "  Downloading qwen3:14b (~9 GB)..."
+        ollama pull qwen3:14b
     fi
 else
     echo "  WARNING: ollama not found. Install it first: https://ollama.com"
