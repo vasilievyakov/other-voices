@@ -26,6 +26,8 @@ def mock_popen():
     with patch("src.recorder.subprocess.Popen") as mock:
         proc = MagicMock()
         proc.poll.return_value = None  # process is "running"
+        # stop() drains the pipes via communicate() -> (stdout, stderr) bytes.
+        proc.communicate.return_value = (b"", b"")
         mock.return_value = proc
         yield mock, proc
 
@@ -158,7 +160,11 @@ class TestRecorderErrors:
     def test_stop_timeout_falls_back_to_kill(self, recorder, mock_popen):
         """If process doesn't exit in 10s, kill() is called."""
         _, proc = mock_popen
-        proc.wait.side_effect = [subprocess.TimeoutExpired("cmd", 10), None]
+        # First communicate() times out; after kill() the second one drains.
+        proc.communicate.side_effect = [
+            subprocess.TimeoutExpired("cmd", 10),
+            (b"", b""),
+        ]
 
         recorder.start("Zoom")
         result = recorder.stop()
@@ -206,3 +212,51 @@ class TestRecorderSecurity:
         recorder.start("Zoom")
         result = recorder.stop()
         assert result["duration_seconds"] >= 0
+
+
+# =============================================================================
+# Stderr surfacing (3 tests) — the Swift binary's diagnostics were previously
+# captured but silently discarded, hiding system-audio capture failures.
+# =============================================================================
+
+
+class TestStderrSurfacing:
+    def test_stop_logs_stderr_lines(self, recorder, mock_popen, caplog):
+        """stop() surfaces each non-empty stderr line via the logger."""
+        _, proc = mock_popen
+        proc.communicate.return_value = (
+            b"",
+            b"Failed to start system audio capture: Error -3801\n"
+            b"Make sure Screen Recording permission is granted.\n",
+        )
+
+        recorder.start("Zoom")
+        with caplog.at_level("INFO", logger="call-recorder"):
+            recorder.stop()
+
+        logged = "\n".join(r.message for r in caplog.records)
+        assert "[audio-capture]" in logged
+        assert "Failed to start system audio capture" in logged
+        assert "Screen Recording permission" in logged
+
+    def test_stop_ignores_blank_stderr_lines(self, recorder, mock_popen, caplog):
+        """Blank stderr lines are not logged as audio-capture output."""
+        _, proc = mock_popen
+        proc.communicate.return_value = (b"", b"\n   \n\n")
+
+        recorder.start("Zoom")
+        with caplog.at_level("INFO", logger="call-recorder"):
+            recorder.stop()
+
+        assert not any("[audio-capture]" in r.message for r in caplog.records)
+
+    def test_stop_no_stderr_no_audio_capture_logs(self, recorder, mock_popen, caplog):
+        """Empty stderr produces no [audio-capture] log lines."""
+        _, proc = mock_popen
+        proc.communicate.return_value = (b"", b"")
+
+        recorder.start("Zoom")
+        with caplog.at_level("INFO", logger="call-recorder"):
+            recorder.stop()
+
+        assert not any("[audio-capture]" in r.message for r in caplog.records)

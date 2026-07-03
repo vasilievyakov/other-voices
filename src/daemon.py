@@ -102,6 +102,78 @@ def _notify_error(stage: str, app_name: str, error: str):
     notify("Other Voices", f"{stage} failed for {app_name}: {error}")
 
 
+def _guard_system_audio(session: dict, separate_result: dict | None) -> bool:
+    """Detect a recording that captured no system audio and warn the user.
+
+    System audio (system.wav → SPEAKER_OTHER segments) goes missing when the
+    Screen Recording permission is declined for bin/audio-capture. The Swift
+    binary now drops a `capture-error.txt` marker in the session dir when its
+    SCStream fails to start; separately, a successful run with zero
+    SPEAKER_OTHER segments also means we only got the mic.
+
+    Side effects: sets the module-level ``_system_audio_ok`` flag (surfaced in
+    status.json), logs a WARNING, and sends a macOS notification rate-limited to
+    once per ``SYSTEM_AUDIO_WARNING_INTERVAL``.
+
+    Returns True if system audio looks OK, False if it is missing.
+    """
+    global _system_audio_ok, _last_system_audio_warning
+
+    session_dir = Path(session["session_dir"])
+    session_id = session.get("session_id", "?")
+    app_name = session.get("app_name", "Unknown")
+
+    # (1) Deterministic marker written by the Swift binary on capture failure.
+    marker = session_dir / "capture-error.txt"
+    capture_error_text: str | None = None
+    if marker.exists():
+        try:
+            capture_error_text = marker.read_text(
+                encoding="utf-8", errors="replace"
+            ).strip()
+        except OSError:
+            capture_error_text = "capture-error.txt present but unreadable"
+
+    # (2) Zero system (SPEAKER_OTHER) segments in a separate-channel transcript.
+    #     Only meaningful when separate transcription actually ran; the merged
+    #     fallback has no speaker separation, so we don't infer from it.
+    system_segment_count: int | None = None
+    if separate_result is not None:
+        system_segment_count = len(separate_result.get("transcript_others") or [])
+
+    missing = capture_error_text is not None or system_segment_count == 0
+
+    if not missing:
+        _system_audio_ok = True
+        return True
+
+    _system_audio_ok = False
+    detail = capture_error_text or "0 system-audio segments transcribed (mic only)"
+    _log(
+        logging.WARNING,
+        "pipeline",
+        f"System audio MISSING [session={session_id}, app={app_name}]: {detail}. "
+        f"Screen Recording permission for bin/audio-capture is likely declined — "
+        f"grant it in System Settings > Privacy & Security > "
+        f"Screen & System Audio Recording, then restart the daemon.",
+    )
+
+    now = time.monotonic()
+    if (
+        _last_system_audio_warning is None
+        or now - _last_system_audio_warning >= SYSTEM_AUDIO_WARNING_INTERVAL
+    ):
+        _last_system_audio_warning = now
+        notify(
+            "Other Voices",
+            "System audio was not captured (mic only). Grant Screen & System "
+            "Audio Recording to bin/audio-capture in System Settings > Privacy "
+            "& Security, then restart the recorder.",
+        )
+
+    return False
+
+
 def _ollama_rss_mb() -> float | None:
     """Best-effort total RSS of ollama processes, in MB.
 
@@ -129,6 +201,17 @@ def _ollama_rss_mb() -> float | None:
 # Module-level Ollama availability (updated on startup and before each pipeline)
 _ollama_available: bool = True
 
+# Module-level system-audio health (updated after each processed call). False
+# means the last recording captured no system audio — almost always the Screen
+# Recording (TCC) permission being declined for bin/audio-capture.
+_system_audio_ok: bool = True
+
+# Rate-limit the "system audio missing" notification so a broken permission does
+# not spam the user on every call. monotonic timestamp of the last warning; None
+# means never warned yet.
+_last_system_audio_warning: float | None = None
+SYSTEM_AUDIO_WARNING_INTERVAL = 3600  # seconds — at most one notification/hour
+
 
 def write_status(
     state: str,
@@ -149,6 +232,7 @@ def write_status(
         "started_at": started_at,
         "pipeline": pipeline,
         "ollama_available": _ollama_available,
+        "system_audio_ok": _system_audio_ok,
     }
     tmp_path = STATUS_PATH.with_suffix(".tmp")
     try:
@@ -314,6 +398,11 @@ def process_recording(
             transcript = transcribe_result
             transcript_segments = None
             segments_list = None
+
+    # ── System-audio health check ──
+    # Set _system_audio_ok before the "saving"/"idle" status writes so the flag
+    # lands in status.json for this call.
+    _guard_system_audio(session, separate_result)
 
     # ── Step 2: Summarize (requires Ollama) ──
     summary = None

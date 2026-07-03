@@ -13,7 +13,15 @@ from unittest.mock import patch, MagicMock, call
 
 import pytest
 
-from src.daemon import write_status, process_recording, notify, _Timer, _log
+import src.daemon
+from src.daemon import (
+    write_status,
+    process_recording,
+    notify,
+    _Timer,
+    _log,
+    _guard_system_audio,
+)
 
 
 # =============================================================================
@@ -96,6 +104,123 @@ class TestWriteStatus:
         data = json.loads(status_path.read_text())
         assert data["ollama_available"] is False
 
+    def test_system_audio_ok_in_status(self, tmp_path):
+        """status.json includes the system_audio_ok flag from module state."""
+        status_path = tmp_path / "status.json"
+
+        with patch("src.daemon.STATUS_PATH", status_path):
+            src.daemon._system_audio_ok = True
+            write_status("idle")
+        assert json.loads(status_path.read_text())["system_audio_ok"] is True
+
+        with patch("src.daemon.STATUS_PATH", status_path):
+            src.daemon._system_audio_ok = False
+            write_status("idle")
+        assert json.loads(status_path.read_text())["system_audio_ok"] is False
+
+        # restore default so later tests start clean
+        src.daemon._system_audio_ok = True
+
+
+# =============================================================================
+# System Audio Guard (8 tests) — detect recordings with no system audio, which
+# happens when Screen Recording (TCC) is declined for bin/audio-capture.
+# =============================================================================
+
+
+def _sep_result(others=None):
+    """Build a transcribe_separate() result with a given SPEAKER_OTHER list."""
+    others = [] if others is None else others
+    return {
+        "text": "unified text",
+        "segments": [],
+        "transcript_me": [{"start": 0.0, "end": 5.0, "text": "hi"}],
+        "transcript_others": others,
+    }
+
+
+class TestSystemAudioGuard:
+    def setup_method(self):
+        """Reset module-level guard state before each test."""
+        src.daemon._system_audio_ok = True
+        src.daemon._last_system_audio_warning = None
+
+    @patch("src.daemon.notify")
+    def test_healthy_when_system_segments_present(self, mock_notify, sample_session):
+        """Non-empty transcript_others and no marker -> system audio OK."""
+        sep = _sep_result(others=[{"start": 0.0, "end": 2.0, "text": "other"}])
+        assert _guard_system_audio(sample_session, sep) is True
+        assert src.daemon._system_audio_ok is True
+        mock_notify.assert_not_called()
+
+    @patch("src.daemon.notify")
+    def test_missing_when_zero_system_segments(self, mock_notify, sample_session):
+        """Empty transcript_others -> system audio missing, flag + notify."""
+        assert _guard_system_audio(sample_session, _sep_result(others=[])) is False
+        assert src.daemon._system_audio_ok is False
+        mock_notify.assert_called_once()
+
+    @patch("src.daemon.notify")
+    def test_missing_when_capture_error_marker(self, mock_notify, sample_session):
+        """capture-error.txt in the session dir -> system audio missing."""
+        marker = Path(sample_session["session_dir"]) / "capture-error.txt"
+        marker.write_text("Failed to start system audio capture: Error -3801")
+
+        # Even with system segments present, the marker forces a failure.
+        sep = _sep_result(others=[{"start": 0.0, "end": 2.0, "text": "other"}])
+        assert _guard_system_audio(sample_session, sep) is False
+        assert src.daemon._system_audio_ok is False
+        mock_notify.assert_called_once()
+
+    @patch("src.daemon.notify")
+    def test_merged_fallback_not_flagged(self, mock_notify, sample_session):
+        """separate_result=None (merged fallback) and no marker -> not flagged."""
+        assert _guard_system_audio(sample_session, None) is True
+        assert src.daemon._system_audio_ok is True
+        mock_notify.assert_not_called()
+
+    def test_warning_logged(self, sample_session, caplog):
+        """A missing capture logs a WARNING naming Screen Recording."""
+        with (
+            patch("src.daemon.notify"),
+            caplog.at_level(logging.WARNING, logger="call-recorder"),
+        ):
+            _guard_system_audio(sample_session, _sep_result(others=[]))
+
+        warnings = [r for r in caplog.records if r.levelno == logging.WARNING]
+        assert warnings
+        joined = "\n".join(r.message for r in warnings)
+        assert "System audio MISSING" in joined
+        assert "Screen Recording" in joined
+
+    @patch("src.daemon.notify")
+    def test_notification_rate_limited(self, mock_notify, sample_session):
+        """Two missing calls within the interval -> only one notification."""
+        _guard_system_audio(sample_session, _sep_result(others=[]))
+        _guard_system_audio(sample_session, _sep_result(others=[]))
+        assert mock_notify.call_count == 1
+
+    @patch("src.daemon.notify")
+    def test_notification_fires_again_after_interval(self, mock_notify, sample_session):
+        """After the interval elapses, the notification fires again."""
+        _guard_system_audio(sample_session, _sep_result(others=[]))
+        # Simulate the last warning being older than the interval.
+        src.daemon._last_system_audio_warning -= (
+            src.daemon.SYSTEM_AUDIO_WARNING_INTERVAL + 1
+        )
+        _guard_system_audio(sample_session, _sep_result(others=[]))
+        assert mock_notify.call_count == 2
+
+    @patch("src.daemon.notify")
+    def test_notification_message_mentions_settings_path(
+        self, mock_notify, sample_session
+    ):
+        """The notification text points the user to the right settings pane."""
+        _guard_system_audio(sample_session, _sep_result(others=[]))
+        msg = mock_notify.call_args[0][1]
+        assert "System audio" in msg
+        assert "Screen" in msg
+
 
 # =============================================================================
 # Process Recording (10 tests)
@@ -166,6 +291,34 @@ class TestProcessRecording:
         assert call_record is not None
         assert call_record["transcript"] is None
         assert call_record["summary_json"] is None
+
+    @patch("src.daemon.check_ollama", return_value=True)
+    @patch("src.daemon.notify")
+    @patch("src.daemon.write_status")
+    def test_pipeline_sets_system_audio_flag_when_missing(
+        self,
+        mock_status,
+        mock_notify,
+        mock_check,
+        tmp_db,
+        sample_session,
+        sample_summary,
+    ):
+        """process_recording runs the guard: empty system side -> flag False."""
+        src.daemon._system_audio_ok = True
+        src.daemon._last_system_audio_warning = None
+
+        transcriber = MagicMock()
+        # transcript_others is empty -> no system audio was captured.
+        transcriber.transcribe_separate.return_value = self._make_separate_result()
+        summarizer = MagicMock()
+        summarizer.summarize.return_value = sample_summary
+
+        process_recording(sample_session, transcriber, summarizer, tmp_db)
+
+        assert src.daemon._system_audio_ok is False
+        # restore for later tests
+        src.daemon._system_audio_ok = True
 
     @patch("src.daemon.check_ollama", return_value=True)
     @patch("src.daemon.notify")

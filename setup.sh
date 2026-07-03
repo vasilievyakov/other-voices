@@ -40,6 +40,36 @@ else
     exit 1
 fi
 
+# Code-sign with a STABLE identifier so the identity does not drift on every
+# rebuild. Previously the binary was signed with an auto-derived identifier
+# (e.g. "audio-capture-new"); each rebuild changed it, macOS treated the binary
+# as a brand-new app, and the Screen Recording (TCC) grant was silently revoked
+# — which left system.wav missing from every recording.
+#
+# If an Apple Development identity is available, prefer it (stable Designated
+# Requirement → the TCC grant survives rebuilds). Otherwise fall back to an
+# ad-hoc signature with a fixed identifier.
+#
+# IMPORTANT (ad-hoc case): ad-hoc signing keeps the identifier stable but the
+# code hash still changes on every rebuild, so macOS WILL forget the Screen
+# Recording permission. After EACH rebuild you MUST re-grant it:
+#   System Settings > Privacy & Security > Screen & System Audio Recording
+# and re-add / re-enable bin/audio-capture, then restart the daemon.
+CODESIGN_ID="com.vasiliev.audio-capture"
+SIGNING_IDENTITY="$(security find-identity -v -p codesigning 2>/dev/null \
+    | grep -o '"Apple Development[^"]*"' | head -1 | tr -d '"')"
+if [ -n "$SIGNING_IDENTITY" ]; then
+    codesign --force --sign "$SIGNING_IDENTITY" --identifier "$CODESIGN_ID" bin/audio-capture
+    echo "  bin/audio-capture signed with '$SIGNING_IDENTITY' (identifier $CODESIGN_ID)"
+    echo "  Stable identity: the Screen Recording grant should survive rebuilds."
+else
+    codesign --force --sign - --identifier "$CODESIGN_ID" bin/audio-capture
+    echo "  bin/audio-capture signed ad-hoc (identifier $CODESIGN_ID)"
+    echo "  NOTE: no Apple Development identity found — ad-hoc signature changes"
+    echo "  every rebuild. You MUST re-grant Screen Recording after each rebuild:"
+    echo "  System Settings > Privacy & Security > Screen & System Audio Recording"
+fi
+
 # 4. Pull Ollama model
 echo "[4/6] Pulling Ollama model (qwen3:14b)..."
 if command -v ollama &>/dev/null; then
@@ -79,8 +109,9 @@ echo ""
 echo "=== Setup Complete ==="
 echo ""
 echo "Before starting, grant permissions in System Settings → Privacy & Security:"
-echo "  1. Screen Recording → add Terminal (or your terminal app)"
-echo "  2. Microphone → add Terminal (or your terminal app)"
+echo "  1. Screen & System Audio Recording → add & enable bin/audio-capture"
+echo "     (needed for system.wav; without it recordings are mic-only)"
+echo "  2. Microphone → add & enable bin/audio-capture (or your terminal app)"
 echo ""
 echo "To start the daemon:"
 echo "  launchctl bootstrap gui/\$(id -u) $PLIST_DST"

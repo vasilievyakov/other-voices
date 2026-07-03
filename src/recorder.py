@@ -57,13 +57,20 @@ class AudioRecorder:
         # Send SIGTERM for graceful shutdown
         self.process.send_signal(signal.SIGTERM)
 
-        # Wait up to 10 seconds for clean exit
+        # communicate() drains stdout/stderr while waiting — avoids a pipe-buffer
+        # deadlock and lets us surface the Swift binary's diagnostics, which were
+        # previously captured but silently discarded (hiding capture failures).
         try:
-            self.process.wait(timeout=10)
+            _out, err = self.process.communicate(timeout=10)
         except subprocess.TimeoutExpired:
             log.warning("audio-capture did not exit in 10s, killing")
             self.process.kill()
-            self.process.wait()
+            _out, err = self.process.communicate()
+
+        if err:
+            for line in err.decode("utf-8", errors="replace").splitlines():
+                if line.strip():
+                    log.info(f"[audio-capture] {line}")
 
         ended_at = datetime.now()
         duration = (ended_at - self.started_at).total_seconds()

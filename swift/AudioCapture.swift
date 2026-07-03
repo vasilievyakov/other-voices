@@ -178,12 +178,35 @@ class MicrophoneCapture {
     private let engine = AVAudioEngine()
     private var wavWriter: WAVWriter?
     private let outputPath: String
+    private var configObserver: NSObjectProtocol?
 
     init(outputPath: String) {
         self.outputPath = outputPath
     }
 
     func start() throws {
+        // WAV writer is created once and reused across engine restarts, so a
+        // mid-call route change keeps appending to the same file.
+        wavWriter = try WAVWriter(path: outputPath, sampleRate: UInt32(sampleRate), channels: UInt16(channels))
+        try startEngine()
+
+        // AVAudioEngine silently stops delivering buffers when the audio
+        // route/config changes — e.g. an output/input device switch, or another
+        // app (a dictation tool like Wispr Flow) grabbing the microphone. Left
+        // unhandled, the tap goes quiet and mic.wav ends up empty (header only).
+        // Restart the engine on every configuration change to keep capturing.
+        configObserver = NotificationCenter.default.addObserver(
+            forName: .AVAudioEngineConfigurationChange,
+            object: engine,
+            queue: nil
+        ) { [weak self] _ in
+            self?.restartAfterConfigChange()
+        }
+
+        fputs("Microphone capture started: \(outputPath)\n", stderr)
+    }
+
+    private func startEngine() throws {
         let inputNode = engine.inputNode
         let hwFormat = inputNode.inputFormat(forBus: 0)
 
@@ -201,9 +224,7 @@ class MicrophoneCapture {
             throw NSError(domain: "AudioCapture", code: 3, userInfo: [NSLocalizedDescriptionKey: "Cannot create target audio format"])
         }
 
-        wavWriter = try WAVWriter(path: outputPath, sampleRate: UInt32(sampleRate), channels: UInt16(channels))
-
-        // Install tap with converter
+        // Install tap with converter (re-created each start to match current hw format)
         let converter = AVAudioConverter(from: hwFormat, to: targetFormat)
 
         inputNode.installTap(onBus: 0, bufferSize: 4096, format: hwFormat) { [weak self] buffer, _ in
@@ -243,10 +264,25 @@ class MicrophoneCapture {
         }
 
         try engine.start()
-        fputs("Microphone capture started: \(outputPath)\n", stderr)
+    }
+
+    private func restartAfterConfigChange() {
+        fputs("Audio configuration changed — restarting microphone engine\n", stderr)
+        engine.inputNode.removeTap(onBus: 0)
+        engine.stop()
+        do {
+            try startEngine()
+            fputs("Microphone engine restarted after config change\n", stderr)
+        } catch {
+            fputs("Failed to restart microphone after config change: \(error)\n", stderr)
+        }
     }
 
     func stop() {
+        if let observer = configObserver {
+            NotificationCenter.default.removeObserver(observer)
+            configObserver = nil
+        }
         engine.inputNode.removeTap(onBus: 0)
         engine.stop()
         wavWriter?.finalize()
@@ -298,8 +334,16 @@ Task {
     do {
         try await systemCapture.start()
     } catch {
-        fputs("Failed to start system audio capture: \(error)\n", stderr)
+        let msg = "Failed to start system audio capture: \(error)"
+        fputs("\(msg)\n", stderr)
         fputs("Make sure Screen Recording permission is granted.\n", stderr)
+        // Drop a marker file so the Python pipeline can deterministically detect
+        // that system audio capture failed (e.g. Screen Recording TCC declined),
+        // instead of guessing from an empty/missing system.wav. daemon.py reads
+        // this to warn the user and flag status.json.
+        let markerPath = "\(outputDir)/capture-error.txt"
+        try? "\(msg)\nMake sure Screen Recording permission is granted.\n"
+            .write(toFile: markerPath, atomically: true, encoding: .utf8)
     }
 
     do {
