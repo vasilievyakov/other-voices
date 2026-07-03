@@ -6,6 +6,7 @@ import subprocess
 import tempfile
 from pathlib import Path
 
+from . import diarizer
 from .config import (
     FFMPEG_BIN,
     MLX_WHISPER_BIN,
@@ -263,7 +264,9 @@ class Transcriber:
                 "start": s["start"],
                 "end": s["end"],
                 "text": s["text"],
-                "speaker": "SPEAKER_OTHER",
+                # Per-speaker label from diarization if present; otherwise the
+                # channel-level baseline SPEAKER_OTHER.
+                "speaker": s.get("speaker", "SPEAKER_OTHER"),
             }
             for s in segments_others
         ]
@@ -329,6 +332,11 @@ class Transcriber:
         if not segments_me and not segments_others:
             log.error("Both mic and system transcriptions failed")
             return None
+
+        # Diarize the system channel: split the single SPEAKER_OTHER into
+        # per-speaker SPEAKER_1..N. Never fails — falls back to SPEAKER_OTHER.
+        if segments_others:
+            segments_others = diarizer.diarize(str(system_wav), segments_others)
 
         # Merge by timestamp
         merged = self._merge_by_timestamp(segments_me, segments_others)

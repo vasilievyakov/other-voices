@@ -414,3 +414,104 @@ class TestTranscriberEdgeCases:
 
         assert isinstance(result, str)
         assert "Fallback from bad json" in result
+
+
+# =============================================================================
+# Diarization wiring in transcribe_separate
+# =============================================================================
+
+
+class TestMergeByTimestampSpeakers:
+    def test_system_segments_keep_diarized_speaker(self, transcriber):
+        """_merge_by_timestamp honours a per-segment speaker on system segments."""
+        me = [{"start": 1.0, "end": 2.0, "text": "hi"}]
+        others = [
+            {"start": 0.0, "end": 1.0, "text": "a", "speaker": "SPEAKER_1"},
+            {"start": 2.0, "end": 3.0, "text": "b", "speaker": "SPEAKER_2"},
+        ]
+        merged = transcriber._merge_by_timestamp(me, others)
+        by_text = {m["text"]: m["speaker"] for m in merged}
+        assert by_text["hi"] == "SPEAKER_ME"
+        assert by_text["a"] == "SPEAKER_1"
+        assert by_text["b"] == "SPEAKER_2"
+
+    def test_system_segments_default_to_other(self, transcriber):
+        """Without a speaker key, system segments fall back to SPEAKER_OTHER."""
+        others = [{"start": 0.0, "end": 1.0, "text": "a"}]
+        merged = transcriber._merge_by_timestamp([], others)
+        assert merged[0]["speaker"] == "SPEAKER_OTHER"
+
+
+class TestTranscribeSeparateDiarization:
+    def _fake_whisper(self, mic_segs, sys_segs):
+        """Return a _run_whisper stub keyed on the audio file name."""
+
+        def _run(audio_path, output_dir):
+            return mic_segs if "mic.wav" in str(audio_path) else sys_segs
+
+        return _run
+
+    def test_diarization_labels_propagate(self, transcriber, session_both):
+        """diarize() output (SPEAKER_1/2) flows into merged segments and text."""
+        mic_segs = [{"start": 5.0, "end": 6.0, "text": "me"}]
+        sys_segs = [
+            {"start": 0.0, "end": 2.0, "text": "one"},
+            {"start": 2.0, "end": 4.0, "text": "two"},
+        ]
+
+        def fake_diarize(wav_path, segments, **kwargs):
+            labels = ["SPEAKER_1", "SPEAKER_2"]
+            return [{**s, "speaker": labels[i]} for i, s in enumerate(segments)]
+
+        with (
+            patch.object(
+                transcriber,
+                "_run_whisper",
+                side_effect=self._fake_whisper(mic_segs, sys_segs),
+            ),
+            patch("src.transcriber.diarizer.diarize", side_effect=fake_diarize),
+        ):
+            result = transcriber.transcribe_separate(str(session_both))
+
+        speakers = {s["speaker"] for s in result["segments"]}
+        assert speakers == {"SPEAKER_ME", "SPEAKER_1", "SPEAKER_2"}
+        assert "SPEAKER_1: one" in result["text"]
+        assert "SPEAKER_2: two" in result["text"]
+
+    def test_diarization_fallback_to_other(self, transcriber, session_both):
+        """If diarize returns SPEAKER_OTHER, merged output uses SPEAKER_OTHER."""
+        mic_segs = [{"start": 5.0, "end": 6.0, "text": "me"}]
+        sys_segs = [{"start": 0.0, "end": 2.0, "text": "one"}]
+
+        def fake_diarize(wav_path, segments, **kwargs):
+            return [{**s, "speaker": "SPEAKER_OTHER"} for s in segments]
+
+        with (
+            patch.object(
+                transcriber,
+                "_run_whisper",
+                side_effect=self._fake_whisper(mic_segs, sys_segs),
+            ),
+            patch("src.transcriber.diarizer.diarize", side_effect=fake_diarize),
+        ):
+            result = transcriber.transcribe_separate(str(session_both))
+
+        speakers = {s["speaker"] for s in result["segments"]}
+        assert speakers == {"SPEAKER_ME", "SPEAKER_OTHER"}
+
+    def test_diarize_called_only_for_system(self, transcriber, session_mic_only):
+        """Mic-only session: diarize is never called; output unchanged (SPEAKER_ME)."""
+        mic_segs = [{"start": 0.0, "end": 1.0, "text": "solo"}]
+
+        with (
+            patch.object(
+                transcriber,
+                "_run_whisper",
+                side_effect=self._fake_whisper(mic_segs, []),
+            ),
+            patch("src.transcriber.diarizer.diarize") as mock_diar,
+        ):
+            result = transcriber.transcribe_separate(str(session_mic_only))
+
+        mock_diar.assert_not_called()
+        assert {s["speaker"] for s in result["segments"]} == {"SPEAKER_ME"}

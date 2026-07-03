@@ -1,1 +1,8 @@
 psutil
+
+# Speaker diarization within the system channel (SPEAKER_1..N).
+# Fully local/offline; no gated model downloads (no HuggingFace token required).
+# sherpa-onnx bundles its own runtime (sherpa-onnx-core) — no torch needed.
+sherpa-onnx==1.13.3
+numpy==2.5.0
+scikit-learn==1.9.0  # pulls scipy/joblib/threadpoolctl transitively

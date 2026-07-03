@@ -63,6 +63,35 @@ WHISPER_MODEL = "mlx-community/whisper-large-v3-mlx"
 WHISPER_LANGUAGE = "ru"
 FFMPEG_BIN = "ffmpeg"
 
+# Diarization — per-speaker labels WITHIN system.wav (remote participants).
+# Channel-level ME/OTHER stays the guaranteed baseline; this refines the system
+# channel into SPEAKER_1..N using sherpa-onnx speaker embeddings + clustering.
+# Fully local/offline, no gated model downloads (no auth token required).
+DIARIZATION_ENABLED = True
+DIARIZATION_MODELS_DIR = Path.home() / ".cache" / "other-voices" / "models"
+DIARIZATION_MODEL_FILE = "3dspeaker_speech_campplus_sv_zh_en_16k-common_advanced.onnx"
+DIARIZATION_MODEL_PATH = DIARIZATION_MODELS_DIR / DIARIZATION_MODEL_FILE
+# Public GitHub release asset (no HuggingFace auth / no gating). Used by
+# diarizer.download_model() for reproducible setup.
+DIARIZATION_MODEL_URL = (
+    "https://github.com/k2-fsa/sherpa-onnx/releases/download/"
+    "speaker-recongition-models/"
+    "3dspeaker_speech_campplus_sv_zh_en_16k-common_advanced.onnx"
+)
+DIARIZATION_NUM_THREADS = 2
+# Segments shorter than this (seconds) are not embedded directly (embeddings are
+# unreliable on very short audio); they inherit the speaker of the temporally
+# nearest embedded segment.
+DIARIZATION_MIN_EMBED_DURATION = 0.5
+# Cosine distance cutoff for agglomerative clustering when the speaker count is
+# unknown (DIARIZATION_NUM_SPEAKERS = 0). Lower = more speakers (splits more),
+# higher = fewer speakers (merges more).
+DIARIZATION_DISTANCE_THRESHOLD = 0.55
+# Upper bound on distinct remote speakers when auto-detecting.
+DIARIZATION_MAX_SPEAKERS = 8
+# 0 = auto-detect count via DIARIZATION_DISTANCE_THRESHOLD; >0 forces exactly N.
+DIARIZATION_NUM_SPEAKERS = 0
+
 # Summarization
 OLLAMA_BASE_URL = "http://localhost:11434"
 OLLAMA_URL = f"{OLLAMA_BASE_URL}/api/generate"
