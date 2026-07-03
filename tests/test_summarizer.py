@@ -80,17 +80,20 @@ class TestSummarizerOutput:
 
     @patch("src.summarizer.urllib.request.urlopen")
     def test_valid_json_parsed(self, mock_urlopen):
-        """Valid JSON from Ollama is parsed into dict."""
+        """Valid JSON from Ollama is parsed into dict (plus additive coverage)."""
         expected = {
             "summary": "Test summary",
             "key_points": ["point 1"],
             "decisions": ["decision 1"],
-            "action_items": ["task 1"],
+            "action_items": ["task 1"],  # no @owner → survives validation
             "participants": ["Alice"],
         }
         mock_urlopen.return_value = _mock_ollama(json.dumps(expected))
         result = self.summarizer.summarize("A" * 100)
-        assert result == expected
+        # summarize adds the additive "coverage" key; strip it for comparison.
+        assert result["coverage"] == "full"
+        result_wo_coverage = {k: v for k, v in result.items() if k != "coverage"}
+        assert result_wo_coverage == expected
 
     @patch("src.summarizer.urllib.request.urlopen")
     def test_markdown_json_wrapper_stripped(self, mock_urlopen):
@@ -459,3 +462,164 @@ class TestSummarizerChunked:
         result = self.summarizer.summarize(self._make_long_text(60000))
         assert result is not None
         assert result["summary"] == "Only success"
+
+
+# =============================================================================
+# Coverage Detection & One-Sided Guardrails (anti-hallucination)
+# =============================================================================
+
+
+def _valid(**overrides):
+    """Valid summary JSON string with empty lists by default."""
+    data = {
+        "summary": "ok",
+        "key_points": [],
+        "decisions": [],
+        "action_items": [],
+        "participants": [],
+        "entities": [],
+    }
+    data.update(overrides)
+    return json.dumps(data, ensure_ascii=False)
+
+
+class TestCoverageDetection:
+    def setup_method(self):
+        self.s = Summarizer()
+
+    def test_mic_only_detected(self):
+        """Transcript with only SPEAKER_ME labels → mic_only."""
+        t = "[0:00] SPEAKER_ME: hello\n[0:30] SPEAKER_ME: still talking to myself"
+        assert self.s._detect_coverage(t) == "mic_only"
+
+    def test_full_detected_multi_speaker(self):
+        """Presence of a non-ME speaker label → full."""
+        t = "[0:00] SPEAKER_ME: hi\n[0:30] SPEAKER_1: hello back to you now"
+        assert self.s._detect_coverage(t) == "full"
+
+    def test_legacy_speaker_other_is_full(self):
+        """Legacy SPEAKER_OTHER counts as the other side → full."""
+        t = "[0:00] SPEAKER_ME: hi\n[0:30] SPEAKER_OTHER: yes indeed"
+        assert self.s._detect_coverage(t) == "full"
+
+    def test_no_labels_is_full(self):
+        """Plain transcript without speaker labels is treated as full."""
+        assert (
+            self.s._detect_coverage("plain transcript with no speaker labels") == "full"
+        )
+
+    def test_empty_is_full(self):
+        assert self.s._detect_coverage("") == "full"
+
+
+class TestCoverageField:
+    def setup_method(self):
+        self.s = Summarizer()
+
+    @patch("src.summarizer.urllib.request.urlopen")
+    def test_coverage_mic_only_added(self, mock_urlopen):
+        """Mic-only transcript yields coverage == 'mic_only' in the summary."""
+        mock_urlopen.return_value = _mock_ollama(_valid())
+        t = "[0:00] SPEAKER_ME: " + "talking to myself here quite a lot today. " * 3
+        result = self.s.summarize(t)
+        assert result["coverage"] == "mic_only"
+
+    @patch("src.summarizer.urllib.request.urlopen")
+    def test_coverage_full_added(self, mock_urlopen):
+        """Two-sided transcript yields coverage == 'full'."""
+        mock_urlopen.return_value = _mock_ollama(_valid())
+        t = (
+            "[0:00] SPEAKER_ME: hi there friend\n[0:30] SPEAKER_1: "
+            + "hello back. " * 5
+        )
+        result = self.s.summarize(t)
+        assert result["coverage"] == "full"
+
+    @patch("src.summarizer.urllib.request.urlopen")
+    def test_one_sided_instruction_in_prompt(self, mock_urlopen):
+        """Mic-only transcript injects the one-sided notice into the prompt."""
+        mock_urlopen.return_value = _mock_ollama(_valid())
+        t = (
+            "[0:00] SPEAKER_ME: "
+            + "This is an English mic only recording talking. " * 3
+        )
+        self.s.summarize(t)
+        req = mock_urlopen.call_args[0][0]
+        payload = json.loads(req.data.decode("utf-8"))
+        content = payload["messages"][0]["content"]
+        assert "ONE-SIDED RECORDING" in content
+
+    @patch("src.summarizer.urllib.request.urlopen")
+    def test_full_coverage_no_one_sided_instruction(self, mock_urlopen):
+        """Two-sided transcript does NOT inject the one-sided notice."""
+        mock_urlopen.return_value = _mock_ollama(_valid())
+        t = (
+            "[0:00] SPEAKER_ME: hi there friend\n"
+            "[0:30] SPEAKER_1: " + "hello back to you here now. " * 3
+        )
+        self.s.summarize(t)
+        req = mock_urlopen.call_args[0][0]
+        payload = json.loads(req.data.decode("utf-8"))
+        content = payload["messages"][0]["content"]
+        assert "ONE-SIDED RECORDING" not in content
+
+
+class TestActionItemOwnerValidation:
+    def setup_method(self):
+        self.s = Summarizer()
+
+    def test_direct_drop_unattested_owner(self):
+        """Owner absent from transcript is dropped."""
+        summary = {
+            "action_items": ["[0:00] @Ghostface: do x", "[1:00] @SPEAKER_ME: real"]
+        }
+        transcript = "[0:00] SPEAKER_ME: I will do the real thing myself"
+        out = self.s._validate_action_items(summary, transcript)
+        assert out["action_items"] == ["[1:00] @SPEAKER_ME: real"]
+
+    def test_direct_keep_attested_name(self):
+        """Owner name present in transcript is kept."""
+        summary = {"action_items": ["@Anna: send report"]}
+        transcript = "Anna said she will send the report tomorrow"
+        out = self.s._validate_action_items(summary, transcript)
+        assert out["action_items"] == ["@Anna: send report"]
+
+    def test_speaker_label_owner_kept(self):
+        """A speaker-label owner counts as attested."""
+        summary = {"action_items": ["[2:00] @SPEAKER_1: follow up"]}
+        transcript = "[2:00] SPEAKER_1: I will follow up on that"
+        out = self.s._validate_action_items(summary, transcript)
+        assert out["action_items"] == ["[2:00] @SPEAKER_1: follow up"]
+
+    def test_direct_keep_no_owner(self):
+        """Item without an @owner is kept (nothing to validate)."""
+        summary = {"action_items": ["prepare the deck by Friday"]}
+        out = self.s._validate_action_items(summary, "no owners mentioned here")
+        assert out["action_items"] == ["prepare the deck by Friday"]
+
+    def test_empty_action_items_ok(self):
+        summary = {"action_items": []}
+        out = self.s._validate_action_items(summary, "transcript")
+        assert out["action_items"] == []
+
+    def test_non_string_items_kept(self):
+        summary = {"action_items": [{"owner": "x"}]}
+        out = self.s._validate_action_items(summary, "transcript")
+        assert out["action_items"] == [{"owner": "x"}]
+
+    @patch("src.summarizer.urllib.request.urlopen")
+    def test_end_to_end_drops_fabricated_owner(self, mock_urlopen):
+        """summarize() drops an action item whose owner is not in the transcript."""
+        mock_urlopen.return_value = _mock_ollama(
+            _valid(
+                action_items=[
+                    "[0:00] @Ghostface: fabricated task",
+                    "[1:00] @SPEAKER_ME: the real one",
+                ]
+            )
+        )
+        transcript = "[0:00] SPEAKER_ME: " + "I will handle the real one myself. " * 3
+        result = self.s.summarize(transcript)
+        joined = " ".join(result["action_items"])
+        assert "Ghostface" not in joined
+        assert any("SPEAKER_ME" in it for it in result["action_items"])

@@ -158,17 +158,19 @@ class TestBuildPrompt:
         assert "Hello everyone" in prompt
 
     def test_segments_add_citation_instruction(self):
-        """When segments provided, citation instruction is included."""
+        """When segments provided, the segment citation instruction is included."""
         segments = [{"start": 0.0, "end": 5.0, "text": "test"}]
         prompt = build_prompt(
             "default", "test transcript content here enough", segments=segments
         )
-        assert "timestamp" in prompt.lower()
+        # Segment-specific citation instruction (distinct from the always-on
+        # evidence rules which also mention [MM:SS]).
+        assert "Reference them in key_points" in prompt
 
     def test_no_segments_no_citation_instruction(self):
-        """Without segments, no citation instruction."""
+        """Without segments, the segment-specific citation instruction is absent."""
         prompt = build_prompt("default", "test transcript content here enough")
-        assert "timestamp" not in prompt.lower()
+        assert "Reference them in key_points" not in prompt
 
 
 # =============================================================================
@@ -237,3 +239,83 @@ class TestTimestampFormatting:
     def test_format_transcript_without_segments(self):
         result = _format_transcript_with_timestamps("Plain text", None)
         assert result == "Plain text"
+
+
+# =============================================================================
+# Anti-Hallucination Rules (11 tests)
+# =============================================================================
+
+_EN_TEXT = "English meeting transcript with enough content to detect language here"
+_RU_TEXT = "Обсудили запуск проекта и распределили задачи между участниками команды"
+
+
+class TestAntiHallucinationRules:
+    def test_evidence_rules_in_every_template_en(self):
+        """Every template's EN prompt carries the evidence rules block."""
+        for name in TEMPLATES:
+            prompt = build_prompt(name, _EN_TEXT)
+            assert "EVIDENCE RULES" in prompt, name
+            assert "Do NOT invent people" in prompt, name
+
+    def test_evidence_rules_in_every_template_ru(self):
+        """Every template's RU prompt carries the evidence rules block."""
+        for name in TEMPLATES:
+            prompt = build_prompt(name, _RU_TEXT)
+            assert "ПРАВИЛА ДОКАЗАТЕЛЬНОСТИ" in prompt, name
+            assert "НЕ выдумывай людей" in prompt, name
+
+    def test_one_side_rule_present_en(self):
+        """General one-sided rule is present in EN prompt."""
+        prompt = build_prompt("default", _EN_TEXT)
+        assert "only ONE side of the conversation" in prompt
+
+    def test_one_side_rule_present_ru(self):
+        """General one-sided rule is present in RU prompt."""
+        prompt = build_prompt("default", _RU_TEXT)
+        assert "только ОДНА сторона разговора" in prompt
+
+    def test_participants_no_placeholder_invention_en(self):
+        """EN prompt no longer forces placeholder participants."""
+        prompt = build_prompt("default", _EN_TEXT)
+        assert "Never []" not in prompt
+        assert "['Speaker 1', 'Speaker 2']" not in prompt
+        assert "Do NOT invent placeholder people" in prompt
+
+    def test_participants_no_placeholder_invention_ru(self):
+        """RU prompt no longer forces placeholder participants."""
+        prompt = build_prompt("default", _RU_TEXT)
+        assert "Никогда не []" not in prompt
+        assert "НЕ придумывай людей-заглушек" in prompt
+
+    def test_action_items_empty_allowed_and_timestamped_en(self):
+        """EN action_items rule allows empty and requires [MM:SS]."""
+        prompt = build_prompt("default", _EN_TEXT)
+        assert "MM:SS" in prompt
+        assert "EMPTY list [] is the correct answer" in prompt
+
+    def test_action_items_empty_allowed_ru(self):
+        """RU action_items rule allows empty list explicitly."""
+        prompt = build_prompt("default", _RU_TEXT)
+        assert "MM:SS" in prompt
+        assert "ПУСТОЙ список [] — правильный ответ" in prompt
+
+    def test_speaker_labels_referenced(self):
+        """Prompt tells the model to fall back on speaker labels."""
+        prompt = build_prompt("default", _EN_TEXT)
+        assert "SPEAKER_1" in prompt
+        assert "SPEAKER_ME" in prompt
+
+    def test_one_sided_flag_prepends_notice_en(self):
+        """one_sided=True prepends the EN one-sided notice; default omits it."""
+        on = build_prompt("default", _EN_TEXT, one_sided=True)
+        off = build_prompt("default", _EN_TEXT)
+        assert "ONE-SIDED RECORDING" in on
+        assert "only SPEAKER_ME's side was recorded" in on  # reminder too
+        assert "ONE-SIDED RECORDING" not in off
+
+    def test_one_sided_flag_prepends_notice_ru(self):
+        """one_sided=True prepends the RU one-sided notice."""
+        on = build_prompt("default", _RU_TEXT, one_sided=True)
+        off = build_prompt("default", _RU_TEXT)
+        assert "ОДНОСТОРОННЯЯ ЗАПИСЬ" in on
+        assert "ОДНОСТОРОННЯЯ ЗАПИСЬ" not in off

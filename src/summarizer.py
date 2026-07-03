@@ -150,9 +150,12 @@ class Summarizer:
         template_name: str,
         notes: str | None,
         segments: list[dict] | None,
+        one_sided: bool = False,
     ) -> dict | None:
         """Summarize a single chunk of transcript."""
-        prompt = build_prompt(template_name, text, notes, segments=segments)
+        prompt = build_prompt(
+            template_name, text, notes, segments=segments, one_sided=one_sided
+        )
         log.info(
             f"Calling Ollama ({OLLAMA_MODEL}), template={template_name}, "
             f"chars={len(text)}..."
@@ -230,6 +233,85 @@ class Summarizer:
 
         return merged
 
+    # -------------------------------------------------------------------------
+    # Coverage detection and post-generation validation (anti-hallucination)
+    # -------------------------------------------------------------------------
+
+    @staticmethod
+    def _detect_coverage(transcript: str) -> str:
+        """Detect whether the transcript captured both sides or only the mic.
+
+        Speaker labels follow the diarization contract: SPEAKER_ME,
+        SPEAKER_1..SPEAKER_N, or legacy SPEAKER_OTHER. A transcript that uses
+        speaker labels but contains ONLY SPEAKER_ME is a one-sided, mic-only
+        recording. Transcripts without any SPEAKER_ labels (legacy plain text)
+        cannot be confirmed one-sided, so they are treated as "full" to avoid
+        suppressing legitimate content.
+
+        Returns:
+            "mic_only" if the only speaker label present is SPEAKER_ME,
+            otherwise "full".
+        """
+        labels = set(re.findall(r"SPEAKER_[A-Z0-9]+", transcript or ""))
+        non_me = labels - {"SPEAKER_ME"}
+        if labels and not non_me:
+            return "mic_only"
+        return "full"
+
+    @staticmethod
+    def _validate_action_items(summary: dict, transcript: str) -> dict:
+        """Drop action_items whose @owner does not appear in the transcript.
+
+        The owner token (the word after '@') is checked as a case-insensitive
+        substring of the transcript. Speaker labels (e.g. SPEAKER_1) count as
+        appearing because they are present in the transcript text. Items without
+        an '@owner' are kept as-is (nothing to validate against).
+        """
+        items = summary.get("action_items")
+        if not isinstance(items, list) or not items:
+            return summary
+
+        transcript_lower = (transcript or "").lower()
+        kept: list = []
+        dropped: list = []
+        for item in items:
+            if not isinstance(item, str):
+                kept.append(item)
+                continue
+            m = re.search(r"@([^\s:,;)\]]+)", item)
+            if not m:
+                kept.append(item)
+                continue
+            owner = m.group(1).strip(".,;:()[]").strip()
+            if not owner or owner.lower() in transcript_lower:
+                kept.append(item)
+            else:
+                dropped.append((owner, item))
+
+        if dropped:
+            for owner, item in dropped:
+                log.info(
+                    f"Validation: dropping action_item with unattested owner "
+                    f"@{owner}: {item!r}"
+                )
+            log.warning(
+                f"Validation dropped {len(dropped)} action_item(s) whose owner "
+                f"is not present in the transcript"
+            )
+            summary["action_items"] = kept
+        return summary
+
+    def _finalize(self, summary: dict, transcript: str, coverage: str) -> dict:
+        """Apply post-generation validation and additive metadata.
+
+        - Drops action_items with fabricated owners.
+        - Adds the additive "coverage" field ("mic_only" | "full"). The Swift
+          app's dict-based parser tolerates unknown keys.
+        """
+        summary = self._validate_action_items(summary, transcript)
+        summary["coverage"] = coverage
+        return summary
+
     def summarize(
         self,
         transcript: str,
@@ -241,6 +323,11 @@ class Summarizer:
 
         For long transcripts (>25K chars), splits into chunks, summarizes
         each independently, then merges results via a reduce pass.
+
+        Detects one-sided (mic-only) transcripts up front: enables one-sided
+        guardrails in the prompt and tags the result with a "coverage" field.
+        After generation, drops action_items whose owner is not attested in the
+        transcript.
 
         Args:
             transcript: Call transcript text.
@@ -255,11 +342,36 @@ class Summarizer:
             log.info("Transcript too short for summarization")
             return None
 
+        coverage = self._detect_coverage(transcript)
+        one_sided = coverage == "mic_only"
+        if one_sided:
+            log.info(
+                "Detected mic-only (one-sided) transcript — enabling one-sided guardrails"
+            )
+
+        result = self._summarize_impl(
+            transcript, template_name, notes, segments, one_sided
+        )
+        if result is None:
+            return None
+        return self._finalize(result, transcript, coverage)
+
+    def _summarize_impl(
+        self,
+        transcript: str,
+        template_name: str,
+        notes: str | None,
+        segments: list[dict] | None,
+        one_sided: bool,
+    ) -> dict | None:
+        """Core map-reduce summarization (no coverage/validation post-processing)."""
         chunks = chunk_transcript(transcript, CHUNK_MAX_CHARS, CHUNK_OVERLAP)
 
         if len(chunks) == 1:
             # Short call — single pass (most common case)
-            summary = self._summarize_single(transcript, template_name, notes, segments)
+            summary = self._summarize_single(
+                transcript, template_name, notes, segments, one_sided=one_sided
+            )
             if summary is not None:
                 log.info("Summary generated successfully")
             return summary
@@ -282,7 +394,7 @@ class Summarizer:
             # Only pass notes to the first chunk
             chunk_notes = notes if i == 0 else None
             result = self._summarize_single(
-                chunk, template_name, chunk_notes, segments=None
+                chunk, template_name, chunk_notes, segments=None, one_sided=one_sided
             )
             if result is not None:
                 chunk_summaries.append(result)

@@ -142,20 +142,24 @@ def _detect_language(text: str) -> str:
 _HINTS = {
     # --- Common fields ---
     "participants": {
-        "en": ["<Name (role if mentioned)>"],
-        "ru": ["<Имя (роль если упомянута)>"],
+        "en": ["<name if spoken, else the speaker label e.g. SPEAKER_1>"],
+        "ru": ["<имя если названо, иначе метка спикера, напр. SPEAKER_1>"],
     },
     "key_points": {
-        "en": ["<specific fact with names/numbers — one sentence>"],
-        "ru": ["<конкретный факт с именами/числами — одно предложение>"],
+        "en": ["<[MM:SS] specific fact with names/numbers — one sentence>"],
+        "ru": ["<[MM:SS] конкретный факт с именами/числами — одно предложение>"],
     },
     "decisions": {
-        "en": ["<firm decision that closes a question>"],
-        "ru": ["<принятое решение, закрывающее вопрос>"],
+        "en": ["<[MM:SS] firm decision explicitly stated in the transcript>"],
+        "ru": ["<[MM:SS] решение, явно принятое в транскрипте>"],
     },
     "action_items": {
-        "en": ["<@Name: specific task [by deadline if stated]>"],
-        "ru": ["<@Имя: задача [к сроку если назван]>"],
+        "en": [
+            "<[MM:SS] @Owner: explicit commitment — Owner is a name said or a speaker label>"
+        ],
+        "ru": [
+            "<[MM:SS] @Исполнитель: явное обязательство — имя из транскрипта или метка спикера>"
+        ],
     },
     "summary": {
         "en": "<2-3 sentences: purpose, outcome, what's next. Plain text only.>",
@@ -179,8 +183,10 @@ _HINTS = {
         "ru": ["<Имя (роль в решении о покупке)>"],
     },
     "next_steps": {
-        "en": ["<@Name: specific action [by when]>"],
-        "ru": ["<@Имя: конкретное действие [к когда]>"],
+        "en": ["<[MM:SS] @Owner: concrete action agreed in the transcript>"],
+        "ru": [
+            "<[MM:SS] @Исполнитель: конкретное действие, согласованное в транскрипте>"
+        ],
     },
     # --- 1-on-1 ---
     "feedback": {
@@ -300,138 +306,159 @@ _PREAMBLES = {
 }
 
 # Detailed per-field instructions for each template.
+# Anti-hallucination: participants may be speaker labels or empty; action_items /
+# decisions must be explicitly present with a [MM:SS] reference; empty lists are
+# allowed and preferred over invention. See also _EVIDENCE_RULES below.
 _FIELD_RULES = {
     "default": {
         "en": (
             "FIELD RULES:\n"
-            "- participants: everyone who spoke or was named. Format: 'Name (role)'. If no names: ['Speaker 1', 'Speaker 2']. Never [].\n"
-            "- key_points: 3-7 specific facts with names/numbers/dates. One sentence each. NOT topic labels. "
-            "BAD: 'API discussed'. GOOD: 'Client deadline is May 15, no extension possible'.\n"
-            "- decisions: ONLY firm decisions that CLOSE a question. Not opinions, not topics discussed. "
-            'If none: ["No decisions made."].\n'
-            "- action_items: tasks with a named owner. Format: '@Name: task [by deadline]'. "
-            'Exclude vague suggestions. If none: ["No action items assigned."].\n'
+            "- participants: only people actually named or speaking in the transcript. "
+            "Format: 'Name (role)' when a name is spoken, otherwise the speaker label as-is "
+            "(SPEAKER_ME, SPEAKER_1). Do NOT invent names or placeholder people. "
+            "An empty list [] is allowed if nobody can be identified.\n"
+            "- key_points: 3-7 specific facts with names/numbers/dates, each prefixed with its "
+            "[MM:SS] timestamp. One sentence each. NOT topic labels. "
+            "BAD: 'API discussed'. GOOD: '[12:03] Client deadline is May 15, no extension possible'.\n"
+            "- decisions: ONLY firm decisions explicitly stated that CLOSE a question, each prefixed "
+            "with [MM:SS]. Not opinions, not topics discussed. If none: [].\n"
+            "- action_items: ONLY commitments explicitly made in the transcript. "
+            "Format: '[MM:SS] @Name: task [by deadline]'. The owner must be a name said in the "
+            "transcript or a speaker label. If none: [] (do not invent a task or an owner).\n"
             "- summary: exactly 2-3 sentences. 1) Why this call happened. 2) Main outcome or decision. "
             "3) What remains unresolved. Plain text only — no markdown, no bullets.\n"
             "- title: 5-8 words. WHO + WHAT + OUTCOME. Never generic: no 'meeting', 'discussion', 'call'. "
             "GOOD: 'Q3 Budget Approved, Hiring Frozen'.\n"
-            "- entities: people, companies, products, tools. Type: person/company/product/tool. If none: []."
+            "- entities: people, companies, products, tools actually mentioned. "
+            "Type: person/company/product/tool. If none: []."
         ),
         "ru": (
             "ПРАВИЛА ПОЛЕЙ:\n"
-            "- participants: все кто говорил или был назван. Формат: «Имя (роль)». Если имён нет: "
-            '["Говорящий 1", "Говорящий 2"]. Никогда не [].\n'
-            "- key_points: 3-7 конкретных фактов с именами/числами/датами. По одному предложению. "
-            "НЕ названия тем. Плохо: «Обсуждение API». Хорошо: «Дедлайн клиента — 15 мая, перенос невозможен».\n"
-            "- decisions: ТОЛЬКО принятые решения, которые ЗАКРЫВАЮТ вопрос. Не мнения, не обсуждения. "
-            'Если нет: ["Решений не принято."].\n'
-            "- action_items: задачи с конкретным исполнителем. Формат: «@Имя: задача [к сроку]». "
-            'Без размытых предложений. Если нет: ["Задач не назначено."].\n'
+            "- participants: только реально названные или говорящие в транскрипте. "
+            "Формат: «Имя (роль)», если имя произнесено, иначе метка спикера как есть "
+            "(SPEAKER_ME, SPEAKER_1). НЕ придумывай имён и людей-заглушек. "
+            "Пустой список [] допустим, если никого нельзя определить.\n"
+            "- key_points: 3-7 конкретных фактов с именами/числами/датами, каждый с меткой [MM:SS] "
+            "в начале. По одному предложению. НЕ названия тем. "
+            "Плохо: «Обсуждение API». Хорошо: «[12:03] Дедлайн клиента — 15 мая, перенос невозможен».\n"
+            "- decisions: ТОЛЬКО явно принятые решения, которые ЗАКРЫВАЮТ вопрос, каждое с меткой "
+            "[MM:SS]. Не мнения, не обсуждения. Если нет: [].\n"
+            "- action_items: ТОЛЬКО обязательства, явно данные в транскрипте. "
+            "Формат: «[MM:SS] @Имя: задача [к сроку]». Исполнитель — имя из транскрипта или метка "
+            "спикера. Если нет: [] (не выдумывай задачу или исполнителя).\n"
             "- summary: ровно 2-3 предложения. 1) Зачем был звонок. 2) Главный результат или решение. "
             "3) Что нерешено. Только текст — без markdown, без списков.\n"
             "- title: 5-8 слов. КТО + ЧТО + РЕЗУЛЬТАТ. Не общие слова: не «встреча», не «обсуждение». "
             "Хорошо: «Бюджет Q3 одобрен, найм заморожен».\n"
-            "- entities: люди, компании, продукты, инструменты. Тип: person/company/product/tool. Если нет: []."
+            "- entities: реально упомянутые люди, компании, продукты, инструменты. "
+            "Тип: person/company/product/tool. Если нет: []."
         ),
     },
     "sales_call": {
         "en": (
             "FIELD RULES:\n"
-            "- participants: all people on the call. 'Name (role/company)'. Never [].\n"
-            "- objections: explicit resistance or doubt from the prospect. Quote their words. "
-            'Categorize: PRICE/TIMING/TRUST/FIT. If none: ["No objections raised."].\n'
-            "- budget_signals: any mention of money, budget, pricing capacity. Quote exact words. "
-            'If none: ["Budget not discussed."].\n'
-            "- decision_makers: who makes the buying decision. 'Name (role)'. "
-            'If unclear: ["Decision process not clarified."].\n'
-            "- next_steps: concrete time-bound commitments. '@Name: action [by when]'. "
-            'Not vague "follow up". If none: ["No next steps agreed."].\n'
+            "- participants: only people actually on the call. 'Name (role/company)' when named, "
+            "otherwise the speaker label. Do NOT invent people. Empty list [] allowed.\n"
+            "- objections: explicit resistance or doubt from the prospect. Quote their words with "
+            "[MM:SS]. Categorize: PRICE/TIMING/TRUST/FIT. If none: [].\n"
+            "- budget_signals: any mention of money, budget, pricing capacity. Quote exact words with "
+            "[MM:SS]. If none: [].\n"
+            "- decision_makers: who makes the buying decision, only if stated. 'Name (role)'. "
+            "If unclear: [].\n"
+            "- next_steps: ONLY concrete time-bound commitments explicitly agreed. "
+            "'[MM:SS] @Name: action [by when]'. Owner is a name said or a speaker label. "
+            'Not vague "follow up". If none: [] (do not invent).\n'
             "- summary: 1 sentence. Who, buying stage, most important commercial signal.\n"
             "- title: prospect name + stage. 'Acme Corp — Budget Objection, Proposal Requested'.\n"
-            "- entities: people, companies, products mentioned. If none: []."
+            "- entities: people, companies, products actually mentioned. If none: []."
         ),
         "ru": (
             "ПРАВИЛА ПОЛЕЙ:\n"
-            "- participants: все участники. «Имя (роль/компания)». Никогда не [].\n"
-            "- objections: явное сопротивление или сомнение клиента. Цитируй их слова. "
-            'Категория: ЦЕНА/СРОКИ/ДОВЕРИЕ/СООТВЕТСТВИЕ. Если нет: ["Возражений не было."].\n'
-            "- budget_signals: любое упоминание денег, бюджета, ценовых возможностей. Точные цитаты. "
-            'Если нет: ["Бюджет не обсуждался."].\n'
-            "- decision_makers: кто принимает решение о покупке. «Имя (роль)». "
-            'Если неясно: ["Процесс решения не прояснён."].\n'
-            "- next_steps: конкретные обязательства со сроками. «@Имя: действие [к когда]». "
-            'Не размытое «продолжить общение». Если нет: ["Следующих шагов не согласовано."].\n'
+            "- participants: только реальные участники. «Имя (роль/компания)», если названо, иначе "
+            "метка спикера. НЕ придумывай людей. Пустой список [] допустим.\n"
+            "- objections: явное сопротивление или сомнение клиента. Цитируй их слова с меткой [MM:SS]. "
+            "Категория: ЦЕНА/СРОКИ/ДОВЕРИЕ/СООТВЕТСТВИЕ. Если нет: [].\n"
+            "- budget_signals: любое упоминание денег, бюджета, ценовых возможностей. Точные цитаты с "
+            "[MM:SS]. Если нет: [].\n"
+            "- decision_makers: кто принимает решение о покупке, только если сказано. «Имя (роль)». "
+            "Если неясно: [].\n"
+            "- next_steps: ТОЛЬКО конкретные обязательства со сроками, явно согласованные. "
+            "«[MM:SS] @Имя: действие [к когда]». Исполнитель — имя из транскрипта или метка спикера. "
+            "Не размытое «продолжить общение». Если нет: [] (не выдумывай).\n"
             "- summary: 1 предложение. Кто, стадия воронки, главный коммерческий сигнал.\n"
             "- title: имя клиента + стадия. «Acme Corp — возражение по цене, запрошено КП».\n"
-            "- entities: люди, компании, продукты. Если нет: []."
+            "- entities: реально упомянутые люди, компании, продукты. Если нет: []."
         ),
     },
     "one_on_one": {
         "en": (
             "FIELD RULES:\n"
-            "- participants: both people. 'Name (role)'. Never [].\n"
+            "- participants: only the people actually present. 'Name (role)' when named, otherwise "
+            "the speaker label. Do NOT invent people. Empty list [] allowed.\n"
             "- feedback: both directions. Prefix: 'Manager→Report:' or 'Report→Manager:'. "
-            'Only specific evaluative feedback. If none: ["No feedback exchanged."].\n'
-            "- blockers: specific obstacles preventing progress. Include systemic blockers. "
-            'If none: ["No blockers surfaced."].\n'
-            "- goals: commitments, development targets discussed. "
-            'If none: ["No goals set or reviewed."].\n'
+            "Only specific evaluative feedback actually voiced, with [MM:SS]. If none: [].\n"
+            "- blockers: specific obstacles actually raised. Include systemic blockers. With [MM:SS]. "
+            "If none: [].\n"
+            "- goals: commitments or development targets actually discussed, with [MM:SS]. "
+            "If none: [].\n"
             "- mood: 1 sentence. Observable behavioral signals only — energy, stress, engagement. "
             "Quote the transcript. Do NOT infer emotions or psychological states.\n"
             "- summary: 1 sentence capturing the person's current professional state.\n"
             "- title: include person's name. 'Alex 1-on-1 — Reorg Concerns, Promotion Timeline'.\n"
-            "- entities: people, teams, projects mentioned. If none: []."
+            "- entities: people, teams, projects actually mentioned. If none: []."
         ),
         "ru": (
             "ПРАВИЛА ПОЛЕЙ:\n"
-            "- participants: оба участника. «Имя (роль)». Никогда не [].\n"
+            "- participants: только реально присутствующие. «Имя (роль)», если названо, иначе метка "
+            "спикера. НЕ придумывай людей. Пустой список [] допустим.\n"
             "- feedback: в обе стороны. Префикс: «Руководитель→Сотрудник:» или «Сотрудник→Руководитель:». "
-            'Только конкретная оценочная обратная связь. Если нет: ["Обратной связи не было."].\n'
-            "- blockers: конкретные препятствия для прогресса. Включай системные блокеры. "
-            'Если нет: ["Блокеров не озвучено."].\n'
-            "- goals: обязательства, цели развития. "
-            'Если нет: ["Цели не обсуждались."].\n'
+            "Только конкретная оценочная обратная связь, реально прозвучавшая, с [MM:SS]. Если нет: [].\n"
+            "- blockers: конкретные препятствия, реально озвученные. Включай системные блокеры. "
+            "С [MM:SS]. Если нет: [].\n"
+            "- goals: обязательства или цели развития, реально обсуждённые, с [MM:SS]. Если нет: [].\n"
             "- mood: 1 предложение. Только наблюдаемые сигналы — энергия, стресс, вовлечённость. "
             "Цитируй транскрипт. НЕ выводы об эмоциях.\n"
             "- summary: 1 предложение о текущем профессиональном состоянии.\n"
             "- title: укажи имя. «1-на-1 с Алексом — тревога по реорганизации, сроки повышения».\n"
-            "- entities: люди, команды, проекты. Если нет: []."
+            "- entities: реально упомянутые люди, команды, проекты. Если нет: []."
         ),
     },
     "standup": {
         "en": (
             "FIELD RULES:\n"
-            "- participants: first names only. Never [].\n"
-            "- done_yesterday: completed items only. Verb + what. Max 8 words each. "
-            "'Shipped login page to staging.' NOT 'Worked on login page.'\n"
-            "- doing_today: planned items. Same format.\n"
-            "- blockers: genuine blockers preventing work, not risks or concerns. "
-            'If none: ["No blockers."]. Never empty.\n'
+            "- participants: first names actually spoken, otherwise speaker labels. "
+            "Do NOT invent people. Empty list [] allowed.\n"
+            "- done_yesterday: completed items only, actually reported. Verb + what. Max 8 words each. "
+            "'[MM:SS] Shipped login page to staging.' NOT 'Worked on login page.'\n"
+            "- doing_today: planned items actually stated. Same format with [MM:SS].\n"
+            "- blockers: genuine blockers actually raised, not risks or concerns. With [MM:SS]. "
+            "If none: [].\n"
             "- summary: 1 sentence, max 15 words. Team state today.\n"
             "- title: date + focus area. 'Feb 20 Standup — Auth Blocked, 3 Items Done'.\n"
-            "- entities: projects, tools mentioned. If none: []."
+            "- entities: projects, tools actually mentioned. If none: []."
         ),
         "ru": (
             "ПРАВИЛА ПОЛЕЙ:\n"
-            "- participants: только имена. Никогда не [].\n"
-            "- done_yesterday: только завершённые задачи. Глагол + что. Максимум 8 слов. "
-            "«Выкатили авторизацию на стейджинг». НЕ «Работали над авторизацией».\n"
-            "- doing_today: запланированные задачи. Тот же формат.\n"
-            "- blockers: только реальные блокеры, не риски. "
-            'Если нет: ["Блокеров нет."]. Никогда не пустой.\n'
+            "- participants: реально прозвучавшие имена, иначе метки спикеров. НЕ придумывай людей. "
+            "Пустой список [] допустим.\n"
+            "- done_yesterday: только завершённые задачи, реально названные. Глагол + что. Максимум 8 слов. "
+            "«[MM:SS] Выкатили авторизацию на стейджинг». НЕ «Работали над авторизацией».\n"
+            "- doing_today: запланированные задачи, реально названные. Тот же формат с [MM:SS].\n"
+            "- blockers: только реальные блокеры, реально озвученные, не риски. С [MM:SS]. Если нет: [].\n"
             "- summary: 1 предложение, максимум 15 слов. Состояние команды.\n"
             "- title: дата + направление. «Стендап 20 фев — блокер авторизации, 3 задачи выполнены».\n"
-            "- entities: проекты, инструменты. Если нет: []."
+            "- entities: реально упомянутые проекты, инструменты. Если нет: []."
         ),
     },
     "interview": {
         "en": (
             "FIELD RULES:\n"
-            "- participants: candidate + interviewers. 'Name (role)'. Never [].\n"
-            "- strengths: specific competency + evidence. "
-            "'Competency: X. Evidence: what they demonstrated.' Job-relevant only. 3-5 items.\n"
-            "- concerns: specific gap + evidence. Job-relevant only. "
-            "No inferences about personality or background. 2-4 items.\n"
+            "- participants: candidate + interviewers actually present. 'Name (role)' when named, "
+            "otherwise the speaker label. Do NOT invent people. Empty list [] allowed.\n"
+            "- strengths: specific competency + evidence from the interview, with [MM:SS]. "
+            "'Competency: X. Evidence: what they demonstrated.' Job-relevant only. Only those actually shown.\n"
+            "- concerns: specific gap + evidence, with [MM:SS]. Job-relevant only. "
+            "No inferences about personality or background. Only concerns actually observed.\n"
             "- culture_fit: candidate's OWN stated work preferences only. Quote them. "
             "If not discussed: empty string.\n"
             "- recommendation: interviewer's EXPLICIT stated assessment only. "
@@ -439,15 +466,16 @@ _FIELD_RULES = {
             "- summary: 1 sentence. Candidate, role, overall signal (strong/mixed/weak).\n"
             "- title: candidate + role + signal. "
             "'Sarah K — Backend Lead — Strong Technical, Communication Concern'.\n"
-            "- entities: candidate, company, technologies discussed. If none: []."
+            "- entities: candidate, company, technologies actually discussed. If none: []."
         ),
         "ru": (
             "ПРАВИЛА ПОЛЕЙ:\n"
-            "- participants: кандидат + интервьюеры. «Имя (роль)». Никогда не [].\n"
-            "- strengths: конкретная компетенция + доказательство. "
-            "«Компетенция: X. Доказательство: что продемонстрировал». Только по работе. 3-5 пунктов.\n"
-            "- concerns: конкретный пробел + доказательство. Только по работе. "
-            "Без выводов о личности. 2-4 пункта.\n"
+            "- participants: кандидат + интервьюеры, реально присутствующие. «Имя (роль)», если названо, "
+            "иначе метка спикера. НЕ придумывай людей. Пустой список [] допустим.\n"
+            "- strengths: конкретная компетенция + доказательство из интервью, с [MM:SS]. "
+            "«Компетенция: X. Доказательство: что продемонстрировал». Только по работе. Только реально показанные.\n"
+            "- concerns: конкретный пробел + доказательство, с [MM:SS]. Только по работе. "
+            "Без выводов о личности. Только реально замеченные.\n"
             "- culture_fit: ТОЛЬКО высказанные кандидатом предпочтения. Цитируй. "
             "Если не обсуждалось: пустая строка.\n"
             "- recommendation: ТОЛЬКО явная оценка интервьюера. НЕ генерируй своё мнение. "
@@ -455,35 +483,104 @@ _FIELD_RULES = {
             "- summary: 1 предложение. Кандидат, роль, сигнал (сильный/смешанный/слабый).\n"
             "- title: кандидат + роль + сигнал. "
             "«Саша К — Lead Backend — сильная техника, вопросы по коммуникации».\n"
-            "- entities: кандидат, компания, технологии. Если нет: []."
+            "- entities: реально обсуждённые кандидат, компания, технологии. Если нет: []."
         ),
     },
     "brainstorm": {
         "en": (
             "FIELD RULES:\n"
-            "- participants: everyone who contributed ideas. Never [].\n"
-            "- ideas: ideas that got sustained attention (not passing mentions). "
-            "'Idea — one line description'. 3-7 items.\n"
-            "- feasibility: ONLY concerns explicitly raised during discussion, "
+            "- participants: everyone who actually contributed. Speaker labels when unnamed. "
+            "Do NOT invent people. Empty list [] allowed.\n"
+            "- ideas: ideas that got sustained attention (not passing mentions), with [MM:SS]. "
+            "'Idea — one line description'. Only ideas actually raised.\n"
+            "- feasibility: ONLY concerns explicitly raised during discussion, with [MM:SS], "
             "not your assessment. 'Idea: concern raised'. If none discussed: [].\n"
-            "- next_steps: concrete actions. '@Name: what [by when]'. Not 'explore further'.\n"
+            "- next_steps: ONLY concrete actions explicitly agreed. '[MM:SS] @Name: what [by when]'. "
+            "Owner is a name said or a speaker label. Not 'explore further'. If none: [].\n"
             "- summary: 1 sentence. Session direction and most promising outcome.\n"
             "- title: topic + direction. 'Growth Brainstorm — Referral Program Selected'.\n"
-            "- entities: products, tools, companies discussed. If none: []."
+            "- entities: products, tools, companies actually discussed. If none: []."
         ),
         "ru": (
             "ПРАВИЛА ПОЛЕЙ:\n"
-            "- participants: все кто предлагал идеи. Никогда не [].\n"
-            "- ideas: идеи, получившие реальное внимание (не мимолётные). "
-            "«Идея — описание». 3-7 пунктов.\n"
-            "- feasibility: ТОЛЬКО проблемы, явно озвученные в обсуждении, "
+            "- participants: все, кто реально участвовал. Метки спикеров, если без имени. "
+            "НЕ придумывай людей. Пустой список [] допустим.\n"
+            "- ideas: идеи, получившие реальное внимание (не мимолётные), с [MM:SS]. "
+            "«Идея — описание». Только реально прозвучавшие идеи.\n"
+            "- feasibility: ТОЛЬКО проблемы, явно озвученные в обсуждении, с [MM:SS], "
             "не твоя оценка. «Идея: озвученная проблема». Если не обсуждалось: [].\n"
-            "- next_steps: конкретные действия. «@Имя: что [к когда]». Не 'изучить подробнее'.\n"
+            "- next_steps: ТОЛЬКО конкретные действия, явно согласованные. «[MM:SS] @Имя: что [к когда]». "
+            "Исполнитель — имя из транскрипта или метка спикера. Не 'изучить подробнее'. Если нет: [].\n"
             "- summary: 1 предложение. Направление сессии и самый перспективный результат.\n"
             "- title: тема + направление. «Брейнсторм по росту — выбрана реферальная программа».\n"
-            "- entities: продукты, инструменты, компании. Если нет: []."
+            "- entities: реально обсуждённые продукты, инструменты, компании. Если нет: []."
         ),
     },
+}
+
+# =============================================================================
+# Evidence rules — appended for EVERY template. This is the core
+# anti-hallucination contract: extract only what is in the transcript, allow
+# empty lists, and never guess the missing side of a one-sided recording.
+# =============================================================================
+_EVIDENCE_RULES = {
+    "en": (
+        "EVIDENCE RULES (apply to every field):\n"
+        "- Use ONLY what is actually in the transcript. Do NOT invent people, names, "
+        "decisions, tasks, deadlines, or numbers.\n"
+        "- participants: list only names actually spoken. When a speaker has no name, "
+        "use the speaker label as-is (SPEAKER_ME, SPEAKER_1, ...). Do NOT invent "
+        "placeholder people such as 'Speaker 1' / 'Participant 2'. If nobody can be "
+        "identified, an empty list [] is correct.\n"
+        "- action_items: include ONLY commitments explicitly stated. Each item starts "
+        "with its [MM:SS] timestamp and names an owner that is a name said in the "
+        "transcript or a speaker label. An EMPTY list [] is the correct answer when no "
+        "explicit commitment was made — prefer [] over inventing a task or an owner.\n"
+        "- decisions: include ONLY decisions explicitly made, each starting with its "
+        "[MM:SS] timestamp. An empty list [] is correct when nothing was decided.\n"
+        "- If the transcript contains only ONE side of the conversation (for example only "
+        "SPEAKER_ME speaks), do NOT guess what the other side said, asked, decided, or "
+        "committed to. Summarize only what the present speaker actually says."
+    ),
+    "ru": (
+        "ПРАВИЛА ДОКАЗАТЕЛЬНОСТИ (для всех полей):\n"
+        "- Используй ТОЛЬКО то, что реально есть в транскрипте. НЕ выдумывай людей, имена, "
+        "решения, задачи, сроки и числа.\n"
+        "- participants: перечисляй только реально прозвучавшие имена. Если у говорящего "
+        "нет имени — используй его метку как есть (SPEAKER_ME, SPEAKER_1, ...). НЕ придумывай "
+        "людей-заглушек вроде «Говорящий 1» / «Участник 2». Если никого нельзя определить — "
+        "правильный ответ пустой список [].\n"
+        "- action_items: только обязательства, явно озвученные. Каждый пункт начинается с "
+        "метки [MM:SS] и указывает исполнителя — имя из транскрипта или метку спикера. "
+        "ПУСТОЙ список [] — правильный ответ, если явных обязательств не было; пустой список "
+        "лучше выдуманной задачи или исполнителя.\n"
+        "- decisions: только явно принятые решения, каждое начинается с метки [MM:SS]. "
+        "Пустой список [] корректен, если ничего не решено.\n"
+        "- Если в транскрипте только ОДНА сторона разговора (например, говорит только "
+        "SPEAKER_ME) — НЕ додумывай, что сказала, спросила, решила или пообещала другая "
+        "сторона. Резюмируй только то, что реально произносит присутствующий говорящий."
+    ),
+}
+
+# Prepended near the top of the prompt when the recording captured only the local
+# microphone (mic_only coverage). Placed high for maximum attention.
+_ONE_SIDED_NOTICE = {
+    "en": (
+        "IMPORTANT — ONE-SIDED RECORDING: This transcript captured only ONE side of the "
+        "call (the local microphone, SPEAKER_ME). The other participants' words were NOT "
+        "recorded. Summarize only what SPEAKER_ME actually says. Do NOT invent the other "
+        "side's replies, questions, decisions, or commitments. participants should contain "
+        "only SPEAKER_ME unless another name is explicitly spoken. action_items and "
+        "decisions will usually be empty [] — do not fabricate them."
+    ),
+    "ru": (
+        "ВАЖНО — ОДНОСТОРОННЯЯ ЗАПИСЬ: В этом транскрипте записана только ОДНА сторона "
+        "звонка (локальный микрофон, SPEAKER_ME). Слова остальных участников НЕ записаны. "
+        "Резюмируй только то, что реально говорит SPEAKER_ME. НЕ придумывай реплики, вопросы, "
+        "решения и обязательства другой стороны. В participants должен быть только SPEAKER_ME, "
+        "если в тексте явно не названо другое имя. action_items и decisions чаще всего будут "
+        "пустыми [] — не выдумывай их."
+    ),
 }
 
 # One-shot examples — only for default template (most commonly used).
@@ -498,18 +595,18 @@ _EXAMPLES = {
                     "Irina (marketing)",
                 ],
                 "key_points": [
-                    "Q3 budget overrun of $200k identified",
-                    "Hiring freeze effective immediately across all departments",
-                    "Marketing budget cut from $500k to $400k for Q4",
-                    "Product roadmap shifted to retention over growth features",
+                    "[02:14] Q3 budget overrun of $200k identified",
+                    "[05:40] Hiring freeze effective immediately across all departments",
+                    "[08:12] Marketing budget cut from $500k to $400k for Q4",
+                    "[11:30] Product roadmap shifted to retention over growth features",
                 ],
                 "decisions": [
-                    "Hiring freeze approved by CEO until end of Q4",
-                    "Marketing budget cut by 20%",
+                    "[05:40] Hiring freeze approved by CEO until end of Q4",
+                    "[08:12] Marketing budget cut by 20%",
                 ],
                 "action_items": [
-                    "@Anna: update job postings to reflect hiring pause by Friday",
-                    "@Mark: revise Q4 roadmap and share with team by Monday",
+                    "[06:02] @Anna: update job postings to reflect hiring pause by Friday",
+                    "[12:05] @Mark: revise Q4 roadmap and share with team by Monday",
                 ],
                 "summary": (
                     "Team agreed to freeze hiring until Q4 due to Q3 budget overruns. "
@@ -533,18 +630,18 @@ _EXAMPLES = {
                     "Ирина (маркетинг)",
                 ],
                 "key_points": [
-                    "Перерасход бюджета Q3 на 200к",
-                    "Найм заморожен с сегодняшнего дня по всем отделам",
-                    "Бюджет маркетинга урезан с 500к до 400к на Q4",
-                    "Дорожная карта: фокус на удержание вместо роста",
+                    "[02:14] Перерасход бюджета Q3 на 200к",
+                    "[05:40] Найм заморожен с сегодняшнего дня по всем отделам",
+                    "[08:12] Бюджет маркетинга урезан с 500к до 400к на Q4",
+                    "[11:30] Дорожная карта: фокус на удержание вместо роста",
                 ],
                 "decisions": [
-                    "Заморозка найма одобрена CEO до конца Q4",
-                    "Бюджет маркетинга урезан на 20%",
+                    "[05:40] Заморозка найма одобрена CEO до конца Q4",
+                    "[08:12] Бюджет маркетинга урезан на 20%",
                 ],
                 "action_items": [
-                    "@Анна: обновить вакансии к пятнице",
-                    "@Марк: пересмотреть дорожную карту Q4, разослать команде к понедельнику",
+                    "[06:02] @Анна: обновить вакансии к пятнице",
+                    "[12:05] @Марк: пересмотреть дорожную карту Q4, разослать команде к понедельнику",
                 ],
                 "summary": (
                     "Команда согласовала заморозку найма до Q4 из-за перерасхода бюджета. "
@@ -575,20 +672,28 @@ def build_prompt(
     transcript: str,
     notes: str | None = None,
     segments: list[dict] | None = None,
+    one_sided: bool = False,
 ) -> str:
     """Build extraction prompt for Ollama.
 
     Structure (addresses "lost in the middle" problem for 7B models):
     1. Identity — extraction engine, not chatbot
+    1b. One-sided notice (if one_sided) — highest attention, prepended near top
     2. Template preamble — sets the analysis frame
     3. Numbered rules — format constraints
     4. Schema — with descriptive placeholders, fields ordered for quality
     5. Field rules — detailed per-template instructions
+    5b. Evidence rules — anti-hallucination contract for every template
     6. One-shot example — concrete quality target
     7. Timestamp instruction (if segments available)
     8. User notes (if provided)
     9. Transcript
     10. Reminder — repeat key constraints + "Start with {"
+
+    Args:
+        one_sided: When True, the transcript captured only the local mic
+            (SPEAKER_ME). A prominent notice is prepended telling the model not
+            to guess the other side of the conversation.
     """
     template = TEMPLATES.get(template_name, TEMPLATES["default"])
     effective_name = template_name if template_name in TEMPLATES else "default"
@@ -609,6 +714,9 @@ def build_prompt(
             "Your ONLY job is to read the transcript and output a single valid JSON object. "
             "Do NOT address the user. Do NOT explain. ONLY JSON."
         )
+
+    # 1b. One-sided notice (prepended high for attention)
+    one_sided_notice = _ONE_SIDED_NOTICE[lang] if one_sided else ""
 
     # 2. Preamble (template-specific)
     preamble = _PREAMBLES.get(effective_name, {}).get(lang, "")
@@ -641,6 +749,9 @@ def build_prompt(
     field_rules = _FIELD_RULES.get(effective_name, _FIELD_RULES["default"]).get(
         lang, ""
     )
+
+    # 5b. Evidence rules (anti-hallucination, applied to every template)
+    evidence_rules = _EVIDENCE_RULES[lang]
 
     # 6. Example
     example_json = _EXAMPLES.get(effective_name, {}).get(lang, "")
@@ -687,19 +798,30 @@ def build_prompt(
     if lang == "ru":
         reminder = (
             "Напоминание: выведи ТОЛЬКО JSON с полями из схемы. "
-            "summary = 2-3 предложения, без markdown. Начни ответ с {"
+            "summary = 2-3 предложения, без markdown. "
+            "Не выдумывай людей, задачи и решения — используй только то, что есть в транскрипте; "
+            "пустые списки допустимы. Начни ответ с {"
         )
+        if one_sided:
+            reminder += " Помни: записана только сторона SPEAKER_ME — не додумывай слова других участников."
     else:
         reminder = (
             "Remember: output ONLY JSON with schema fields. "
-            "summary = 2-3 plain text sentences. Start your response with {"
+            "summary = 2-3 plain text sentences. "
+            "Do not invent people, tasks, or decisions — use only what is in the transcript; "
+            "empty lists are fine. Start your response with {"
         )
+        if one_sided:
+            reminder += " Remember: only SPEAKER_ME's side was recorded — do not guess the other side's words."
 
     # Assemble prompt
     parts = [identity]
+    if one_sided_notice:
+        parts.append(one_sided_notice)
     if preamble:
         parts.append(preamble)
     parts.extend(["", rules, "", schema_label, schema, "", field_rules])
+    parts.extend(["", evidence_rules])
     if example_block:
         parts.extend(["", example_block])
     if ts_instruction:
