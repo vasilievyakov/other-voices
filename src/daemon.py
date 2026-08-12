@@ -20,8 +20,10 @@ from .config import (
     STATUS_PATH,
     DATA_DIR,
     MIN_CALL_DURATION,
+    DETECTION_CONFIRMATIONS,
     check_ollama,
 )
+from .consent import ConsentGate
 from .database import Database
 from .detector import CallDetector
 from .recorder import AudioRecorder
@@ -548,7 +550,8 @@ def main():
     except Exception as e:
         _log(logging.WARNING, "startup", f"Failed to export templates: {e}")
 
-    detector = CallDetector()
+    detector = CallDetector(confirmations=DETECTION_CONFIRMATIONS)
+    consent = ConsentGate()
     recorder = AudioRecorder()
     transcriber = Transcriber()
     summarizer = Summarizer()
@@ -591,8 +594,8 @@ def main():
                     write_status("idle")
                 last_heartbeat = time.monotonic()
 
-            if in_call and not recorder.is_recording:
-                # Call started — re-check Ollama each time
+            if consent.tick(in_call, app_name, recorder.is_recording):
+                # User granted recording — re-check Ollama each time
                 _ollama_available = check_ollama()
                 _log(
                     logging.INFO,

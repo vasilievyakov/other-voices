@@ -24,6 +24,10 @@ AUDIO_CAPTURE_BIN = BASE_DIR / "bin" / "audio-capture"
 POLL_INTERVAL = 3  # seconds between checks
 MIN_CALL_DURATION = 30  # ignore calls shorter than this (seconds)
 HEARTBEAT_INTERVAL = 60  # refresh status.json at least this often (seconds)
+DETECTION_CONFIRMATIONS = 2  # consecutive positive checks before a call is reported
+
+# Consent — recording never starts without an explicit user "yes"
+CONSENT_TIMEOUT = 60  # seconds the dialog waits; no answer = do not record
 
 # Apps to detect — process names and detection strategy
 CALL_APPS = {

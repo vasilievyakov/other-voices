@@ -311,3 +311,147 @@ class TestDetectorResilience:
         active, app = self.detector.check()
         assert active is False
         assert app is None
+
+
+# =============================================================================
+# QUIC filter — UDP:443 must not count for browser helpers
+# =============================================================================
+
+
+class TestQuicFilter:
+    def setup_method(self):
+        self.detector = CallDetector()
+
+    @patch("src.detector.psutil.process_iter")
+    def test_quic_only_traffic_ignored(self, mock_iter):
+        """Chrome Helper with UDP connections only to port 443 (QUIC) → no call."""
+        chrome = make_proc(
+            "Google Chrome Helper",
+            connections=[make_conn("172.217.1.1", port=443), make_conn("142.250.1.1", port=443)],
+        )
+        mock_iter.return_value = [chrome]
+        active, app = self.detector.check()
+        assert active is False
+        assert app is None
+
+    @patch("src.detector.psutil.process_iter")
+    def test_webrtc_high_ports_detected(self, mock_iter):
+        """Chrome Helper with UDP to Meet media ports (19305+) → Google Meet."""
+        chrome = make_proc(
+            "Google Chrome Helper",
+            connections=[make_conn("74.125.1.1", port=19305), make_conn("74.125.1.2", port=19307)],
+        )
+        mock_iter.return_value = [chrome]
+        active, app = self.detector.check()
+        assert active is True
+        assert app == "Google Meet"
+
+    @patch("src.detector.psutil.process_iter")
+    def test_mixed_quic_and_one_media_below_threshold(self, mock_iter):
+        """One QUIC (443) + one media connection → only 1 counted → no call."""
+        chrome = make_proc(
+            "Google Chrome Helper",
+            connections=[make_conn("172.217.1.1", port=443), make_conn("74.125.1.1", port=19305)],
+        )
+        mock_iter.return_value = [chrome]
+        active, app = self.detector.check()
+        assert active is False
+        assert app is None
+
+    @patch("src.detector.psutil.process_iter")
+    def test_native_apps_still_count_port_443(self, mock_iter):
+        """Native apps (Teams) are not QUIC-filtered — port 443 still counts."""
+        teams = make_proc(
+            "Microsoft Teams",
+            connections=[make_conn("52.112.1.1", port=443), make_conn("52.112.1.2", port=443)],
+        )
+        mock_iter.return_value = [teams]
+        active, app = self.detector.check()
+        assert active is True
+        assert app == "Microsoft Teams"
+
+
+# =============================================================================
+# Debounce — confirmations=N requires N consecutive positive checks
+# =============================================================================
+
+
+def _meet_procs():
+    return [
+        make_proc(
+            "Google Chrome Helper",
+            connections=[make_conn("74.125.1.1", port=19305), make_conn("74.125.1.2", port=19307)],
+        )
+    ]
+
+
+def _zoom_procs():
+    return [make_proc("CptHost")]
+
+
+class TestDebounce:
+    @patch("src.detector.psutil.process_iter")
+    def test_first_sighting_not_reported(self, mock_iter):
+        """confirmations=2: first positive check → still (False, None)."""
+        detector = CallDetector(confirmations=2)
+        mock_iter.return_value = _meet_procs()
+        active, app = detector.check()
+        assert active is False
+        assert app is None
+
+    @patch("src.detector.psutil.process_iter")
+    def test_second_consecutive_sighting_reported(self, mock_iter):
+        """confirmations=2: second consecutive positive check → (True, app)."""
+        detector = CallDetector(confirmations=2)
+        mock_iter.return_value = _meet_procs()
+        detector.check()
+        active, app = detector.check()
+        assert active is True
+        assert app == "Google Meet"
+
+    @patch("src.detector.psutil.process_iter")
+    def test_gap_resets_counter(self, mock_iter):
+        """Positive, negative, positive → still not reported (counter reset)."""
+        detector = CallDetector(confirmations=2)
+        mock_iter.return_value = _meet_procs()
+        detector.check()
+        mock_iter.return_value = []
+        detector.check()
+        mock_iter.return_value = _meet_procs()
+        active, app = detector.check()
+        assert active is False
+        assert app is None
+
+    @patch("src.detector.psutil.process_iter")
+    def test_app_switch_restarts_confirmation(self, mock_iter):
+        """Meet seen once, then Zoom → Zoom needs its own 2 confirmations."""
+        detector = CallDetector(confirmations=2)
+        mock_iter.return_value = _meet_procs()
+        detector.check()
+        mock_iter.return_value = _zoom_procs()
+        active, app = detector.check()
+        assert active is False
+        mock_iter.return_value = _zoom_procs()
+        active, app = detector.check()
+        assert active is True
+        assert app == "Zoom"
+
+    @patch("src.detector.psutil.process_iter")
+    def test_confirmed_call_stays_reported(self, mock_iter):
+        """After confirmation, subsequent checks keep returning (True, app)."""
+        detector = CallDetector(confirmations=2)
+        mock_iter.return_value = _meet_procs()
+        detector.check()
+        detector.check()
+        active, app = detector.check()
+        assert active is True
+        assert app == "Google Meet"
+
+    @patch("src.detector.psutil.process_iter")
+    def test_default_confirmations_is_immediate(self, mock_iter):
+        """Default CallDetector() reports on the first positive check."""
+        detector = CallDetector()
+        mock_iter.return_value = _meet_procs()
+        active, app = detector.check()
+        assert active is True
+        assert app == "Google Meet"

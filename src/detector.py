@@ -9,6 +9,11 @@ class CallDetector:
     # CptHost only exists during active Zoom call — most reliable
     ZOOM_PROCESS = "CptHost"
 
+    # Chrome speaks QUIC (HTTP/3) over UDP:443 during ordinary browsing, which
+    # looks identical to a call by connection count alone. Meet media uses
+    # high ports (19305+), so 443 is excluded for browser helpers only.
+    BROWSER_EXCLUDED_PORTS = frozenset({443})
+
     # Apps where we check process + UDP connections
     UDP_APPS = {
         "Microsoft Teams": {"processes": ["Microsoft Teams"], "min_udp": 2},
@@ -25,12 +30,35 @@ class CallDetector:
         "Google Chrome Helper (Renderer)",
     ]
 
+    def __init__(self, confirmations: int = 1):
+        """confirmations — how many consecutive positive checks are required
+        before a call is reported. 1 = report immediately."""
+        self._confirmations = confirmations
+        self._streak = 0
+        self._streak_app: str | None = None
+
     def check(self) -> tuple[bool, str | None]:
-        """Check if a call is active.
+        """Check if a call is active, debounced over consecutive calls.
 
         Returns:
             (is_active, app_name) — e.g. (True, "Zoom") or (False, None)
         """
+        active, app = self._raw_check()
+        if not active:
+            self._streak = 0
+            self._streak_app = None
+            return False, None
+        if app == self._streak_app:
+            self._streak += 1
+        else:
+            self._streak = 1
+            self._streak_app = app
+        if self._streak >= self._confirmations:
+            return True, app
+        return False, None
+
+    def _raw_check(self) -> tuple[bool, str | None]:
+        """Single instantaneous detection pass, no debounce."""
         # 1. Zoom — just check for CptHost process
         if self._process_exists(self.ZOOM_PROCESS):
             return True, "Zoom"
@@ -43,7 +71,9 @@ class CallDetector:
 
         # 3. Google Meet (browser) — browser helper with multiple UDP connections
         for helper in self.BROWSER_HELPERS:
-            if self._has_udp_connections(helper, 2):
+            if self._has_udp_connections(
+                helper, 2, exclude_ports=self.BROWSER_EXCLUDED_PORTS
+            ):
                 return True, "Google Meet"
 
         return False, None
@@ -58,7 +88,12 @@ class CallDetector:
                 continue
         return False
 
-    def _has_udp_connections(self, process_name: str, min_count: int) -> bool:
+    def _has_udp_connections(
+        self,
+        process_name: str,
+        min_count: int,
+        exclude_ports: frozenset[int] = frozenset(),
+    ) -> bool:
         """Check if a process has at least min_count UDP connections to distinct IPs."""
         for proc in psutil.process_iter(["name"]):
             try:
@@ -68,7 +103,7 @@ class CallDetector:
                 # Count connections with remote addresses (active UDP)
                 remote_ips = set()
                 for conn in conns:
-                    if conn.raddr:
+                    if conn.raddr and conn.raddr.port not in exclude_ports:
                         remote_ips.add(conn.raddr.ip)
                 if len(remote_ips) >= min_count:
                     return True
