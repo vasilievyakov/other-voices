@@ -377,6 +377,15 @@ func runActionItemTests() {
 func runDaemonStatusTests() {
     print("\n--- DaemonStatus Tests ---")
 
+    test("systemAudioOk decodes from status json") {
+        let json = """
+        {"daemon_pid": 1, "timestamp": "2026-08-19T10:00:00.000+00:00",
+         "state": "idle", "system_audio_ok": false}
+        """.data(using: .utf8)!
+        let s = try JSONDecoder().decode(DaemonStatus.self, from: json)
+        expect(s.systemAudioOk == false, "got \(String(describing: s.systemAudioOk))")
+    }
+
     test("micOnlyStreak decodes from status json") {
         let json = """
         {"daemon_pid": 1, "timestamp": "2026-08-19T10:00:00.000+00:00",

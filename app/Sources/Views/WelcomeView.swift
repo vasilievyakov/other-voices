@@ -43,13 +43,13 @@ package struct WelcomeView: View {
             VStack(alignment: .leading, spacing: 16) {
                 FeatureRow(
                     icon: "phone.badge.waveform.fill",
-                    title: "Automatic Recording",
-                    subtitle: "Detects calls and records transparently"
+                    title: "Asks Before Recording",
+                    subtitle: "Detects calls and asks your permission before touching the microphone"
                 )
                 FeatureRow(
                     icon: "sparkles",
                     title: "AI Summaries",
-                    subtitle: "Local AI extracts key points, decisions, and commitments"
+                    subtitle: "Local AI extracts key points, decisions, and action items"
                 )
                 FeatureRow(
                     icon: "lock.shield.fill",
@@ -71,6 +71,12 @@ package struct WelcomeView: View {
                 StatusRow(
                     label: "Ollama AI Engine",
                     isAvailable: ollamaAvailable
+                )
+                StatusRow(
+                    label: "System Audio Capture",
+                    isAvailable: daemon.status?.systemAudioOk,
+                    okText: "Working",
+                    failText: "Not granted \u{2014} recordings capture your mic only"
                 )
             }
             .padding(16)
@@ -155,6 +161,8 @@ private struct FeatureRow: View {
 private struct StatusRow: View {
     let label: String
     let isAvailable: Bool?
+    var okText: String = "Available"
+    var failText: String = "Not Running"
 
     var body: some View {
         HStack(spacing: 10) {
@@ -175,7 +183,7 @@ private struct StatusRow: View {
             Spacer()
 
             if let available = isAvailable {
-                Text(available ? "Available" : "Not Running")
+                Text(available ? okText : failText)
                     .font(.caption)
                     .foregroundStyle(available ? .green : .secondary)
             } else {

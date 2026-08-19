@@ -9,6 +9,8 @@ package struct DaemonStatus: Codable, Equatable {
     package let startedAt: String?
     package let pipeline: String?
     package let ollamaAvailable: Bool?
+    /// False when the last recording captured no system audio (TCC declined).
+    package let systemAudioOk: Bool?
     /// Consecutive calls recorded without the interlocutors' channel.
     package let micOnlyStreak: Int?
 
@@ -21,6 +23,7 @@ package struct DaemonStatus: Codable, Equatable {
         case startedAt = "started_at"
         case pipeline
         case ollamaAvailable = "ollama_available"
+        case systemAudioOk = "system_audio_ok"
         case micOnlyStreak = "mic_only_streak"
     }
 
