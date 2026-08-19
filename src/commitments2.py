@@ -37,7 +37,7 @@ CANDIDATE_PATTERNS = [
     re.compile(
         r"\b(пришлю|скину|отправлю|подготовлю|сделаю|передам|созвонюсь|напишу|"
         r"проверю|уточню|согласую|оформлю|заплачу|перезвоню|занесу|организую|"
-        r"соберу|запишу|поставлю|добавлю|посмотрю|вышлю|поделюсь)\w*\b",
+        r"соберу|запишу|поставлю|добавлю|посмотрю|вышлю|поделюсь)\b",
         re.IGNORECASE,
     ),
     # cohortative / joint-action invitation — the "soft" promises
@@ -49,11 +49,29 @@ CANDIDATE_PATTERNS = [
     # immediacy deictic
     re.compile(
         r"\b(сейчас|щас|прямо сейчас|сегодня же)\b.{0,20}\b(скину|пришлю|сделаю|"
-        r"отправлю|напишу|поставлю)\w*\b",
+        r"отправлю|напишу|поставлю)\b",
         re.IGNORECASE,
     ),
     # modal reinforcement of an obligation
     re.compile(r"\b(обязательно|не забуду|я обещаю|беру на себя)\b", re.IGNORECASE),
+    # 1pl strong perfective — rare, unconditionally commissive
+    re.compile(
+        r"\b(созвонимся|синхронизируемся|встретимся|договоримся|скинем|"
+        r"пришл[её]м|вышлем)\b",
+        re.IGNORECASE,
+    ),
+    # 1pl weak/instructional — candidate only with a time anchor in the line
+    # («мы будем называть субагентов» — инструктаж, не обещание; «будем делать
+    # в пятницу» — обещание). Reviewer-verified: candidates 125 -> ~50.
+    re.compile(
+        r"(?=.*\b(?:будем|сделаем|обсудим|собер[её]м|запустим|подготовим|"
+        r"напишем|проверим|запишем)\b)"
+        r"(?=.*\b(?:понедельник|вторник|сред[ау]|четверг|пятниц\w*|суббот\w*|"
+        r"воскресень\w*|завтра|послезавтра|сегодня|вечером|утром|"
+        r"на следующей неделе|после (?:звонка|встречи|созвона|обеда)|"
+        r"через (?:час|день|неделю)))",
+        re.IGNORECASE,
+    ),
 ]
 
 CLASSIFY_SCHEMA = {
@@ -77,7 +95,11 @@ CLASSIFY_PROMPT = """Ты — лингвист-эксперт по речевы�
 
 ОПРЕДЕЛЕНИЕ: обещание — говорящий связывает СЕБЯ обязательством совершить \
 будущее действие (включая мягкие формы: «давайте синхронимся», «сейчас скину»). \
-НЕ обещание: вопрос («скинешь?»), гипотеза («наверное, отправлю»), пересказ \
+Условное или сценарное обещание — «пока ты делаешь X, я сделаю Y», «мы будем \
+делать это в пятницу, наверное» — это ТОЖЕ обещание: хеджирование («наверное», \
+«например») снижает confidence, но не отменяет обязательства, если говорящий \
+называет СВОЁ будущее действие. НЕ обещание: вопрос («скинешь?»), просьба или \
+поручение собеседнику («можешь скинуть?», «скинь ему», «посмотри»), пересказ \
 чужого действия («он сказал, что пришлёт»), факт о будущем без обязательства \
 («встреча в пятницу»).
 
@@ -181,6 +203,7 @@ def extract_commitments(transcript: str, llm=None, votes: int = 3) -> list[dict]
             continue
 
         verified = verify_quote(best.get("quote") or "", cand["context"])
+        cand_ts = Summarizer._parse_ts(cand["line"])
         uncertain = 1 if (len(yes_votes) * 2 < votes or verified == "failed") else 0
         results.append(
             {
@@ -193,25 +216,40 @@ def extract_commitments(transcript: str, llm=None, votes: int = 3) -> list[dict]
                 "uncertain": uncertain,
                 "confidence_votes": f"{len(yes_votes)}/{votes}",
                 "verified": verified,
+                "_ts": cand_ts,
             }
         )
 
-    # Dedup near-duplicates: same committer + quote token overlap >= 0.6
+    # Dedup: token overlap OR (близкие таймкоды + слабый overlap) — фрагмент
+    # «сейчас скину» и «в Telegram скину» через 10 секунд — одно обещание;
+    # выживает более длинная формулировка (reviewer, polish cycle 1).
     deduped: list[dict] = []
     for item in results:
         item_tokens = _tokens(item.get("quote") or item["what"])
-        duplicate = False
+        duplicate_of = None
         for kept in deduped:
             if kept["who"] != item["who"]:
                 continue
             kept_tokens = _tokens(kept.get("quote") or kept["what"])
-            if item_tokens and kept_tokens:
-                overlap = len(item_tokens & kept_tokens) / min(
-                    len(item_tokens), len(kept_tokens)
-                )
-                if overlap >= 0.6:
-                    duplicate = True
-                    break
-        if not duplicate:
+            if not (item_tokens and kept_tokens):
+                continue
+            overlap = len(item_tokens & kept_tokens) / min(
+                len(item_tokens), len(kept_tokens)
+            )
+            near = (
+                item.get("_ts") is not None
+                and kept.get("_ts") is not None
+                and abs(item["_ts"] - kept["_ts"]) <= 45
+            )
+            if overlap >= 0.6 or (near and overlap >= 0.25):
+                duplicate_of = kept
+                break
+        if duplicate_of is None:
             deduped.append(item)
+        elif len(item.get("quote") or item["what"]) > len(
+            duplicate_of.get("quote") or duplicate_of["what"]
+        ):
+            deduped[deduped.index(duplicate_of)] = item
+    for item in deduped:
+        item.pop("_ts", None)
     return deduped

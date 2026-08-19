@@ -91,6 +91,8 @@ def main():
         elapsed = round(time.monotonic() - t0, 1)
 
         union_last = runs[-1]
+        # extractions saved for diagnosis — polish cycles must not re-run
+        # the model just to see what was extracted (reviewer, cycle 1)
         entry = {
             "session_id": sid,
             "candidates": candidates,
@@ -107,6 +109,7 @@ def main():
                 3,
             ),
             "seconds": elapsed,
+            "extracted": union_last,
         }
         if sid in LABELS:
             entry["recall"] = labeled_recall(

@@ -152,3 +152,18 @@ class TestLabeledRecall:
         summary = {"commitments": [], "action_items": []}
         r = labeled_recall(summary, [{"ts": "1:00", "text": "прислать смету"}])
         assert r == {"total": 1, "found": 0}
+
+
+class TestRecallMorphology:
+    def test_infinitive_label_matches_first_person_quote(self):
+        from src.evaluation import labeled_recall
+
+        summary = {
+            "commitments": [
+                {"who": "SPEAKER_ME", "what": "скину документ",
+                 "quote": "сейчас я вам скину прям такой документ"}
+            ],
+            "action_items": [],
+        }
+        labels = [{"ts": "69:12", "text": "скинуть документ прямо сейчас"}]
+        assert labeled_recall(summary, labels) == {"total": 1, "found": 1}

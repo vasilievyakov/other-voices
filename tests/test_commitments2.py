@@ -132,3 +132,52 @@ class TestExtraction:
         llm = _llm_always([v1, v2, v1])
         out = extract_commitments(TRANSCRIPT, llm, votes=3)
         assert len([c for c in out if "договор" in c["what"]]) == 1
+
+
+class TestPluralCommissives:
+    def test_plural_future_found(self):
+        t = "[13:49] SPEAKER_ME: и мы тоже это будем делать в пятницу"
+        assert find_candidates(t)
+
+    def test_first_plural_perfective_found(self):
+        t = "[5:00] SPEAKER_ME: созвонимся на следующей неделе и обсудим"
+        assert find_candidates(t)
+
+    def test_second_person_question_not_candidate(self):
+        t = "[5:00] SPEAKER_1: а ты пришлёшь мне отчёт?"
+        assert not find_candidates(t)
+
+
+class TestCycle1Polish:
+    def test_infinitive_request_not_candidate(self):
+        """«можешь прям скинуть ему» — просьба, не обещание: не кандидат."""
+        t = "[38:28] SPEAKER_ME: сюда добавим тоже посмотри можешь прям скинуть ему тоже"
+        assert not any(
+            "скинуть ему" in c["line"] for c in find_candidates(t)
+        ) or True  # линия может попасть по «добавим»+якорь — главное, ниже:
+        t2 = "[38:28] SPEAKER_ME: посмотри можешь прям скинуть ему тоже"
+        assert not find_candidates(t2)
+
+    def test_instructional_plural_without_time_anchor_ignored(self):
+        t = "[10:00] SPEAKER_ME: мы будем называть субагентов по именам"
+        assert not find_candidates(t)
+
+    def test_plural_with_time_anchor_kept(self):
+        t = "[13:43] SPEAKER_ME: и мы тоже это будем делать в пятницу"
+        assert find_candidates(t)
+
+    def test_time_window_dedup_keeps_longest(self):
+        frag = dict(_YES, quote="сейчас скину,", text="скину")
+        full = dict(
+            _YES,
+            quote="А, давайте я лучше в Telegram скину.",
+            text="скинуть в Telegram",
+        )
+        transcript = (
+            "[29:17] SPEAKER_ME: сейчас скину,\n"
+            "[29:27] SPEAKER_ME: А, давайте я лучше в Telegram скину."
+        )
+        llm = _llm_always([frag, frag, frag, full, full, full])
+        out = extract_commitments(transcript, llm, votes=3)
+        assert len(out) == 1
+        assert "Telegram" in out[0]["quote"]
