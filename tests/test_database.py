@@ -6,6 +6,7 @@ Enterprise coverage: CRUD, FTS5, action items, security, concurrency.
 import json
 import sqlite3
 import threading
+from datetime import datetime
 
 import pytest
 
@@ -922,3 +923,53 @@ class TestMicOnlyStreak:
         self._call(tmp_db, "20260801_000001", coverage="mic_only")
         self._call(tmp_db, "20260802_000002", coverage="full", source_seed=True)
         assert tmp_db.mic_only_streak() == 1
+
+
+class TestPlatformCanary:
+    def _call(self, db, sid, app, started, seed=False):
+        db.insert_call(
+            session_id=sid,
+            app_name=app,
+            started_at=started,
+            ended_at=started,
+            duration_seconds=60.0,
+            system_wav_path=None,
+            mic_wav_path=None,
+            transcript="hi",
+            summary=None,
+        )
+        if seed:
+            with db._conn() as conn:
+                conn.execute(
+                    "UPDATE calls SET source='import_seed' WHERE session_id=?", (sid,)
+                )
+
+    NOW = datetime(2026, 8, 19, 12, 0, 0)
+
+    def test_dead_platform_with_history_flagged(self, tmp_db):
+        for i in range(5):
+            self._call(tmp_db, f"s{i}", "Google Meet", f"2026-07-0{i + 1}T10:00:00")
+        assert tmp_db.platform_canary(now=self.NOW) == ["Google Meet"]
+
+    def test_active_platform_not_flagged(self, tmp_db):
+        for i in range(5):
+            self._call(tmp_db, f"s{i}", "Zoom", f"2026-07-0{i + 1}T10:00:00")
+        self._call(tmp_db, "recent", "Zoom", "2026-08-18T10:00:00")
+        assert tmp_db.platform_canary(now=self.NOW) == []
+
+    def test_thin_history_not_flagged(self, tmp_db):
+        self._call(tmp_db, "s1", "Discord", "2026-07-01T10:00:00")
+        assert tmp_db.platform_canary(now=self.NOW) == []
+
+    def test_import_seeds_do_not_create_baseline(self, tmp_db):
+        for i in range(5):
+            self._call(
+                tmp_db, f"s{i}", "Telegram", f"2026-07-0{i + 1}T10:00:00", seed=True
+            )
+        assert tmp_db.platform_canary(now=self.NOW) == []
+
+    def test_multiple_dead_platforms_sorted(self, tmp_db):
+        for i in range(5):
+            self._call(tmp_db, f"z{i}", "Zoom", f"2026-07-0{i + 1}T10:00:00")
+            self._call(tmp_db, f"m{i}", "Google Meet", f"2026-07-0{i + 1}T11:00:00")
+        assert tmp_db.platform_canary(now=self.NOW) == ["Google Meet", "Zoom"]

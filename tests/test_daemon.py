@@ -694,6 +694,7 @@ class TestMicOnlyStreakInStatus:
         monkeypatch.setattr(daemon_mod, "_ollama_available", True)
         monkeypatch.setattr(daemon_mod, "_system_audio_ok", True)
         monkeypatch.setattr(daemon_mod, "_mic_only_streak", 0)
+        monkeypatch.setattr(daemon_mod, "_platform_canary", [])
 
     def test_status_contains_mic_only_streak(self, tmp_path, monkeypatch):
         import src.daemon as daemon_mod
@@ -716,3 +717,19 @@ class TestMicOnlyStreakInStatus:
 
         data = _json.loads((tmp_path / "status.json").read_text())
         assert data["mic_only_streak"] == 5
+
+
+class TestPlatformCanaryInStatus:
+    def test_status_contains_platform_canary(self, tmp_path, monkeypatch):
+        import src.daemon as daemon_mod
+
+        monkeypatch.setattr(daemon_mod, "STATUS_PATH", tmp_path / "status.json")
+        monkeypatch.setattr(daemon_mod, "_ollama_available", True)
+        monkeypatch.setattr(daemon_mod, "_system_audio_ok", True)
+        monkeypatch.setattr(daemon_mod, "_mic_only_streak", 0)
+        monkeypatch.setattr(daemon_mod, "_platform_canary", ["Google Meet"])
+        daemon_mod.write_status("idle")
+        import json as _json
+
+        data = _json.loads((tmp_path / "status.json").read_text())
+        assert data["platform_canary"] == ["Google Meet"]

@@ -1,6 +1,7 @@
 """Call Recorder — SQLite FTS5 database."""
 
 import json
+from datetime import datetime, timedelta
 import logging
 import sqlite3
 from pathlib import Path
@@ -224,6 +225,37 @@ class Database:
                 break
             streak += 1
         return streak
+
+    def platform_canary(
+        self,
+        window_days: int = 7,
+        min_baseline: int = 5,
+        now: datetime | None = None,
+    ) -> list[str]:
+        """Platforms that historically produced calls but went silent.
+
+        A platform is flagged when it has at least min_baseline live calls
+        older than the window and zero calls inside the window. Catches a
+        detection regression (like the silent death of Google Meet on
+        2026-08-12) automatically instead of by manual audit.
+        """
+        now = now or datetime.now()
+        cutoff = (now - timedelta(days=window_days)).isoformat()
+        with self._conn() as conn:
+            rows = conn.execute(
+                """SELECT app_name,
+                          SUM(CASE WHEN started_at < ? THEN 1 ELSE 0 END),
+                          SUM(CASE WHEN started_at >= ? THEN 1 ELSE 0 END)
+                   FROM calls
+                   WHERE source != 'import_seed'
+                   GROUP BY app_name""",
+                (cutoff, cutoff),
+            ).fetchall()
+        return sorted(
+            app
+            for app, baseline, recent in rows
+            if (baseline or 0) >= min_baseline and (recent or 0) == 0
+        )
 
     def update_notes(self, session_id: str, notes: str | None):
         """Update user notes for a call."""

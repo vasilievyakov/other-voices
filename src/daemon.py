@@ -219,6 +219,44 @@ SYSTEM_AUDIO_WARNING_INTERVAL = 3600  # seconds — at most one notification/hou
 # Updated after each processed call; shown by the app as an escalating warning.
 _mic_only_streak = 0
 
+# Platforms with historical calls that produced zero calls in the last week —
+# a detection regression canary. Refreshed on startup and after each call.
+_platform_canary: list[str] = []
+
+# Rate-limit the canary notification to once per day.
+_last_canary_warning: float | None = None
+CANARY_WARNING_INTERVAL = 86400  # seconds
+
+
+def _refresh_platform_canary(db):
+    """Update the detection-regression canary and warn at most once a day."""
+    global _platform_canary, _last_canary_warning
+    try:
+        _platform_canary = db.platform_canary()
+    except Exception as e:
+        _log(logging.WARNING, "canary", f"Canary check failed: {e}")
+        return
+    if not _platform_canary:
+        return
+    apps = ", ".join(_platform_canary)
+    _log(
+        logging.WARNING,
+        "canary",
+        f"Detection canary: no calls in 7 days from historically active "
+        f"platform(s): {apps}",
+    )
+    now = time.monotonic()
+    if (
+        _last_canary_warning is None
+        or now - _last_canary_warning >= CANARY_WARNING_INTERVAL
+    ):
+        _last_canary_warning = now
+        notify(
+            "Other Voices",
+            f"За неделю не замечено ни одного звонка: {apps}. "
+            f"Возможно, сломалась детекция.",
+        )
+
 
 def write_status(
     state: str,
@@ -241,6 +279,7 @@ def write_status(
         "ollama_available": _ollama_available,
         "system_audio_ok": _system_audio_ok,
         "mic_only_streak": _mic_only_streak,
+        "platform_canary": _platform_canary,
     }
     tmp_path = STATUS_PATH.with_suffix(".tmp")
     try:
@@ -489,6 +528,7 @@ def process_recording(
     # escalates a silent one-channel degradation instead of hiding it in logs.
     global _mic_only_streak
     _mic_only_streak = db.mic_only_streak()
+    _refresh_platform_canary(db)
     if _mic_only_streak:
         _log(
             logging.WARNING,
@@ -579,6 +619,7 @@ def main():
     # does not silently reset with every relaunch.
     global _mic_only_streak
     _mic_only_streak = db.mic_only_streak()
+    _refresh_platform_canary(db)
 
     running = True
 
