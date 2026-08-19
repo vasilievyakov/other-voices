@@ -18,7 +18,11 @@ STATUS_PATH = DATA_DIR / "status.json"
 LOG_PATH = BASE_DIR / "logs" / "call-recorder.log"
 LOG_MAX_BYTES = 5 * 1024 * 1024  # 5MB per log file
 LOG_BACKUP_COUNT = 3  # keep 3 rotated backups
-AUDIO_CAPTURE_BIN = BASE_DIR / "bin" / "audio-capture"
+# Inside an .app bundle: a standalone binary cannot stably hold the Screen
+# Recording TCC grant — macOS ties the grant to a bundle identity.
+AUDIO_CAPTURE_BIN = (
+    BASE_DIR / "bin" / "AudioCapture.app" / "Contents" / "MacOS" / "audio-capture"
+)
 CALL_SIGNAL_BIN = BASE_DIR / "bin" / "call-signal"
 
 # Detector

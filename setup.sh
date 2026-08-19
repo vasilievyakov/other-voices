@@ -22,9 +22,14 @@ fi
 .venv/bin/pip install --quiet psutil
 echo "  venv created, psutil installed"
 
-# 3. Compile Swift binary
-echo "[3/6] Compiling Swift audio-capture binary..."
-swiftc swift/AudioCapture.swift -o bin/audio-capture \
+# 3. Compile Swift binary into an .app bundle. A bare binary cannot stably
+# hold the Screen Recording TCC grant — macOS expects a bundle identity
+# (CFBundleIdentifier), and the grant survives rebuilds only with one.
+APP_DIR="bin/AudioCapture.app"
+APP_BIN="$APP_DIR/Contents/MacOS/audio-capture"
+echo "[3/6] Compiling Swift audio-capture binary (bundle)..."
+mkdir -p "$APP_DIR/Contents/MacOS"
+swiftc swift/AudioCapture.swift -o "$APP_BIN" \
     -framework ScreenCaptureKit \
     -framework AVFoundation \
     -framework CoreMedia \
@@ -32,9 +37,34 @@ swiftc swift/AudioCapture.swift -o bin/audio-capture \
     -O \
     2>&1
 
-if [ -f bin/audio-capture ]; then
-    echo "  bin/audio-capture compiled successfully"
-    chmod +x bin/audio-capture
+cat > "$APP_DIR/Contents/Info.plist" << 'PLIST'
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleIdentifier</key>
+    <string>com.vasiliev.audio-capture</string>
+    <key>CFBundleName</key>
+    <string>AudioCapture</string>
+    <key>CFBundleExecutable</key>
+    <string>audio-capture</string>
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+    <key>CFBundleShortVersionString</key>
+    <string>1.0</string>
+    <key>LSUIElement</key>
+    <true/>
+    <key>NSMicrophoneUsageDescription</key>
+    <string>Other Voices records your side of consented calls.</string>
+    <key>NSAudioCaptureUsageDescription</key>
+    <string>Other Voices records the other participants of consented calls.</string>
+</dict>
+</plist>
+PLIST
+
+if [ -f "$APP_BIN" ]; then
+    echo "  $APP_BIN compiled successfully"
+    chmod +x "$APP_BIN"
 else
     echo "  ERROR: Compilation failed"
     exit 1
@@ -70,17 +100,17 @@ fi
 # code hash still changes on every rebuild, so macOS WILL forget the Screen
 # Recording permission. After EACH rebuild you MUST re-grant it:
 #   System Settings > Privacy & Security > Screen & System Audio Recording
-# and re-add / re-enable bin/audio-capture, then restart the daemon.
+# and re-add / re-enable bin/AudioCapture.app, then restart the daemon.
 CODESIGN_ID="com.vasiliev.audio-capture"
 SIGNING_IDENTITY="$(security find-identity -v -p codesigning 2>/dev/null \
     | grep -o '"Apple Development[^"]*"' | head -1 | tr -d '"')"
 if [ -n "$SIGNING_IDENTITY" ]; then
-    codesign --force --sign "$SIGNING_IDENTITY" --identifier "$CODESIGN_ID" bin/audio-capture
-    echo "  bin/audio-capture signed with '$SIGNING_IDENTITY' (identifier $CODESIGN_ID)"
+    codesign --force --sign "$SIGNING_IDENTITY" --identifier "$CODESIGN_ID" "$APP_DIR"
+    echo "  $APP_DIR signed with '$SIGNING_IDENTITY' (identifier $CODESIGN_ID)"
     echo "  Stable identity: the Screen Recording grant should survive rebuilds."
 else
-    codesign --force --sign - --identifier "$CODESIGN_ID" bin/audio-capture
-    echo "  bin/audio-capture signed ad-hoc (identifier $CODESIGN_ID)"
+    codesign --force --sign - --identifier "$CODESIGN_ID" "$APP_DIR"
+    echo "  $APP_DIR signed ad-hoc (identifier $CODESIGN_ID)"
     echo "  NOTE: no Apple Development identity found — ad-hoc signature changes"
     echo "  every rebuild. You MUST re-grant Screen Recording after each rebuild:"
     echo "  System Settings > Privacy & Security > Screen & System Audio Recording"
@@ -125,9 +155,9 @@ echo ""
 echo "=== Setup Complete ==="
 echo ""
 echo "Before starting, grant permissions in System Settings → Privacy & Security:"
-echo "  1. Screen & System Audio Recording → add & enable bin/audio-capture"
+echo "  1. Screen & System Audio Recording → add & enable bin/AudioCapture.app"
 echo "     (needed for system.wav; without it recordings are mic-only)"
-echo "  2. Microphone → add & enable bin/audio-capture (or your terminal app)"
+echo "  2. Microphone → add & enable bin/AudioCapture.app (or your terminal app)"
 echo ""
 echo "To start the daemon:"
 echo "  launchctl bootstrap gui/\$(id -u) $PLIST_DST"

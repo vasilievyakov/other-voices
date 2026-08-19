@@ -105,7 +105,8 @@ class CallDetector:
 
     # Our own recorder must never detect itself (it holds the mic while
     # recording — the classic stuck-detector bug).
-    OWN_PROCESSES = {"audio-capture", "call-signal"}
+    # "AudioCapture" is how the bundled recorder reports via its .app name.
+    OWN_PROCESSES = {"audio-capture", "AudioCapture", "call-signal"}
 
     BROWSER_NAME_PREFIXES = ("Google Chrome", "Arc", "Chromium")
 

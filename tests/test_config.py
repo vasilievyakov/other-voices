@@ -86,3 +86,12 @@ class TestConfigConstants:
     def test_notify_enabled_is_bool(self):
         """NOTIFY_ENABLED is a boolean."""
         assert isinstance(NOTIFY_ENABLED, bool)
+
+
+class TestAudioCaptureBundle:
+    def test_capture_binary_lives_inside_app_bundle(self):
+        """Standalone binaries cannot stably hold the Screen Recording TCC
+        grant — macOS expects a bundle identity (board backlog item 11)."""
+        from src.config import AUDIO_CAPTURE_BIN
+
+        assert "AudioCapture.app/Contents/MacOS" in str(AUDIO_CAPTURE_BIN)

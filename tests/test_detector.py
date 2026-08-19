@@ -644,3 +644,12 @@ class TestSignalProbe:
             "camera_on": False,
             "webrtc_assertion": False,
         }
+
+
+class TestBundledRecorderExcluded:
+    @patch("src.detector.psutil.process_iter")
+    def test_bundle_process_name_excluded(self, mock_iter):
+        """The bundled recorder reports as 'AudioCapture' via its .app name."""
+        mock_iter.return_value = []
+        d = CallDetector(signal_probe=FakeProbe(_sig(mic_apps=["AudioCapture"])))
+        assert d.check() == (False, None)

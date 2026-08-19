@@ -9,31 +9,33 @@
 
 - [x] 1. Детектор: пережить SystemError/PermissionError из psutil.process_iter
   (падения демона 10.06, 11.07, 13.07). Коммит e8cc78f.
-- [ ] 2. Гигиена данных: колонка `source` в calls (migration), пометить 37
+- [x] 2. [475ed7a] Гигиена данных: колонка `source` в calls (migration), пометить 37
   синтетических строк (`import_seed`) — это строки без папки в recordings/
   (Zoom 13, Meet 11, Telegram 8, FaceTime 5); НЕ удалять. Пересчитать и
   поправить цифры в landing.html; README: свести три расходящихся числа
   тестов к реальному (355). Проверка: `select count(*) from calls where
   source='live'` совпадает с числом папок в recordings/.
-- [ ] 3. coverage → пользователю: сохранять coverage (mic_only/full) в БД,
+- [x] 3. coverage → пользователю: coverage уже лежал в summary_json — миграция
+  не потребовалась; типизирован в CallSummary + бейджи (коммит выше).
+  Исходная формулировка: сохранять coverage (mic_only/full) в БД,
   прокинуть в Call.swift, бейдж «Собеседник не записан» в CallRowView +
   CallDetailView + явный placeholder в AudioPlayerView вместо молча
   пропавшей дорожки System Audio. Проверка: открыть звонок после 10.06 и
   увидеть статус без чтения лога.
-- [ ] 4. Эскалация тихой деградации: счётчик подряд идущих mic_only-звонков в
+- [x] 4. [884ce9c] Эскалация тихой деградации: счётчик подряд идущих mic_only-звонков в
   status.json; DaemonStatusCard показывает warning-состояние «пишется только
   твой микрофон, N звонков подряд» вместо часового throttled-notify.
-- [ ] 5. Canary по платформам: недельный счётчик звонков по приложениям против
+- [x] 5. Canary по платформам: недельный счётчик звонков по приложениям против
   исторической базовой линии; ноль при ненулевой базе → notify + флаг в
   status.json. Ловит повтор «тихой смерти Meet» автоматически.
-- [ ] 6. Consent-диалог: убрать default button «Записать» (Enter не должен
-  соглашаться рефлекторно) — рекомендация Айва и Мурати.
-- [ ] 7. WelcomeView: переписать тексты в честном регистре лендинга («records
+- [x] 6. [7e9792d] Consent-диалог: убран default button «Записать» (Enter не
+  соглашается рефлекторно) — рекомендация Айва и Мурати.
+- [x] 7. [60080f4] WelcomeView: переписать тексты в честном регистре лендинга («records
   transparently» противоречит consent-модели) + строка живой проверки
   Screen Recording права.
-- [ ] 8. Ollama structured output (format: json schema) как основной путь;
+- [x] 8. [45e8d36] Ollama structured output (format: json schema) как основной путь;
   _try_repair_json/_mechanical_merge остаются fallback'ом.
-- [ ] 9. Валидация owner в action items: сверка с participants вместо substring
+- [x] 9. Валидация owner в action items: сверка с participants вместо substring
   по всему транскрипту («Максим» ≠ «максимум»).
 - [ ] 10. Detection v2 (сначала design doc): Swift-хелпер `call-signal` —
   CoreAudio per-process API (kAudioHardwarePropertyProcessObjectList +
