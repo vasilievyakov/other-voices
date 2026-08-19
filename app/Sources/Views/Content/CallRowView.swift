@@ -22,6 +22,14 @@ struct CallRowView: View {
                             .accessibilityLabel("AI summary available")
                     }
 
+                    if call.summary?.isMicOnly == true {
+                        Image(systemName: "person.2.slash")
+                            .font(.caption2)
+                            .foregroundStyle(.orange)
+                            .accessibilityLabel("Other side not recorded")
+                            .help("Only your microphone was captured")
+                    }
+
                     Spacer()
                     Text(call.durationFormatted)
                         .font(.caption)

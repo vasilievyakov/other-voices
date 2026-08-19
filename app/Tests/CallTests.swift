@@ -123,6 +123,49 @@ func runCallTests() {
     }
 }
 
+// MARK: - Coverage Tests
+
+func runCoverageTests() {
+    print("\n--- Coverage Tests ---")
+
+    test("coverage mic_only decodes as typed field") {
+        let json = """
+        {"summary": "s", "coverage": "mic_only"}
+        """.data(using: .utf8)!
+        let s = CallSummary.decode(from: json)
+        expect(s?.coverage == "mic_only", "got \(String(describing: s?.coverage))")
+        expect(s?.isMicOnly == true)
+    }
+
+    test("coverage full decodes and is not mic-only") {
+        let json = """
+        {"summary": "s", "coverage": "full"}
+        """.data(using: .utf8)!
+        let s = CallSummary.decode(from: json)
+        expect(s?.coverage == "full")
+        expect(s?.isMicOnly == false)
+    }
+
+    test("coverage absent means nil and not mic-only") {
+        let json = """
+        {"summary": "s"}
+        """.data(using: .utf8)!
+        let s = CallSummary.decode(from: json)
+        expect(s?.coverage == nil)
+        expect(s?.isMicOnly == false)
+    }
+
+    test("coverage never leaks into additionalSections") {
+        let json = """
+        {"summary": "s", "coverage": "mic_only", "risks": ["a"]}
+        """.data(using: .utf8)!
+        let s = CallSummary.decode(from: json)
+        expect(s?.additionalSections["coverage"] == nil)
+        expect(s?.additionalSections["Coverage"] == nil)
+        expect(s?.additionalSections["Risks"]?.count == 1)
+    }
+}
+
 // MARK: - CallSummary Tests (5)
 
 func runCallSummaryTests() {
@@ -641,6 +684,7 @@ struct TestRunner {
         print("Other Voices — Enterprise Swift Tests")
         runCallTests()
         runCallSummaryTests()
+        runCoverageTests()
         runEntityTests()
         runActionItemTests()
         runDaemonStatusTests()

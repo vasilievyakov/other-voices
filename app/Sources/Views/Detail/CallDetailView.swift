@@ -168,6 +168,16 @@ struct CallDetailView: View {
             Text(call.startedAtFormatted)
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
+
+            if call.summary?.isMicOnly == true {
+                Label(
+                    "Other side not recorded — summary built from your microphone only",
+                    systemImage: "person.2.slash"
+                )
+                .font(.caption)
+                .foregroundStyle(.orange)
+                .padding(.top, 2)
+            }
         }
     }
 

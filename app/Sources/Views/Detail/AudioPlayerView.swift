@@ -23,6 +23,8 @@ struct AudioPlayerView: View {
                 if let systemPath = call.systemWavPath,
                    FileManager.default.fileExists(atPath: systemPath) {
                     audioRow(label: "System Audio", path: systemPath)
+                } else {
+                    missingSystemAudioRow
                 }
 
                 if let micPath = call.micWavPath,
@@ -31,6 +33,25 @@ struct AudioPlayerView: View {
                 }
             }
         }
+    }
+
+    /// The system track is the other participants' voices. When it was not
+    /// captured the player says so out loud instead of silently dropping the row.
+    private var missingSystemAudioRow: some View {
+        HStack(spacing: 12) {
+            Image(systemName: "speaker.slash")
+                .font(.title2)
+                .foregroundStyle(.orange)
+                .accessibilityHidden(true)
+            Text("System Audio")
+                .font(.subheadline)
+                .frame(minWidth: 85, alignment: .leading)
+                .fixedSize()
+            Text("Not recorded — other participants are missing from this recording")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+        .accessibilityElement(children: .combine)
     }
 
     @ViewBuilder

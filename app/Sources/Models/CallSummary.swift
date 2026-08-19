@@ -11,8 +11,13 @@ package struct CallSummary: Hashable {
     package let participants: [String]?
     package let entities: [Entity]?
     package let additionalSections: [String: [String]]
+    /// "mic_only" when only the user's channel was recorded, "full" otherwise.
+    package let coverage: String?
     package var title: String?
     package var truncationWarning: String?
+
+    /// True when the interlocutors' channel is absent from this recording.
+    package var isMicOnly: Bool { coverage == "mic_only" }
 
     package init(
         summary: String? = nil,
@@ -22,6 +27,7 @@ package struct CallSummary: Hashable {
         participants: [String]? = nil,
         entities: [Entity]? = nil,
         additionalSections: [String: [String]] = [:],
+        coverage: String? = nil,
         title: String? = nil,
         truncationWarning: String? = nil
     ) {
@@ -32,6 +38,7 @@ package struct CallSummary: Hashable {
         self.participants = participants
         self.entities = entities
         self.additionalSections = additionalSections
+        self.coverage = coverage
         self.title = title
         self.truncationWarning = truncationWarning
     }
@@ -40,7 +47,7 @@ package struct CallSummary: Hashable {
     private static let knownKeys: Set<String> = [
         "summary", "key_points", "decisions", "action_items",
         "participants", "entities", "template",
-        "title", "truncation_warning"
+        "title", "truncation_warning", "coverage"
     ]
 
     /// Decode from JSON data with extensive fallback logic.
@@ -61,6 +68,7 @@ package struct CallSummary: Hashable {
         var participants: [String]? = nil
         var entities: [Entity]? = nil
         var additional: [String: [String]] = [:]
+        var coverage: String? = nil
         var title: String? = nil
         var truncationWarning: String? = nil
 
@@ -97,8 +105,9 @@ package struct CallSummary: Hashable {
         actionItems = actionItems ?? topLevel.actionItems
         participants = participants ?? topLevel.participants
 
-        // 3. Title and truncation warning
+        // 3. Title, truncation warning, coverage
         if let t = json["title"] as? String { title = t }
+        if let c = json["coverage"] as? String { coverage = c }
         if let w = json["truncation_warning"] as? String { truncationWarning = w }
 
         // 4. Entities
@@ -123,6 +132,7 @@ package struct CallSummary: Hashable {
             participants: participants,
             entities: entities,
             additionalSections: additional,
+            coverage: coverage,
             title: title,
             truncationWarning: truncationWarning
         )
