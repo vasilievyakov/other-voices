@@ -165,3 +165,17 @@ class TestConsentGate:
     def test_no_prompt_while_recording(self):
         assert self.gate.tick(True, "Google Meet", recording=True) is False
         assert self.prompts == []
+
+
+class TestNoDefaultButton:
+    @patch("src.consent.subprocess.Popen")
+    def test_dialog_has_no_default_button(self, mock_popen):
+        """Consent must be a deliberate click — Enter must not answer the dialog.
+
+        Board recommendation (Ive, Murati): a dialog with legal consequences
+        must not be answerable by a reflexive keypress.
+        """
+        mock_popen.return_value = make_osascript_proc(running=True)
+        ConsentPrompt("Google Meet")
+        script = " ".join(mock_popen.call_args[0][0])
+        assert "default button" not in script

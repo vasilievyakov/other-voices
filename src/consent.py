@@ -33,8 +33,9 @@ class ConsentPrompt:
         script = (
             f'display dialog "Записать звонок {safe_app}?" '
             f'with title "Call Recorder" '
+            # No default button on purpose: consent must be a deliberate
+            # click, a reflexive Enter must not start a recording.
             f'buttons {{"{DECLINE_BUTTON}", "{RECORD_BUTTON}"}} '
-            f'default button "{RECORD_BUTTON}" '
             f"giving up after {timeout}"
         )
         try:
