@@ -23,9 +23,11 @@ from .config import (
     DETECTION_CONFIRMATIONS,
     check_ollama,
 )
+from .brief import build_brief, render_brief
 from .commitments2 import extract_commitments
 from .consent import ConsentGate
 from .database import Database
+from .digests import write_followup, write_morning_digest
 from .detector import CallDetector
 from .recorder import AudioRecorder
 from .summarizer import Summarizer
@@ -227,6 +229,45 @@ _platform_canary: list[str] = []
 # Rate-limit the canary notification to once per day.
 _last_canary_warning: float | None = None
 CANARY_WARNING_INTERVAL = 86400  # seconds
+
+
+def _notify_person_debts(db, session_id: str, limit: int = 2):
+    """Post-call care moment (Pedregal): surface standing debt with the
+    people from THIS call, right when the owner just hung up. At most
+    `limit` notifications; only confident, nonzero debt."""
+    persons = [
+        e["name"]
+        for e in db.get_entities(session_id)
+        if e.get("type") == "person" and not e["name"].upper().startswith("SPEAKER")
+    ]
+    shown = 0
+    for name in persons:
+        if shown >= limit:
+            break
+        brief = build_brief(db, name)
+        if not brief or (not brief["outgoing"] and not brief["incoming"]):
+            continue
+        header = render_brief(brief).splitlines()[0].lstrip("# ")
+        notify("Other Voices", header)
+        shown += 1
+
+
+# Morning digest fires once per calendar day, on the first daemon activity
+# after the date change (no extra launchd job; survives sleeping Macs).
+_last_digest_date: str | None = None
+
+
+def _maybe_write_morning_digest(db):
+    global _last_digest_date
+    today = datetime.now().strftime("%Y-%m-%d")
+    if _last_digest_date == today:
+        return
+    _last_digest_date = today
+    try:
+        path = write_morning_digest(db)
+        notify("Other Voices", f"Утренний дайджест готов: {Path(path).name}")
+    except Exception as e:
+        _log(logging.WARNING, "digest", f"Morning digest failed: {e}")
 
 
 def _refresh_platform_canary(db):
@@ -560,6 +601,18 @@ def process_recording(
             f"the interlocutors' channel",
         )
 
+    # ── Delivery artifacts: follow-up draft + person-debt reminders ──
+    followup_path = None
+    try:
+        followup_path = write_followup(db, session_id)
+    except Exception as e:
+        _log(logging.WARNING, "digest", f"Follow-up draft failed: {e}")
+
+    try:
+        _notify_person_debts(db, session_id)
+    except Exception as e:
+        _log(logging.WARNING, "digest", f"Debt reminder failed: {e}")
+
     # ── Pipeline complete — summary notification ──
     total_ms = (time.monotonic() - pipeline_start) * 1000
 
@@ -571,9 +624,12 @@ def process_recording(
     if not _ollama_available:
         skipped_text = " [AI skipped: Ollama offline]"
 
+    draft_text = " Черновик письма готов (digests/)." if followup_path else ""
+
     notify(
         "Call Recorder",
-        f"Звонок {app_name} ({duration:.0f}с) записан.{summary_text}{skipped_text}",
+        f"Звонок {app_name} ({duration:.0f}с) записан.{draft_text}"
+        f"{summary_text}{skipped_text}",
     )
     _log(
         logging.INFO,
@@ -668,6 +724,7 @@ def main():
             # changes, so a hung or silently dead daemon is detectable
             # by timestamp staleness.
             if time.monotonic() - last_heartbeat >= HEARTBEAT_INTERVAL:
+                _maybe_write_morning_digest(db)
                 if recorder.is_recording:
                     write_status(
                         "recording",

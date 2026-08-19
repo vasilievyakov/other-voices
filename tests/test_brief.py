@@ -111,3 +111,28 @@ class TestRenderBrief:
         assert "outgoing" not in md
         assert "direction" not in md
         assert "[1:00]" not in md
+
+
+class TestBriefHonesty:
+    def test_uncertain_never_in_debt_counter(self, tmp_db):
+        _call(tmp_db, "s1", "2026-08-16T10:00:00")
+        tmp_db.insert_commitments(
+            "s1",
+            [
+                {"type": "outgoing", "who": "SPEAKER_ME", "to_whom": "Максим",
+                 "what": "уверенное", "quote": "сделаю", "uncertain": 0},
+                {"type": "outgoing", "who": "SPEAKER_ME", "to_whom": "Максим",
+                 "what": "сомнительное", "quote": "может сделаю", "uncertain": 1},
+            ],
+        )
+        brief = build_brief(tmp_db, "Максим", now=NOW)
+        assert len(brief["outgoing"]) == 1
+        assert len(brief["unconfirmed"]) == 1
+        md = render_brief(brief)
+        assert "должен: 1" in md.splitlines()[0]
+        assert "нужно подтвердить: 1" in md
+
+    def test_empty_is_honest_not_confident(self, tmp_db):
+        _call(tmp_db, "s1", "2026-08-16T10:00:00")
+        md = render_brief(build_brief(tmp_db, "Максим", now=NOW))
+        assert "не значит" in md  # «не найдено — не значит, что не было»

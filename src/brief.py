@@ -43,6 +43,7 @@ def build_brief(db, name: str, now: datetime | None = None) -> dict | None:
 
     outgoing: list[dict] = []
     incoming: list[dict] = []
+    unconfirmed: list[dict] = []
     for c_row in calls:
         for c in db.get_commitments(c_row["session_id"]):
             if c.get("status") != "open":
@@ -54,6 +55,11 @@ def build_brief(db, name: str, now: datetime | None = None) -> dict | None:
                 "session_id": c["session_id"],
                 "date": call_dates.get(c["session_id"], ""),
             }
+            # Uncertain extraction never mixes into the debt counters —
+            # a confident number over shaky data is a polite lie (board rule).
+            if c.get("uncertain"):
+                unconfirmed.append(entry)
+                continue
             direction = c.get("direction")
             if direction == "outgoing":
                 outgoing.append(entry)
@@ -87,6 +93,7 @@ def build_brief(db, name: str, now: datetime | None = None) -> dict | None:
         "calls_count": len(calls),
         "outgoing": outgoing,
         "incoming": incoming,
+        "unconfirmed": unconfirmed,
         "recent": recent,
     }
 
@@ -108,12 +115,14 @@ def _days_phrase(days: int | None) -> str:
 def render_brief(brief: dict) -> str:
     """Markdown a person brief: debt first, human words, no raw fields."""
     name = brief["name"]
-    lines = [
+    header = (
         f"# {name} — должен: {len(brief['outgoing'])} · "
         f"тебе должны: {len(brief['incoming'])} · "
-        f"последний разговор: {_days_phrase(brief['days_since_contact'])}",
-        "",
-    ]
+        f"последний разговор: {_days_phrase(brief['days_since_contact'])}"
+    )
+    if brief.get("unconfirmed"):
+        header += f" · нужно подтвердить: {len(brief['unconfirmed'])}"
+    lines = [header, ""]
 
     if brief["outgoing"]:
         lines.append(f"## Ты обещал (в разговорах с {name})")
@@ -131,6 +140,21 @@ def render_brief(brief: dict) -> str:
             lines.append(f"- {c['what']}{deadline} (звонок {c['date']})")
             if c.get("quote"):
                 lines.append(f"  > {c['quote']}")
+        lines.append("")
+
+    if brief.get("unconfirmed"):
+        lines.append("## Нужно подтвердить (извлечено с низкой уверенностью)")
+        for c in brief["unconfirmed"]:
+            lines.append(f"- {c['what']} (звонок {c['date']})")
+            if c.get("quote"):
+                lines.append(f"  > {c['quote']}")
+        lines.append("")
+
+    if not brief["outgoing"] and not brief["incoming"]:
+        lines.append(
+            "Открытых обязательств не найдено — не значит, что их не было: "
+            "извлечение покрывает не всё."
+        )
         lines.append("")
 
     lines.append("## О чём говорили в последний раз")

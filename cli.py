@@ -221,6 +221,27 @@ def cmd_entities(db: Database, args: list[str]):
             )
 
 
+def cmd_brief(db, args):
+    """brief <имя> — досье по человеку: долги в обе стороны + контекст."""
+    from src.brief import build_brief, render_brief
+
+    if not args:
+        print('Usage: cli.py brief "<имя>"')
+        sys.exit(2)
+    brief = build_brief(db, args[0])
+    if brief is None:
+        print(f"«{args[0]}» не найден среди участников звонков.")
+        sys.exit(1)
+    print(render_brief(brief))
+
+
+def cmd_digest(db, args):
+    """digest — утренний счёт открытых обязательств."""
+    from src.digests import build_morning_digest
+
+    print(build_morning_digest(db))
+
+
 def main():
     if len(sys.argv) < 2:
         print("Call Recorder CLI")
@@ -245,6 +266,8 @@ def main():
         "show": cmd_show,
         "actions": cmd_actions,
         "entities": cmd_entities,
+        "brief": cmd_brief,
+        "digest": cmd_digest,
     }
 
     if cmd not in commands:
