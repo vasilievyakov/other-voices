@@ -31,6 +31,12 @@ MIN_CALL_DURATION = 30  # ignore calls shorter than this (seconds)
 HEARTBEAT_INTERVAL = 60  # refresh status.json at least this often (seconds)
 DETECTION_CONFIRMATIONS = 2  # consecutive positive checks before a call is reported
 
+# Microphone: pin capture to a specific input device by exact name. The
+# system default (Bluetooth headset mic) returns zero-filled buffers while a
+# call app holds it — 2026-08-19 finding, root cause of the «Продолжение
+# следует» epidemic. Empty string = system default input.
+MIC_INPUT_DEVICE = os.environ.get("MIC_INPUT_DEVICE", "Shure MV7+")
+
 # Consent — recording never starts without an explicit user "yes"
 CONSENT_TIMEOUT = 60  # seconds the dialog waits; no answer = do not record
 

@@ -1,4 +1,6 @@
+import AudioToolbox
 import AVFoundation
+import CoreAudio
 import CoreMedia
 import Foundation
 import ScreenCaptureKit
@@ -179,9 +181,87 @@ class MicrophoneCapture {
     private var wavWriter: WAVWriter?
     private let outputPath: String
     private var configObserver: NSObjectProtocol?
+    private let preferredDevice: String?
 
-    init(outputPath: String) {
+    init(outputPath: String, preferredDevice: String? = nil) {
         self.outputPath = outputPath
+        self.preferredDevice = preferredDevice
+    }
+
+    /// Find an input-capable CoreAudio device by exact name.
+    private func findInputDevice(named name: String) -> AudioDeviceID? {
+        var address = AudioObjectPropertyAddress(
+            mSelector: kAudioHardwarePropertyDevices,
+            mScope: kAudioObjectPropertyScopeGlobal,
+            mElement: kAudioObjectPropertyElementMain
+        )
+        var size: UInt32 = 0
+        guard AudioObjectGetPropertyDataSize(
+            AudioObjectID(kAudioObjectSystemObject), &address, 0, nil, &size
+        ) == noErr else { return nil }
+        var ids = [AudioDeviceID](
+            repeating: 0, count: Int(size) / MemoryLayout<AudioDeviceID>.size
+        )
+        guard AudioObjectGetPropertyData(
+            AudioObjectID(kAudioObjectSystemObject), &address, 0, nil, &size, &ids
+        ) == noErr else { return nil }
+
+        for id in ids {
+            var nameAddress = AudioObjectPropertyAddress(
+                mSelector: kAudioObjectPropertyName,
+                mScope: kAudioObjectPropertyScopeGlobal,
+                mElement: kAudioObjectPropertyElementMain
+            )
+            var deviceName: CFString? = nil
+            var nameSize = UInt32(MemoryLayout<CFString?>.size)
+            let status = withUnsafeMutablePointer(to: &deviceName) { ptr in
+                AudioObjectGetPropertyData(id, &nameAddress, 0, nil, &nameSize, ptr)
+            }
+            guard status == noErr, (deviceName as String?) == name else { continue }
+
+            var streamsAddress = AudioObjectPropertyAddress(
+                mSelector: kAudioDevicePropertyStreams,
+                mScope: kAudioDevicePropertyScopeInput,
+                mElement: kAudioObjectPropertyElementMain
+            )
+            var streamsSize: UInt32 = 0
+            if AudioObjectGetPropertyDataSize(id, &streamsAddress, 0, nil, &streamsSize)
+                == noErr, streamsSize > 0 {
+                return id
+            }
+        }
+        return nil
+    }
+
+    /// Pin the engine's input to a specific device. The system default input
+    /// (a Bluetooth headset mic) returns zero-filled buffers while a call app
+    /// holds it — a USB mic is immune to that contention.
+    private func pinInputDevice() {
+        guard let name = preferredDevice, !name.isEmpty else { return }
+        guard var deviceID = findInputDevice(named: name) else {
+            fputs("Input device '\(name)' not found — using default input\n", stderr)
+            return
+        }
+        guard let audioUnit = engine.inputNode.audioUnit else {
+            fputs("No input audio unit — using default input\n", stderr)
+            return
+        }
+        let status = AudioUnitSetProperty(
+            audioUnit,
+            kAudioOutputUnitProperty_CurrentDevice,
+            kAudioUnitScope_Global,
+            0,
+            &deviceID,
+            UInt32(MemoryLayout<AudioDeviceID>.size)
+        )
+        if status == noErr {
+            fputs("Microphone input pinned to: \(name)\n", stderr)
+        } else {
+            fputs(
+                "Failed to pin input to '\(name)' (status \(status)) — using default\n",
+                stderr
+            )
+        }
     }
 
     func start() throws {
@@ -207,8 +287,10 @@ class MicrophoneCapture {
     }
 
     private func startEngine() throws {
+        pinInputDevice()
         let inputNode = engine.inputNode
         let hwFormat = inputNode.inputFormat(forBus: 0)
+        fputs("Microphone hw format: \(Int(hwFormat.sampleRate)) Hz, \(hwFormat.channelCount) ch\n", stderr)
 
         guard hwFormat.sampleRate > 0 else {
             throw NSError(domain: "AudioCapture", code: 2, userInfo: [NSLocalizedDescriptionKey: "No microphone available"])
@@ -299,6 +381,8 @@ guard CommandLine.arguments.count >= 3 else {
 
 let outputDir = CommandLine.arguments[1]
 let sessionId = CommandLine.arguments[2]
+// Optional: preferred input device name (argv[3]); empty = system default
+let preferredMic = CommandLine.arguments.count >= 4 ? CommandLine.arguments[3] : nil
 
 let systemPath = "\(outputDir)/system.wav"
 let micPath = "\(outputDir)/mic.wav"
@@ -307,7 +391,7 @@ let micPath = "\(outputDir)/mic.wav"
 try FileManager.default.createDirectory(atPath: outputDir, withIntermediateDirectories: true)
 
 let systemCapture = SystemAudioCapture(outputPath: systemPath)
-let micCapture = MicrophoneCapture(outputPath: micPath)
+let micCapture = MicrophoneCapture(outputPath: micPath, preferredDevice: preferredMic)
 
 var shouldStop = false
 

@@ -80,7 +80,7 @@ class TestRecorderLifecycle:
         mock_cls.assert_called_once()
         args = mock_cls.call_args
         cmd = args[0][0]
-        assert len(cmd) == 3  # binary, session_dir, session_id
+        assert len(cmd) == 4  # binary, session_dir, session_id, mic device
 
     def test_stop_returns_metadata(self, recorder, mock_popen):
         """stop() returns dict with all expected keys."""
@@ -260,3 +260,16 @@ class TestStderrSurfacing:
             recorder.stop()
 
         assert not any("[audio-capture]" in r.message for r in caplog.records)
+
+
+class TestMicDevicePin:
+    @patch("src.recorder.subprocess.Popen")
+    def test_recorder_passes_preferred_mic_device(self, mock_popen, tmp_path, monkeypatch):
+        import src.recorder as rec_mod
+
+        monkeypatch.setattr(rec_mod, "RECORDINGS_DIR", tmp_path)
+        monkeypatch.setattr(rec_mod, "MIC_INPUT_DEVICE", "Shure MV7+")
+        r = rec_mod.AudioRecorder()
+        r.start("Zoom")
+        args = mock_popen.call_args[0][0]
+        assert args[3] == "Shure MV7+"

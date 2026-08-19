@@ -7,7 +7,7 @@ import time
 from datetime import datetime
 from pathlib import Path
 
-from .config import AUDIO_CAPTURE_BIN, RECORDINGS_DIR
+from .config import AUDIO_CAPTURE_BIN, MIC_INPUT_DEVICE, RECORDINGS_DIR
 
 log = logging.getLogger("call-recorder")
 
@@ -40,7 +40,12 @@ class AudioRecorder:
         log.info(f"Starting recording: session={self.session_id}, app={app_name}")
 
         self.process = subprocess.Popen(
-            [str(AUDIO_CAPTURE_BIN), str(self.session_dir), self.session_id],
+            [
+                str(AUDIO_CAPTURE_BIN),
+                str(self.session_dir),
+                self.session_id,
+                MIC_INPUT_DEVICE,
+            ],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
         )
