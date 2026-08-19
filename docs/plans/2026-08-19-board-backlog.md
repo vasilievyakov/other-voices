@@ -37,7 +37,7 @@
   _try_repair_json/_mechanical_merge остаются fallback'ом.
 - [x] 9. Валидация owner в action items: сверка с participants вместо substring
   по всему транскрипту («Максим» ≠ «максимум»).
-- [ ] 10. Detection v2 (сначала design doc): Swift-хелпер `call-signal` —
+- [x] 10. [5a86ca0] Detection v2 (design doc: 2026-08-19-detection-v2-design.md): Swift-хелпер `call-signal` —
   CoreAudio per-process API (kAudioHardwarePropertyProcessObjectList +
   kAudioProcessPropertyIsRunningInput, push-листенеры; на Tahoe 26 —
   подписка на общий IsRunning + ручная перечитка IsRunningInput) + камера
@@ -47,7 +47,7 @@
   UDP-эвристики — fallback. Consent-диалог остаётся гейтом. Sticky
   keep-alive на mute. Закрывает Meet и лечит детекцию всех платформ одним
   принципом.
-- [ ] 11. audio-capture как .app-бандл с CFBundleIdentifier (standalone-бинарь
+- [x] 11. [e747e40] audio-capture как .app-бандл с CFBundleIdentifier (standalone-бинарь
   не может стабильно держать Screen Recording TCC) — подготовка кода;
   подпись сертификатом — ручной шаг.
 
@@ -56,7 +56,9 @@
 - [ ] Apple Development сертификат ($99/год) → стабильная подпись, право
   перестанет слетать при пересборках. setup.sh уже умеет подхватывать.
 - [ ] System Settings → Privacy & Security → Screen & System Audio Recording →
-  включить audio-capture → `bash restart-daemon.sh`.
+  добавить/включить `~/call-recorder/bin/AudioCapture.app` (новый бандл!
+  старый bin/audio-capture из списка можно убрать) → `bash restart-daemon.sh`.
+  Микрофон при первом запуске бандла тоже спросит право — разрешить.
 - [ ] Решение: consent второй стороны. Совет единогласно считает блокером
   публичности; Granola и Otter сейчас под коллективными исками ровно за
   «тихий» захват. Варианты: видимый локальный индикатор записи /
