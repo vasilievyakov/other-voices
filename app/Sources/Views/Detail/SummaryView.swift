@@ -33,10 +33,6 @@ struct SummaryView: View {
                     .textSelection(.enabled)
             }
 
-            if let points = summary.keyPoints, !points.isEmpty {
-                bulletSection("Key Points", items: points)
-            }
-
             if let decisions = summary.decisions, !decisions.isEmpty {
                 bulletSection("Decisions", items: decisions)
             }
@@ -62,6 +58,10 @@ struct SummaryView: View {
                         .font(.body)
                     }
                 }
+            }
+
+            if let points = summary.keyPoints, !points.isEmpty {
+                bulletSection("Key Points", items: points)
             }
 
             if let participants = summary.participants, !participants.isEmpty {

@@ -274,6 +274,18 @@ def _build_json_schema(template: dict, lang: str) -> str:
     # 4. Entities always present in schema (not as separate instruction)
     schema["entities"] = [{"name": "<name>", "type": "<person|company|product|tool>"}]
 
+    # 5. Commitments — first-class: the model must see the field in the schema
+    # block, not only in a prose rule (board cycle 2, Murati/Sutskever)
+    schema["commitments"] = [
+        {
+            "committer": "<speaker label or spoken name>",
+            "recipient": "<who it was promised to, if said>",
+            "text": "<what was promised>",
+            "deadline": "<deadline, if said>",
+            "quote": "<verbatim quote from transcript>",
+        }
+    ]
+
     return json.dumps(schema, ensure_ascii=False, indent=2)
 
 
@@ -642,6 +654,15 @@ _EXAMPLES = {
                     {"name": "Mark", "type": "person"},
                     {"name": "Irina", "type": "person"},
                 ],
+                "commitments": [
+                    {
+                        "committer": "Mark",
+                        "recipient": "Anna",
+                        "text": "prepare the revised budget",
+                        "deadline": "Friday",
+                        "quote": "I will prepare the revised budget by Friday",
+                    }
+                ],
             },
             indent=2,
         ),
@@ -676,6 +697,15 @@ _EXAMPLES = {
                     {"name": "Анна", "type": "person"},
                     {"name": "Марк", "type": "person"},
                     {"name": "Ирина", "type": "person"},
+                ],
+                "commitments": [
+                    {
+                        "committer": "Марк",
+                        "recipient": "Анна",
+                        "text": "подготовить обновлённый бюджет",
+                        "deadline": "пятница",
+                        "quote": "я подготовлю обновлённый бюджет к пятнице",
+                    }
                 ],
             },
             ensure_ascii=False,

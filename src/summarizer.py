@@ -22,38 +22,41 @@ CHUNK_OVERLAP = 2000
 
 # Merge prompt for combining chunk summaries into a final summary
 _MERGE_PROMPT_RU = """\
-Ты — движок объединения результатов. Ниже приведены {n} промежуточных JSON-резюме, \
-полученных из последовательных частей одного длинного звонка.
+Ты — редактор итогового резюме длинного звонка из {n} частей. Списки уже \
+объединены кодом — твоя работа только редакторская:
+1. summary — связное резюме ВСЕГО звонка (2-4 предложения) по резюме частей ниже.
+2. title — один заголовок, отражающий весь звонок.
+3. key_points — выбери НЕ БОЛЕЕ 8 самых значимых пунктов ИЗ СПИСКА ниже, \
+дословно, ничего не изобретай. Второстепенное отбрось.
+4. decisions — выбери НЕ БОЛЕЕ 5 самых значимых ИЗ СПИСКА ниже, дословно.
+Выводи ТОЛЬКО JSON с полями summary, title, key_points, decisions.
 
-Твоя задача — объединить их в ОДИН итоговый JSON со следующими правилами:
-1. summary — общее резюме всего звонка (2-4 предложения), а не перечисление резюме чанков.
-2. title — один заголовок, отражающий ВЕСЬ звонок.
-3. Все списочные поля (key_points, decisions, action_items, participants и др.) — объедини, \
-убери полные дубликаты. Сохраняй порядок: от начала звонка к концу.
-4. participants — объедини из всех чанков, убери дубликаты.
-5. entities — объедини из всех чанков, убери дубликаты.
-6. Используй ТОЛЬКО поля из входных данных. НЕ добавляй новые.
-7. Выводи ТОЛЬКО JSON. Начни с {{
+РЕЗЮМЕ ЧАСТЕЙ:
+{summaries}
 
-ПРОМЕЖУТОЧНЫЕ РЕЗЮМЕ:
-{summaries}"""
+KEY_POINTS (выбирай отсюда):
+{key_points}
+
+DECISIONS (выбирай отсюда):
+{decisions}"""
 
 _MERGE_PROMPT_EN = """\
-You are a result merging engine. Below are {n} intermediate JSON summaries \
-from consecutive parts of the same long call.
+You are the final editor for a long call summarized in {n} parts. The lists \
+are already merged by code — your job is editorial only:
+1. summary — a coherent summary of the WHOLE call (2-4 sentences) from the part summaries below.
+2. title — one title covering the whole call.
+3. key_points — pick AT MOST 8 most significant points FROM THE LIST below, verbatim. Drop the minor ones.
+4. decisions — pick AT MOST 5 most significant FROM THE LIST below, verbatim.
+Output ONLY JSON with fields summary, title, key_points, decisions.
 
-Your task: merge them into ONE final JSON following these rules:
-1. summary — overall summary of the entire call (2-4 sentences), not a list of chunk summaries.
-2. title — one title reflecting the WHOLE call.
-3. All list fields (key_points, decisions, action_items, participants, etc.) — merge and \
-deduplicate. Preserve chronological order: start to end.
-4. participants — merge from all chunks, deduplicate.
-5. entities — merge from all chunks, deduplicate.
-6. Use ONLY fields present in the inputs. Do NOT add new fields.
-7. Output ONLY JSON. Start with {{
+PART SUMMARIES:
+{summaries}
 
-INTERMEDIATE SUMMARIES:
-{summaries}"""
+KEY_POINTS (pick from here):
+{key_points}
+
+DECISIONS (pick from here):
+{decisions}"""
 
 
 class Summarizer:
@@ -109,6 +112,50 @@ class Summarizer:
         "required": ["summary"],
         "additionalProperties": True,
     }
+
+    _TS_RE = re.compile(r"^\[(\d+):(\d{2})(?::(\d{2}))?\]")
+
+    @classmethod
+    def _parse_ts(cls, item: str) -> int | None:
+        """Leading [MM:SS] / [H:MM:SS] of a list item → seconds, else None."""
+        m = cls._TS_RE.match(item.strip()) if isinstance(item, str) else None
+        if not m:
+            return None
+        a, b, c = m.groups()
+        if c is not None:
+            return int(a) * 3600 + int(b) * 60 + int(c)
+        return int(a) * 60 + int(b)
+
+    @classmethod
+    def _dedup_timestamped(cls, items: list, window_seconds: int = 30) -> list:
+        """Collapse near-duplicate timestamped items from overlapping chunks.
+
+        Chunk overlap re-extracts the same moment twice with different
+        wording; items whose timestamps fall within the window collapse to
+        the longest (most specific) formulation. Untimestamped items pass
+        through untouched.
+        """
+        out: list = []
+        last_ts: int | None = None
+        for item in items:
+            ts = cls._parse_ts(item) if isinstance(item, str) else None
+            if ts is None:
+                out.append(item)
+                continue
+            if (
+                last_ts is not None
+                and out
+                and isinstance(out[-1], str)
+                and cls._parse_ts(out[-1]) is not None
+                and abs(ts - last_ts) <= window_seconds
+            ):
+                if len(item) > len(out[-1]):
+                    out[-1] = item
+                last_ts = ts
+                continue
+            out.append(item)
+            last_ts = ts
+        return out
 
     @staticmethod
     def _is_degenerate(transcript: str) -> bool:
@@ -194,6 +241,7 @@ class Summarizer:
                 "required": ["committer", "text"],
             },
         }
+        required.append("commitments")
         return {
             "type": "object",
             "properties": properties,
@@ -201,7 +249,9 @@ class Summarizer:
             "additionalProperties": False,
         }
 
-    def _call_ollama(self, prompt: str, format_schema: dict | None = None) -> str | None:
+    def _call_ollama(
+        self, prompt: str, format_schema: dict | None = None
+    ) -> str | None:
         """Send prompt to Ollama /api/chat and return content string."""
         payload = json.dumps(
             {
@@ -296,33 +346,63 @@ class Summarizer:
             }
         return result
 
-    def _merge_summaries(self, chunk_summaries: list[dict], lang: str) -> dict | None:
-        """Merge multiple chunk summaries into one final summary (reduce step)."""
-        summaries_text = "\n\n".join(
-            f"--- Chunk {i + 1} of {len(chunk_summaries)} ---\n"
-            + json.dumps(s, ensure_ascii=False, indent=2)
-            for i, s in enumerate(chunk_summaries)
+    _MERGE_PROSE_SCHEMA = {
+        "type": "object",
+        "properties": {
+            "summary": {"type": "string"},
+            "title": {"type": "string"},
+            "key_points": {"type": "array", "items": {"type": "string"}},
+            "decisions": {"type": "array", "items": {"type": "string"}},
+        },
+        "required": ["summary", "title", "key_points", "decisions"],
+        "additionalProperties": False,
+    }
+
+    def _merge_summaries(self, chunk_summaries: list[dict], lang: str) -> dict:
+        """Reduce step: code owns structure, the LLM owns prose.
+
+        Board cycle 2: every LLM hop was an independent chance to lose rare
+        fields (commitments died in merge on all chunked calls). Structural
+        lists are now merged mechanically and deterministically; the LLM only
+        writes the whole-call summary/title and SELECTS the top key_points
+        and decisions from the merged list — it physically cannot drop
+        commitments, entities or participants.
+        """
+        merged = self._mechanical_merge(chunk_summaries)
+        for field in ("key_points", "decisions"):
+            if isinstance(merged.get(field), list):
+                merged[field] = self._dedup_timestamped(merged[field])
+
+        summaries_text = "\n".join(
+            f"--- Часть {i + 1}/{len(chunk_summaries)} ---\n{cs.get('summary', '')}"
+            for i, cs in enumerate(chunk_summaries)
+        )
+        prompt_tpl = _MERGE_PROMPT_RU if lang == "ru" else _MERGE_PROMPT_EN
+        prompt = prompt_tpl.format(
+            n=len(chunk_summaries),
+            summaries=summaries_text,
+            key_points=json.dumps(merged.get("key_points") or [], ensure_ascii=False),
+            decisions=json.dumps(merged.get("decisions") or [], ensure_ascii=False),
         )
 
-        if lang == "ru":
-            prompt = _MERGE_PROMPT_RU.format(
-                n=len(chunk_summaries), summaries=summaries_text
-            )
-        else:
-            prompt = _MERGE_PROMPT_EN.format(
-                n=len(chunk_summaries), summaries=summaries_text
-            )
-
         log.info(f"Merging {len(chunk_summaries)} chunk summaries via Ollama...")
-        raw = self._call_ollama(prompt)
-        result = self._parse_response(raw)
+        raw = self._call_ollama(prompt, self._MERGE_PROSE_SCHEMA)
+        prose = self._parse_response(raw)
 
-        if result is None:
-            # Fallback: mechanical merge without LLM
-            log.warning("LLM merge failed, falling back to mechanical merge")
-            return self._mechanical_merge(chunk_summaries)
+        if prose is None:
+            log.warning("LLM merge failed — keeping mechanical merge result")
+            return merged
 
-        return result
+        if prose.get("summary"):
+            merged["summary"] = prose["summary"]
+        if prose.get("title"):
+            merged["title"] = prose["title"]
+        # The LLM SELECTS from the merged list; an empty selection keeps the
+        # mechanical result rather than wiping real content.
+        for field in ("key_points", "decisions"):
+            if prose.get(field):
+                merged[field] = prose[field]
+        return merged
 
     @staticmethod
     def _mechanical_merge(chunk_summaries: list[dict]) -> dict:
@@ -402,9 +482,16 @@ class Summarizer:
                 tokens.update(p_l.split())
         if owner_l in tokens:
             return True
+        # Russian names inflect by case: «Андрей» → «Андреем», «Игорь» →
+        # «Игоря», «Максим» → «Максиму». Match the stem plus a REAL case
+        # ending — an arbitrary \w-tail would resurrect the «максимум»
+        # false-accept the board killed in cycle 1.
+        stem = (
+            owner_l[:-1] if owner_l[-1:] in ("й", "ь") and len(owner_l) > 3 else owner_l
+        )
         return bool(
             re.search(
-                rf"(?<!\w){re.escape(owner_l)}(?!\w)",
+                rf"(?<!\w){re.escape(stem)}(?:ами|ями|ах|ях|ам|ям|ой|ей|ем|ём|ом|а|я|у|ю|е|ё|и|ы|о|й|ь)?(?!\w)",
                 transcript or "",
                 re.IGNORECASE,
             )
@@ -472,7 +559,9 @@ class Summarizer:
             if not committer or not text:
                 continue
             if not self._owner_attested(committer, participants, transcript):
-                log.info(f"Validation: dropping commitment with unattested committer {committer!r}")
+                log.info(
+                    f"Validation: dropping commitment with unattested committer {committer!r}"
+                )
                 continue
             processed.append(
                 {
@@ -503,11 +592,28 @@ class Summarizer:
         for key in [k for k in summary if k not in allowed]:
             log.info(f"Validation: dropping unknown summary key {key!r}")
             summary.pop(key)
+        # Participants are the source of truth for later attestation checks —
+        # clean the list itself first («Андрей» regression, cycle 2).
+        if isinstance(summary.get("participants"), list):
+            kept_participants = []
+            for name in summary["participants"]:
+                if isinstance(name, str) and self._owner_attested(name, [], transcript):
+                    kept_participants.append(name)
+                else:
+                    log.info(f"Validation: dropping unattested participant {name!r}")
+            summary["participants"] = kept_participants
         summary = self._validate_action_items(summary, transcript)
         if isinstance(summary.get("commitments"), list):
             summary["commitments"] = self._process_commitments(
                 summary["commitments"], summary.get("participants") or [], transcript
             )
+        # A summary a human can read: cap list sizes deterministically —
+        # 52 concatenated key_points is a dump, not care (board cycle 2).
+        for field, cap in (("key_points", 8), ("decisions", 5)):
+            items = summary.get(field)
+            if isinstance(items, list) and len(items) > cap:
+                log.warning(f"Trimming {field} from {len(items)} to {cap} items")
+                summary[field] = self._dedup_timestamped(items)[:cap]
         summary["coverage"] = coverage
         return summary
 

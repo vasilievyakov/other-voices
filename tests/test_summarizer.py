@@ -89,7 +89,9 @@ class TestSummarizerOutput:
             "participants": ["Alice"],
         }
         mock_urlopen.return_value = _mock_ollama(json.dumps(expected))
-        result = self.summarizer.summarize("A" * 100)
+        # Participants must actually appear in the transcript — the finalize
+        # step drops unattested names (board cycle 2).
+        result = self.summarizer.summarize("Alice: let us start. " + "A" * 100)
         # summarize adds the additive "coverage" key; strip it for comparison.
         assert result["coverage"] == "full"
         result_wo_coverage = {k: v for k, v in result.items() if k != "coverage"}
@@ -179,7 +181,7 @@ class TestSummarizerOutput:
         mock_urlopen.return_value = _mock_ollama(
             json.dumps(expected, ensure_ascii=False)
         )
-        result = self.summarizer.summarize("А" * 100)
+        result = self.summarizer.summarize("Вася и Петя обсуждали запуск. " + "А" * 100)
         assert result["summary"] == "Обсудили план запуска"
         assert result["participants"] == ["Вася", "Петя"]
 
@@ -829,3 +831,120 @@ class TestCommitmentsExtraction:
         }
         out = self.s._finalize(summary, "Вася обещал смету", "full")
         assert out["commitments"][0]["type"] == "incoming"
+
+
+# =============================================================================
+# Cycle 2 board fixes: code-owned reduce, timestamp dedup, caps, attestation
+# =============================================================================
+
+
+class TestCodeOwnedReduce:
+    def setup_method(self):
+        self.s = Summarizer()
+
+    def _chunks(self):
+        return [
+            {
+                "summary": "Первая часть.",
+                "key_points": ["[0:10] пункт А", "[5:00] пункт Б"],
+                "decisions": [],
+                "action_items": [],
+                "participants": ["SPEAKER_ME"],
+                "commitments": [
+                    {"committer": "SPEAKER_ME", "text": "пришлю смету", "recipient": "Вася"}
+                ],
+            },
+            {
+                "summary": "Вторая часть.",
+                "key_points": ["[25:00] пункт В"],
+                "decisions": ["[26:00] решили пилот"],
+                "action_items": [],
+                "participants": ["SPEAKER_ME", "Вася"],
+                "commitments": [],
+            },
+        ]
+
+    @patch("src.summarizer.urllib.request.urlopen")
+    def test_commitments_survive_merge_even_when_llm_omits_them(self, mock_urlopen):
+        """Structural fields are merged by code — the LLM cannot lose them."""
+        mock_urlopen.return_value = _mock_ollama(
+            '{"summary": "Весь звонок.", "title": "Т", '
+            '"key_points": ["[0:10] пункт А"], "decisions": ["[26:00] решили пилот"]}'
+        )
+        merged = self.s._merge_summaries(self._chunks(), "ru")
+        assert len(merged["commitments"]) == 1
+        assert merged["participants"] == ["SPEAKER_ME", "Вася"]
+
+    @patch("src.summarizer.urllib.request.urlopen")
+    def test_llm_failure_still_returns_merged_lists(self, mock_urlopen):
+        from urllib.error import URLError
+
+        mock_urlopen.side_effect = URLError("down")
+        merged = self.s._merge_summaries(self._chunks(), "ru")
+        assert merged is not None
+        assert len(merged["commitments"]) == 1
+        assert "[25:00] пункт В" in merged["key_points"]
+
+
+class TestTimestampDedup:
+    def setup_method(self):
+        self.s = Summarizer()
+
+    def test_near_timestamps_collapse_to_longest(self):
+        items = [
+            "[10:00] обсудили бюджет",
+            "[10:12] обсудили бюджет проекта на квартал",
+            "[25:00] другая тема",
+        ]
+        out = self.s._dedup_timestamped(items, window_seconds=30)
+        assert out == [
+            "[10:12] обсудили бюджет проекта на квартал",
+            "[25:00] другая тема",
+        ]
+
+    def test_untimestamped_items_kept(self):
+        items = ["без метки", "[1:00] с меткой"]
+        assert self.s._dedup_timestamped(items) == items
+
+
+class TestFinalizeCaps:
+    def setup_method(self):
+        self.s = Summarizer()
+
+    def test_key_points_capped_at_8_decisions_at_5(self):
+        summary = {
+            "summary": "s",
+            "key_points": [f"[{i}:00] пункт {i}" for i in range(20)],
+            "decisions": [f"[{i}:30] решение {i}" for i in range(9)],
+        }
+        out = self.s._finalize(summary, "т" * 100, "full")
+        assert len(out["key_points"]) == 8
+        assert len(out["decisions"]) == 5
+
+
+class TestParticipantAttestation:
+    def setup_method(self):
+        self.s = Summarizer()
+
+    def test_hallucinated_participant_dropped(self):
+        """Regression: «Андрей» in 20260720_132102 never appears in transcript."""
+        summary = {"summary": "s", "participants": ["Анна", "Андрей", "SPEAKER_1"]}
+        out = self.s._finalize(summary, "Анна согласилась продолжить. SPEAKER_1: да", "full")
+        assert out["participants"] == ["Анна", "SPEAKER_1"]
+
+
+class TestInflectedNameAttestation:
+    def setup_method(self):
+        self.s = Summarizer()
+
+    def test_yotated_name_attested_by_oblique_case(self):
+        """«Андрей» must be attested by «с Андреем» (й-stem inflection)."""
+        summary = {"summary": "s", "participants": ["Андрей"]}
+        out = self.s._finalize(summary, "мы обсудили это с Андреем вчера", "full")
+        assert out["participants"] == ["Андрей"]
+
+    def test_soft_sign_name_attested(self):
+        """«Игорь» attested by «Игоря»."""
+        summary = {"summary": "s", "participants": ["Игорь"]}
+        out = self.s._finalize(summary, "передайте Игоря отчёт", "full")
+        assert out["participants"] == ["Игорь"]

@@ -1,0 +1,13 @@
+{
+ "session_ids": [
+  "20260722_110231",
+  "20260722_100100",
+  "20260721_160242",
+  "20260721_130103",
+  "20260720_171437",
+  "20260720_145950",
+  "20260720_132102",
+  "20260717_140213"
+ ],
+ "note": "Fixed golden set (board cycle 2, Sutskever): same sessions every cycle so metric deltas measure code, not dataset drift."
+}

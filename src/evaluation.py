@@ -9,15 +9,18 @@ import re
 
 from .summarizer import Summarizer
 
-# Russian case endings are short; a name counts as present when it appears as
-# a word prefix with up to 3 trailing word chars («Максиму», «Максима»).
-# This under-detects hallucinations when a similar longer word exists — the
-# metric favors precision of flags over recall.
-_INFLECTION = r"\w{0,3}"
+# A name counts as present when its stem appears with a real Russian case
+# ending («Максиму», «Андреем»). Arbitrary tails are not accepted — «максимум»
+# must not attest «Максим».
+_CASE_ENDINGS = r"(?:ами|ями|ах|ях|ам|ям|ой|ей|ем|ём|ом|а|я|у|ю|е|ё|и|ы|о|й|ь)?"
 
 
 def _name_present(name: str, transcript: str) -> bool:
-    pattern = rf"(?<!\w){re.escape(name.lower())}{_INFLECTION}(?!\w)"
+    name_l = name.lower()
+    # й/ь-stem names inflect by swapping the final letter («Андрей» →
+    # «Андреем») — match the stem plus a real case ending only.
+    stem = name_l[:-1] if name_l[-1:] in ("й", "ь") and len(name_l) > 3 else name_l
+    pattern = rf"(?<!\w){re.escape(stem)}{_CASE_ENDINGS}(?!\w)"
     return bool(re.search(pattern, transcript or "", re.IGNORECASE))
 
 

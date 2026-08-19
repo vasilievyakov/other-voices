@@ -10,6 +10,7 @@ asks qwen3:32b to judge grounding on a subset. Results: eval/<cycle-name>/.
 
 import argparse
 import functools
+import logging
 import json
 import sqlite3
 import sys
@@ -29,6 +30,10 @@ from src.evaluation import (  # noqa: E402
 from src.summarizer import Summarizer  # noqa: E402
 
 print = functools.partial(print, flush=True)  # noqa: A001 — progress must stream
+
+# Without a handler the summarizer's chunk-by-chunk log.info() lines vanish —
+# a 9-minute call looked frozen (board cycle 2, Cherny).
+logging.basicConfig(level=logging.INFO, format="%(message)s", stream=sys.stdout)
 
 JUDGE_MODEL = "qwen3:32b"
 
@@ -55,6 +60,14 @@ JSON-саммари, построенное по нему. Найди утвер
 """
 
 
+def _judge_slice(transcript: str, head: int = 14000, tail: int = 14000) -> str:
+    """Head+tail slice: the flat [:12000] cut marked verbatim late-call quotes
+    as 'ungrounded' and sank long-call scores (board cycle 2)."""
+    if len(transcript) <= head + tail:
+        return transcript
+    return transcript[:head] + "\n...[середина пропущена]...\n" + transcript[-tail:]
+
+
 def judge_grounding(transcript: str, summary: dict) -> dict | None:
     payload = json.dumps(
         {
@@ -63,7 +76,7 @@ def judge_grounding(transcript: str, summary: dict) -> dict | None:
                 {
                     "role": "user",
                     "content": JUDGE_PROMPT.format(
-                        transcript=transcript[:12000],
+                        transcript=_judge_slice(transcript),
                         summary=json.dumps(summary, ensure_ascii=False),
                     ),
                 }
@@ -87,6 +100,13 @@ def judge_grounding(transcript: str, summary: dict) -> dict | None:
         return None
 
 
+def load_golden_ids() -> list[str] | None:
+    golden = Path(__file__).resolve().parent.parent / "eval" / "golden-set.json"
+    if golden.exists():
+        return json.loads(golden.read_text())["session_ids"]
+    return None
+
+
 def pick_sessions(n: int) -> tuple[list[dict], int]:
     """Most recent live sessions with REAL content.
 
@@ -95,12 +115,23 @@ def pick_sessions(n: int) -> tuple[list[dict], int]:
     (sessions, degenerate_skipped).
     """
     conn = sqlite3.connect(DB_PATH)
-    rows = conn.execute(
-        """SELECT session_id, app_name, transcript FROM calls
-           WHERE source = 'live' AND transcript IS NOT NULL
-             AND length(transcript) >= 500
-           ORDER BY session_id DESC""",
-    ).fetchall()
+    golden = load_golden_ids()
+    if golden:
+        # Fixed golden set: deltas across cycles measure code, not dataset drift
+        placeholders = ",".join("?" * len(golden))
+        rows = conn.execute(
+            f"""SELECT session_id, app_name, transcript FROM calls
+               WHERE session_id IN ({placeholders})
+               ORDER BY session_id DESC""",
+            golden,
+        ).fetchall()
+    else:
+        rows = conn.execute(
+            """SELECT session_id, app_name, transcript FROM calls
+               WHERE source = 'live' AND transcript IS NOT NULL
+                 AND length(transcript) >= 500
+               ORDER BY session_id DESC""",
+        ).fetchall()
     conn.close()
     picked: list[dict] = []
     degenerate = 0
@@ -117,7 +148,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("cycle")
     parser.add_argument("--sessions", type=int, default=8)
-    parser.add_argument("--judge", type=int, default=3)
+    parser.add_argument("--judge", type=int, default=99)
     args = parser.parse_args()
 
     out_dir = Path(__file__).resolve().parent.parent / "eval" / args.cycle
@@ -150,6 +181,9 @@ def main():
             entry["coverage_correct"] = coverage_correct(summary, s["transcript"])
             if i < args.judge:
                 entry["judge"] = judge_grounding(s["transcript"], summary)
+                entry["judge_coverage_pct"] = round(
+                    min(1.0, 28000 / max(len(s["transcript"]), 1)) * 100
+                )
             (out_dir / f"{s['session_id']}.summary.json").write_text(
                 json.dumps(summary, ensure_ascii=False, indent=1), encoding="utf-8"
             )
