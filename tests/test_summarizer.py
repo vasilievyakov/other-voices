@@ -652,3 +652,49 @@ class TestStructuredOutput:
         s = Summarizer()
         raw = s._call_ollama("prompt")
         assert s._parse_response(raw) == {"summary": "ok", "_repaired": True}
+
+
+class TestOwnerValidationViaParticipants:
+    def setup_method(self):
+        self.s = Summarizer()
+
+    def test_substring_false_accept_now_dropped(self):
+        """«Максим» must not be attested by the word «максимум» (substring bug)."""
+        summary = {
+            "action_items": ["@Максим: собрать отчёт"],
+            "participants": ["Вася"],
+        }
+        transcript = "мы обсуждали максимум затрат на квартал"
+        out = self.s._validate_action_items(summary, transcript)
+        assert out["action_items"] == []
+
+    def test_owner_matching_participant_kept(self):
+        """Owner listed in participants is attested even without transcript hit."""
+        summary = {
+            "action_items": ["@Максим: собрать отчёт"],
+            "participants": ["Максим"],
+        }
+        out = self.s._validate_action_items(summary, "обсуждение бюджета")
+        assert out["action_items"] == ["@Максим: собрать отчёт"]
+
+    def test_owner_matches_token_of_full_name(self):
+        """@Яков matches participant «Яков Васильев»."""
+        summary = {
+            "action_items": ["@Яков: прислать договор"],
+            "participants": ["Яков Васильев"],
+        }
+        out = self.s._validate_action_items(summary, "без имён")
+        assert out["action_items"] == ["@Яков: прислать договор"]
+
+    def test_word_boundary_transcript_fallback_keeps(self):
+        """No participants list → exact word in transcript still attests."""
+        summary = {"action_items": ["@Anna: send report"]}
+        transcript = "Anna will send the report"
+        out = self.s._validate_action_items(summary, transcript)
+        assert out["action_items"] == ["@Anna: send report"]
+
+    def test_word_boundary_rejects_prefix_word(self):
+        """No participants → «Максим» not attested by «максимум»."""
+        summary = {"action_items": ["@Максим: собрать отчёт"]}
+        out = self.s._validate_action_items(summary, "это максимум возможного")
+        assert out["action_items"] == []

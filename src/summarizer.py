@@ -289,19 +289,48 @@ class Summarizer:
         return "full"
 
     @staticmethod
-    def _validate_action_items(summary: dict, transcript: str) -> dict:
-        """Drop action_items whose @owner does not appear in the transcript.
+    def _owner_attested(owner: str, participants: list, transcript: str) -> bool:
+        """Is this @owner a real person from the call?
 
-        The owner token (the word after '@') is checked as a case-insensitive
-        substring of the transcript. Speaker labels (e.g. SPEAKER_1) count as
-        appearing because they are present in the transcript text. Items without
-        an '@owner' are kept as-is (nothing to validate against).
+        Priority: (1) speaker labels are checked against the transcript text;
+        (2) the participants list is the source of truth — the owner may match
+        a participant name or any single token of a full name; (3) with no
+        participants match, an exact word-boundary hit in the transcript still
+        attests. Plain substring matching is banned: «Максим» must not be
+        attested by «максимум».
+        """
+        owner_l = owner.lower()
+        if re.fullmatch(r"speaker[_ ]?\w+", owner_l):
+            return owner_l in (transcript or "").lower()
+        tokens: set[str] = set()
+        for p in participants or []:
+            if isinstance(p, str):
+                p_l = p.lower().strip()
+                tokens.add(p_l)
+                tokens.update(p_l.split())
+        if owner_l in tokens:
+            return True
+        return bool(
+            re.search(
+                rf"(?<!\w){re.escape(owner_l)}(?!\w)",
+                transcript or "",
+                re.IGNORECASE,
+            )
+        )
+
+    @classmethod
+    def _validate_action_items(cls, summary: dict, transcript: str) -> dict:
+        """Drop action_items whose @owner is not attested by the call.
+
+        Attestation order: participants list first (handles Russian case
+        inflection in the transcript), then exact word-boundary match in the
+        transcript. Items without an '@owner' are kept as-is.
         """
         items = summary.get("action_items")
         if not isinstance(items, list) or not items:
             return summary
 
-        transcript_lower = (transcript or "").lower()
+        participants = summary.get("participants") or []
         kept: list = []
         dropped: list = []
         for item in items:
@@ -313,7 +342,7 @@ class Summarizer:
                 kept.append(item)
                 continue
             owner = m.group(1).strip(".,;:()[]").strip()
-            if not owner or owner.lower() in transcript_lower:
+            if not owner or cls._owner_attested(owner, participants, transcript):
                 kept.append(item)
             else:
                 dropped.append((owner, item))
