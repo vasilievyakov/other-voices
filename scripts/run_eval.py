@@ -216,10 +216,17 @@ def main():
         if i >= args.judge or entry["session_id"] not in summaries:
             continue
         summary = summaries[entry["session_id"]]
-        verdict = judge_grounding(s["transcript"], summary)
-        if verdict is None:
-            print(f"  [judge {i + 1}] retrying {s['session_id']}...")
+        judge_cache = out_dir / f"{s['session_id']}.judge.json"
+        if judge_cache.exists():
+            verdict = json.loads(judge_cache.read_text())
+            print(f"  [judge resume] {s['session_id']}")
+        else:
             verdict = judge_grounding(s["transcript"], summary)
+            if verdict is None:
+                print(f"  [judge {i + 1}] retrying {s['session_id']}...")
+                verdict = judge_grounding(s["transcript"], summary)
+            if verdict is not None:
+                judge_cache.write_text(json.dumps(verdict, ensure_ascii=False))
         entry["judge"] = verdict
         entry["judge_coverage_pct"] = round(
             min(1.0, 28000 / max(len(s["transcript"]), 1)) * 100
