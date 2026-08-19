@@ -3,6 +3,21 @@
 import psutil
 
 
+def _iter_processes(attrs):
+    """psutil.process_iter that survives macOS sysctl races.
+
+    On macOS psutil's as_dict → name() → proc_cmdline can raise
+    SystemError/PermissionError from inside the iterator itself (sysctl
+    KERN_PROCARGS2 race) — outside any per-process try/except in the loop
+    body. This killed the daemon on 10.06, 11.07 and 13.07. Losing the rest
+    of one poll cycle is fine: the next poll runs in POLL_INTERVAL seconds.
+    """
+    try:
+        yield from psutil.process_iter(attrs)
+    except (SystemError, PermissionError, psutil.Error):
+        return
+
+
 class CallDetector:
     """Detects active voice/video calls by checking running processes and UDP connections."""
 
@@ -80,7 +95,7 @@ class CallDetector:
 
     def _process_exists(self, name: str) -> bool:
         """Check if a process with given name is running."""
-        for proc in psutil.process_iter(["name"]):
+        for proc in _iter_processes(["name"]):
             try:
                 if proc.info["name"] == name:
                     return True
@@ -95,7 +110,7 @@ class CallDetector:
         exclude_ports: frozenset[int] = frozenset(),
     ) -> bool:
         """Check if a process has at least min_count UDP connections to distinct IPs."""
-        for proc in psutil.process_iter(["name"]):
+        for proc in _iter_processes(["name"]):
             try:
                 if proc.info["name"] != process_name:
                     continue

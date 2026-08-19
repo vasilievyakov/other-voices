@@ -455,3 +455,45 @@ class TestDebounce:
         active, app = detector.check()
         assert active is True
         assert app == "Google Meet"
+
+
+# =============================================================================
+# Resilience: psutil.process_iter itself raising mid-iteration (macOS sysctl race)
+# =============================================================================
+
+
+def _exploding_iter(*procs, exc=SystemError("proc_cmdline returned a result with an exception set")):
+    """Generator that yields given procs, then raises — mimics psutil on macOS."""
+    def gen(_attrs):
+        yield from procs
+        raise exc
+    return gen
+
+
+class TestProcessIterCrash:
+    @patch("src.detector.psutil.process_iter")
+    def test_systemerror_during_iteration_returns_no_call(self, mock_iter):
+        """SystemError from process_iter (daemon killer 10.06/11.07/13.07) → (False, None), no raise."""
+        mock_iter.side_effect = _exploding_iter()
+        detector = CallDetector()
+        active, app = detector.check()
+        assert active is False
+        assert app is None
+
+    @patch("src.detector.psutil.process_iter")
+    def test_permissionerror_during_iteration_returns_no_call(self, mock_iter):
+        """PermissionError from sysctl KERN_PROCARGS2 → (False, None), no raise."""
+        mock_iter.side_effect = _exploding_iter(exc=PermissionError(13, "force permission denied"))
+        detector = CallDetector()
+        active, app = detector.check()
+        assert active is False
+        assert app is None
+
+    @patch("src.detector.psutil.process_iter")
+    def test_detection_before_explosion_still_wins(self, mock_iter):
+        """Zoom found before the iterator explodes → still detected."""
+        mock_iter.side_effect = _exploding_iter(make_proc("CptHost"))
+        detector = CallDetector()
+        active, app = detector.check()
+        assert active is True
+        assert app == "Zoom"
