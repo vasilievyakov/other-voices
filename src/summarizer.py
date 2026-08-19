@@ -80,6 +80,35 @@ class Summarizer:
             pass
         return None
 
+    # Constrains Ollama's decoder to emit valid JSON with the core summary
+    # shape. Templates add sections beyond the core keys, so additional
+    # properties stay allowed — the schema guarantees well-formed JSON, not a
+    # closed shape. String repair (_try_repair_json) remains as a fallback for
+    # runners that ignore the format field.
+    RESPONSE_SCHEMA = {
+        "type": "object",
+        "properties": {
+            "summary": {"type": "string"},
+            "key_points": {"type": "array", "items": {"type": "string"}},
+            "decisions": {"type": "array", "items": {"type": "string"}},
+            "action_items": {"type": "array", "items": {"type": "string"}},
+            "participants": {"type": "array", "items": {"type": "string"}},
+            "entities": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "name": {"type": "string"},
+                        "type": {"type": "string"},
+                    },
+                    "required": ["name", "type"],
+                },
+            },
+        },
+        "required": ["summary"],
+        "additionalProperties": True,
+    }
+
     def _call_ollama(self, prompt: str) -> str | None:
         """Send prompt to Ollama /api/chat and return content string."""
         payload = json.dumps(
@@ -87,6 +116,7 @@ class Summarizer:
                 "model": OLLAMA_MODEL,
                 "messages": [{"role": "user", "content": prompt}],
                 "stream": False,
+                "format": self.RESPONSE_SCHEMA,
                 "options": {
                     "temperature": 0.1,
                     "num_predict": 16384,

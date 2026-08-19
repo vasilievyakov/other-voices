@@ -623,3 +623,32 @@ class TestActionItemOwnerValidation:
         joined = " ".join(result["action_items"])
         assert "Ghostface" not in joined
         assert any("SPEAKER_ME" in it for it in result["action_items"])
+
+
+# =============================================================================
+# Structured output — Ollama format schema (primary), string repair (fallback)
+# =============================================================================
+
+
+class TestStructuredOutput:
+    @patch("src.summarizer.urllib.request.urlopen")
+    def test_payload_carries_json_schema_format(self, mock_urlopen):
+        """/api/chat payload must constrain output via a JSON-schema format."""
+        mock_urlopen.return_value = _mock_ollama('{"summary": "ok"}')
+        s = Summarizer()
+        s._call_ollama("prompt")
+        request = mock_urlopen.call_args[0][0]
+        payload = json.loads(request.data.decode("utf-8"))
+        assert "format" in payload
+        assert payload["format"]["type"] == "object"
+        assert "summary" in payload["format"]["properties"]
+        # templates add sections beyond the core keys — must stay allowed
+        assert payload["format"].get("additionalProperties", False) is True
+
+    @patch("src.summarizer.urllib.request.urlopen")
+    def test_repair_still_works_as_fallback(self, mock_urlopen):
+        """Malformed output (old Ollama, no schema support) still repairs."""
+        mock_urlopen.return_value = _mock_ollama('{"summary": "ok"} trailing garbage')
+        s = Summarizer()
+        raw = s._call_ollama("prompt")
+        assert s._parse_response(raw) == {"summary": "ok", "_repaired": True}
