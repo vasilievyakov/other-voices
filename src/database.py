@@ -198,6 +198,33 @@ class Database:
                 )
         return len(seeds)
 
+    def mic_only_streak(self, limit: int = 200) -> int:
+        """How many of the most recent live calls in a row are mic-only.
+
+        A call extends the streak only when its summary carries
+        coverage == "mic_only"; a full-coverage call or a call without a
+        summary breaks it. Imported seed rows are ignored.
+        """
+        with self._conn() as conn:
+            rows = conn.execute(
+                """SELECT summary_json FROM calls
+                   WHERE source != 'import_seed'
+                   ORDER BY session_id DESC LIMIT ?""",
+                (limit,),
+            ).fetchall()
+        streak = 0
+        for (summary_json,) in rows:
+            coverage = None
+            if summary_json:
+                try:
+                    coverage = json.loads(summary_json).get("coverage")
+                except (json.JSONDecodeError, AttributeError):
+                    coverage = None
+            if coverage != "mic_only":
+                break
+            streak += 1
+        return streak
+
     def update_notes(self, session_id: str, notes: str | None):
         """Update user notes for a call."""
         with self._conn() as conn:

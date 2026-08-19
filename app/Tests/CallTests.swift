@@ -377,6 +377,23 @@ func runActionItemTests() {
 func runDaemonStatusTests() {
     print("\n--- DaemonStatus Tests ---")
 
+    test("micOnlyStreak decodes from status json") {
+        let json = """
+        {"daemon_pid": 1, "timestamp": "2026-08-19T10:00:00.000+00:00",
+         "state": "idle", "mic_only_streak": 7}
+        """.data(using: .utf8)!
+        let s = try JSONDecoder().decode(DaemonStatus.self, from: json)
+        expect(s.micOnlyStreak == 7, "got \(String(describing: s.micOnlyStreak))")
+    }
+
+    test("micOnlyStreak absent decodes as nil") {
+        let json = """
+        {"daemon_pid": 1, "timestamp": "2026-08-19T10:00:00.000+00:00", "state": "idle"}
+        """.data(using: .utf8)!
+        let s = try JSONDecoder().decode(DaemonStatus.self, from: json)
+        expect(s.micOnlyStreak == nil)
+    }
+
     test("decodeFromJSON") {
         let json = """
         {"daemon_pid":123,"timestamp":"2025-02-20T12:00:00Z","state":"idle","app_name":null,"session_id":null,"started_at":null,"pipeline":null}

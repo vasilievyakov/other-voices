@@ -19,6 +19,12 @@ struct DaemonStatusCard: View {
                 if !daemon.ollamaAvailable {
                     ollamaWarningView
                 }
+
+                // Mic-only escalation — recordings are silently missing the
+                // other side; say it here, not only in the log
+                if let streak = status.micOnlyStreak, streak > 0 {
+                    micOnlyWarningView(streak)
+                }
             } else {
                 offlineView
             }
@@ -156,6 +162,26 @@ struct DaemonStatusCard: View {
                 .foregroundStyle(.secondary)
         }
         .padding(.top, 6)
+    }
+
+    // MARK: - Mic-only warning
+
+    private func micOnlyWarningView(_ streak: Int) -> some View {
+        HStack(spacing: 6) {
+            Image(systemName: "person.2.slash")
+                .foregroundStyle(.orange)
+                .font(.system(size: 10))
+
+            Text(
+                streak == 1
+                    ? "Last call captured your mic only"
+                    : "\(streak) calls in a row captured your mic only"
+            )
+            .font(.caption2)
+            .foregroundStyle(.secondary)
+        }
+        .padding(.top, 6)
+        .help("Other participants are missing from recordings. Grant Screen & System Audio Recording to audio-capture, then restart the daemon.")
     }
 
     // MARK: - Card background

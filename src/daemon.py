@@ -215,6 +215,11 @@ _last_system_audio_warning: float | None = None
 SYSTEM_AUDIO_WARNING_INTERVAL = 3600  # seconds — at most one notification/hour
 
 
+# Consecutive live calls recorded without the interlocutors' channel.
+# Updated after each processed call; shown by the app as an escalating warning.
+_mic_only_streak = 0
+
+
 def write_status(
     state: str,
     app_name: str | None = None,
@@ -235,6 +240,7 @@ def write_status(
         "pipeline": pipeline,
         "ollama_available": _ollama_available,
         "system_audio_ok": _system_audio_ok,
+        "mic_only_streak": _mic_only_streak,
     }
     tmp_path = STATUS_PATH.with_suffix(".tmp")
     try:
@@ -479,6 +485,18 @@ def process_recording(
         duration_ms=t_save.elapsed_ms,
     )
 
+    # Refresh the mic-only streak so status.json (and the app's status card)
+    # escalates a silent one-channel degradation instead of hiding it in logs.
+    global _mic_only_streak
+    _mic_only_streak = db.mic_only_streak()
+    if _mic_only_streak:
+        _log(
+            logging.WARNING,
+            "pipeline",
+            f"Mic-only streak: {_mic_only_streak} call(s) in a row without "
+            f"the interlocutors' channel",
+        )
+
     # ── Pipeline complete — summary notification ──
     total_ms = (time.monotonic() - pipeline_start) * 1000
 
@@ -556,6 +574,11 @@ def main():
     transcriber = Transcriber()
     summarizer = Summarizer()
     db = Database()
+
+    # Restore the mic-only streak across daemon restarts so the warning
+    # does not silently reset with every relaunch.
+    global _mic_only_streak
+    _mic_only_streak = db.mic_only_streak()
 
     running = True
 

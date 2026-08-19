@@ -878,3 +878,47 @@ class TestSourceColumn:
         tmp_db.mark_import_seeds(recordings_dir=tmp_path)
         changed = tmp_db.mark_import_seeds(recordings_dir=tmp_path)
         assert changed == 0
+
+
+class TestMicOnlyStreak:
+    def _call(self, db, sid, coverage=None, source_seed=False):
+        db.insert_call(
+            session_id=sid,
+            app_name="Zoom",
+            started_at=f"2026-08-{sid[-2:]}T10:00:00",
+            ended_at=f"2026-08-{sid[-2:]}T10:10:00",
+            duration_seconds=600.0,
+            system_wav_path=None,
+            mic_wav_path=None,
+            transcript="hi",
+            summary={"summary": "s", "coverage": coverage} if coverage else None,
+        )
+        if source_seed:
+            with db._conn() as conn:
+                conn.execute(
+                    "UPDATE calls SET source='import_seed' WHERE session_id=?", (sid,)
+                )
+
+    def test_empty_db_streak_zero(self, tmp_db):
+        assert tmp_db.mic_only_streak() == 0
+
+    def test_counts_consecutive_latest_mic_only(self, tmp_db):
+        self._call(tmp_db, "20260801_000001", coverage="full")
+        self._call(tmp_db, "20260802_000002", coverage="mic_only")
+        self._call(tmp_db, "20260803_000003", coverage="mic_only")
+        assert tmp_db.mic_only_streak() == 2
+
+    def test_full_coverage_resets_streak(self, tmp_db):
+        self._call(tmp_db, "20260801_000001", coverage="mic_only")
+        self._call(tmp_db, "20260802_000002", coverage="full")
+        assert tmp_db.mic_only_streak() == 0
+
+    def test_missing_summary_breaks_streak(self, tmp_db):
+        self._call(tmp_db, "20260801_000001", coverage="mic_only")
+        self._call(tmp_db, "20260802_000002", coverage=None)
+        assert tmp_db.mic_only_streak() == 0
+
+    def test_import_seeds_ignored(self, tmp_db):
+        self._call(tmp_db, "20260801_000001", coverage="mic_only")
+        self._call(tmp_db, "20260802_000002", coverage="full", source_seed=True)
+        assert tmp_db.mic_only_streak() == 1
