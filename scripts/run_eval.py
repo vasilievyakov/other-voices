@@ -9,6 +9,7 @@ asks qwen3:32b to judge grounding on a subset. Results: eval/<cycle-name>/.
 """
 
 import argparse
+import functools
 import json
 import sqlite3
 import sys
@@ -26,6 +27,8 @@ from src.evaluation import (  # noqa: E402
     summary_shape,
 )
 from src.summarizer import Summarizer  # noqa: E402
+
+print = functools.partial(print, flush=True)  # noqa: A001 — progress must stream
 
 JUDGE_MODEL = "qwen3:32b"
 

@@ -1,0 +1,9 @@
+{
+ "summary": "SPEAKER_ME повторяет фразу «Продолжение следует» в течение 182 минут без указания контекста, целей или результатов. В разговоре отсутствуют конкретные решения, задачи или упоминания других участников.",
+ "title": "Повтор фразы SPEAKER_ME",
+ "participants': [": "key_points': [",
+ "decisions': [": "action_items': [",
+ "entities': [": "summary': ",
+ "title': ": "participants': [",
+ "coverage": "mic_only"
+}

@@ -1,0 +1,47 @@
+{
+ "summary": "SPEAKER_ME discusses ongoing projects, mentions collaboration with individuals like Баня and Андрей, and references planning future steps involving startups and training programs. The conversation includes considerations about access limitations and technological challenges.",
+ "key_points": [
+  "[3:19] Баня курирует больше в каких-то частях",
+  "[5:47] SPEAKER_ME и Дима ведут Андрея, который решил стартапить",
+  "[6:07] SPEAKER_ME знает Наташу (звезда и мем в их кругах)",
+  "[17:24] Упоминание регистрации на Open Road для получения ключа",
+  "[29:43] Целевая аудитория конструируется вокруг тех, кто уперся в лимиты чата"
+ ],
+ "decisions": [],
+ "action_items": [
+  "[5:24] @SPEAKER_ME: оставить себе право перебивать и спрашивать, если что-то не понятно"
+ ],
+ "participants": [
+  "SPEAKER_ME"
+ ],
+ "title": "Project Discussion and Future Plans",
+ "entities": [
+  {
+   "name": "Баня",
+   "type": "person"
+  },
+  {
+   "name": "Андрей",
+   "type": "person"
+  },
+  {
+   "name": "Наташа",
+   "type": "person"
+  },
+  {
+   "name": "Open Road",
+   "type": "tool"
+  }
+ ],
+ "commitments": [
+  {
+   "type": "outgoing",
+   "who": "SPEAKER_ME",
+   "to_whom": null,
+   "what": "оставлю себе право если что тебя перебивать спрашивать если не понятно",
+   "deadline": null,
+   "quote": "я думаю что я оставлю себе право если что тебя перебивать спрашивать если не понятно"
+  }
+ ],
+ "coverage": "mic_only"
+}

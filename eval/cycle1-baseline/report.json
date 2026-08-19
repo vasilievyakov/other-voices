@@ -1,0 +1,202 @@
+{
+ "aggregate": {
+  "sessions": 8,
+  "failed": 0,
+  "repaired": 0,
+  "coverage_correct": 8,
+  "owner_items_total": 0,
+  "owner_items_attested": 0,
+  "sessions_with_hallucinated_participants": 0,
+  "judge_scores": [
+   5,
+   1,
+   5
+  ],
+  "avg_seconds": 34.8
+ },
+ "sessions": [
+  {
+   "session_id": "20260818_165750",
+   "app_name": "Zoom",
+   "transcript_chars": 11877,
+   "seconds": 20.3,
+   "shape": {
+    "failed": false,
+    "summary_chars": 128,
+    "key_points": 0,
+    "decisions": 0,
+    "action_items": 0,
+    "participants": 0,
+    "repaired": false
+   },
+   "owner_attestation": {
+    "with_owner": 0,
+    "attested": 0
+   },
+   "hallucinated_participants": [],
+   "coverage_correct": true,
+   "judge": {
+    "grounded_score": 5,
+    "ungrounded_claims": []
+   }
+  },
+  {
+   "session_id": "20260817_130256",
+   "app_name": "Zoom",
+   "transcript_chars": 6857,
+   "seconds": 64.4,
+   "shape": {
+    "failed": false,
+    "summary_chars": 0,
+    "key_points": 0,
+    "decisions": 0,
+    "action_items": 0,
+    "participants": 0,
+    "repaired": false
+   },
+   "owner_attestation": {
+    "with_owner": 0,
+    "attested": 0
+   },
+   "hallucinated_participants": [],
+   "coverage_correct": true,
+   "judge": {
+    "grounded_score": 1,
+    "ungrounded_claims": [
+     "participants:[\": \"SPEAKER_ME\"",
+     "\"coverage\": \"mic_only\""
+    ]
+   }
+  },
+  {
+   "session_id": "20260813_134328",
+   "app_name": "Zoom",
+   "transcript_chars": 880,
+   "seconds": 34.7,
+   "shape": {
+    "failed": false,
+    "summary_chars": 185,
+    "key_points": 0,
+    "decisions": 0,
+    "action_items": 0,
+    "participants": 0,
+    "repaired": false
+   },
+   "owner_attestation": {
+    "with_owner": 0,
+    "attested": 0
+   },
+   "hallucinated_participants": [],
+   "coverage_correct": true,
+   "judge": {
+    "grounded_score": 5,
+    "ungrounded_claims": []
+   }
+  },
+  {
+   "session_id": "20260813_130156",
+   "app_name": "Zoom",
+   "transcript_chars": 3460,
+   "seconds": 35.3,
+   "shape": {
+    "failed": false,
+    "summary_chars": 145,
+    "key_points": 0,
+    "decisions": 0,
+    "action_items": 0,
+    "participants": 0,
+    "repaired": false
+   },
+   "owner_attestation": {
+    "with_owner": 0,
+    "attested": 0
+   },
+   "hallucinated_participants": [],
+   "coverage_correct": true
+  },
+  {
+   "session_id": "20260813_120036",
+   "app_name": "Zoom",
+   "transcript_chars": 5094,
+   "seconds": 27.2,
+   "shape": {
+    "failed": false,
+    "summary_chars": 132,
+    "key_points": 0,
+    "decisions": 0,
+    "action_items": 0,
+    "participants": 0,
+    "repaired": false
+   },
+   "owner_attestation": {
+    "with_owner": 0,
+    "attested": 0
+   },
+   "hallucinated_participants": [],
+   "coverage_correct": true
+  },
+  {
+   "session_id": "20260812_171835",
+   "app_name": "Zoom",
+   "transcript_chars": 9853,
+   "seconds": 41.4,
+   "shape": {
+    "failed": false,
+    "summary_chars": 156,
+    "key_points": 0,
+    "decisions": 0,
+    "action_items": 0,
+    "participants": 0,
+    "repaired": false
+   },
+   "owner_attestation": {
+    "with_owner": 0,
+    "attested": 0
+   },
+   "hallucinated_participants": [],
+   "coverage_correct": true
+  },
+  {
+   "session_id": "20260812_140014",
+   "app_name": "Zoom",
+   "transcript_chars": 15881,
+   "seconds": 33.7,
+   "shape": {
+    "failed": false,
+    "summary_chars": 200,
+    "key_points": 0,
+    "decisions": 0,
+    "action_items": 0,
+    "participants": 0,
+    "repaired": false
+   },
+   "owner_attestation": {
+    "with_owner": 0,
+    "attested": 0
+   },
+   "hallucinated_participants": [],
+   "coverage_correct": true
+  },
+  {
+   "session_id": "20260812_133239",
+   "app_name": "Zoom",
+   "transcript_chars": 1568,
+   "seconds": 21.5,
+   "shape": {
+    "failed": false,
+    "summary_chars": 142,
+    "key_points": 0,
+    "decisions": 0,
+    "action_items": 0,
+    "participants": 0,
+    "repaired": false
+   },
+   "owner_attestation": {
+    "with_owner": 0,
+    "attested": 0
+   },
+   "hallucinated_participants": [],
+   "coverage_correct": true
+  }
+ ]
+}
