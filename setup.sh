@@ -40,6 +40,22 @@ else
     exit 1
 fi
 
+echo "[3b/6] Compiling Swift call-signal binary..."
+swiftc swift/CallSignal.swift -o bin/call-signal \
+    -framework CoreAudio \
+    -framework CoreMediaIO \
+    -framework AppKit \
+    -O \
+    2>&1
+
+if [ -f bin/call-signal ]; then
+    echo "  bin/call-signal compiled successfully"
+    chmod +x bin/call-signal
+else
+    echo "  ERROR: call-signal compilation failed"
+    exit 1
+fi
+
 # Code-sign with a STABLE identifier so the identity does not drift on every
 # rebuild. Previously the binary was signed with an auto-derived identifier
 # (e.g. "audio-capture-new"); each rebuild changed it, macOS treated the binary

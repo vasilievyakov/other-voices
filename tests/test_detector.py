@@ -6,8 +6,19 @@ Enterprise coverage: all apps, priority, thresholds, resilience.
 from unittest.mock import patch, MagicMock
 import psutil
 
-from src.detector import CallDetector
+import pytest
+
+from src.detector import CallDetector, SignalProbe
 from tests.conftest import make_proc, make_conn, make_conn_no_raddr
+
+
+@pytest.fixture(autouse=True)
+def _no_real_signal_probe(monkeypatch):
+    """Unit tests must not run the real bin/call-signal binary.
+
+    Default probe returns None → legacy UDP paths under test stay reachable.
+    Tests that need a signal inject FakeProbe explicitly."""
+    monkeypatch.setattr(SignalProbe, "probe", lambda self: None)
 
 
 # =============================================================================
@@ -497,3 +508,139 @@ class TestProcessIterCrash:
         active, app = detector.check()
         assert active is True
         assert app == "Zoom"
+
+
+# =============================================================================
+# Detection v2 — physical signal (mic holders + camera + WebRTC assertion)
+# =============================================================================
+
+
+class FakeProbe:
+    def __init__(self, result):
+        self.result = result
+
+    def probe(self):
+        return self.result
+
+
+def _sig(mic_apps=(), camera=False, assertion=False):
+    return {
+        "mic_apps": list(mic_apps),
+        "camera_on": camera,
+        "webrtc_assertion": assertion,
+    }
+
+
+class TestSignalDetection:
+    @patch("src.detector.psutil.process_iter")
+    def test_known_app_holding_mic_detected(self, mock_iter):
+        mock_iter.return_value = []
+        d = CallDetector(signal_probe=FakeProbe(_sig(mic_apps=["zoom.us"])))
+        assert d.check() == (True, "Zoom")
+
+    @patch("src.detector.psutil.process_iter")
+    def test_own_recorder_excluded(self, mock_iter):
+        mock_iter.return_value = []
+        d = CallDetector(signal_probe=FakeProbe(_sig(mic_apps=["audio-capture"])))
+        assert d.check() == (False, None)
+
+    @patch("src.detector.psutil.process_iter")
+    def test_unknown_mic_holder_ignored(self, mock_iter):
+        """Dictation tools (Wispr Flow etc.) must not trigger recording."""
+        mock_iter.return_value = []
+        d = CallDetector(signal_probe=FakeProbe(_sig(mic_apps=["Wispr Flow"])))
+        assert d.check() == (False, None)
+
+    @patch("src.detector.psutil.process_iter")
+    def test_webrtc_assertion_means_browser_call(self, mock_iter):
+        mock_iter.return_value = []
+        d = CallDetector(signal_probe=FakeProbe(_sig(assertion=True)))
+        assert d.check() == (True, "Google Meet")
+
+    @patch("src.detector.psutil.process_iter")
+    def test_browser_mic_plus_camera_means_call(self, mock_iter):
+        mock_iter.return_value = []
+        d = CallDetector(
+            signal_probe=FakeProbe(
+                _sig(mic_apps=["Google Chrome Helper"], camera=True)
+            )
+        )
+        assert d.check() == (True, "Google Meet")
+
+    @patch("src.detector.psutil.process_iter")
+    def test_browser_mic_without_camera_or_assertion_ignored(self, mock_iter):
+        mock_iter.return_value = []
+        d = CallDetector(
+            signal_probe=FakeProbe(_sig(mic_apps=["Google Chrome Helper"]))
+        )
+        assert d.check() == (False, None)
+
+    @patch("src.detector.psutil.process_iter")
+    def test_cpthost_wins_before_signal(self, mock_iter):
+        mock_iter.return_value = [make_proc("CptHost")]
+        d = CallDetector(signal_probe=FakeProbe(_sig()))
+        assert d.check() == (True, "Zoom")
+
+    @patch("src.detector.psutil.process_iter")
+    def test_probe_none_falls_back_to_udp(self, mock_iter):
+        """Helper missing/broken → legacy UDP heuristics still work."""
+        teams = make_proc(
+            "Microsoft Teams",
+            connections=[make_conn("10.0.0.1"), make_conn("10.0.0.2")],
+        )
+        mock_iter.return_value = [teams]
+        d = CallDetector(signal_probe=FakeProbe(None))
+        assert d.check() == (True, "Microsoft Teams")
+
+    @patch("src.detector.psutil.process_iter")
+    def test_signal_no_call_does_not_fall_back_to_udp(self, mock_iter):
+        """A healthy probe is authoritative — QUIC noise must not resurrect."""
+        chrome = make_proc(
+            "Google Chrome Helper",
+            connections=[make_conn("74.125.1.1", port=19305), make_conn("74.125.1.2", port=19307)],
+        )
+        mock_iter.return_value = [chrome]
+        d = CallDetector(signal_probe=FakeProbe(_sig()))
+        assert d.check() == (False, None)
+
+
+# Captured before the autouse fixture patches it — lets probe tests call the
+# real implementation with subprocess mocked.
+_ORIG_PROBE = SignalProbe.probe
+
+
+class TestSignalProbe:
+    @patch("src.detector.subprocess.run")
+    def test_parses_helper_and_assertion(self, mock_run):
+        helper = MagicMock(
+            stdout='{"mic_processes": [{"pid": 1, "name": "zoom.us"}], "camera_on": true}'
+        )
+        pmset = MagicMock(stdout="pid 42(Google Chrome): ... WebRTC has active PeerConnections\n")
+        mock_run.side_effect = [helper, pmset]
+        result = _ORIG_PROBE(SignalProbe())
+        assert result == {
+            "mic_apps": ["zoom.us"],
+            "camera_on": True,
+            "webrtc_assertion": True,
+        }
+
+    @patch("src.detector.subprocess.run")
+    def test_missing_binary_returns_none(self, mock_run):
+        mock_run.side_effect = FileNotFoundError()
+        assert _ORIG_PROBE(SignalProbe()) is None
+
+    @patch("src.detector.subprocess.run")
+    def test_garbage_output_returns_none(self, mock_run):
+        mock_run.return_value = MagicMock(stdout="not json")
+        assert _ORIG_PROBE(SignalProbe()) is None
+
+    @patch("src.detector.subprocess.run")
+    def test_pmset_failure_degrades_to_no_assertion(self, mock_run):
+        helper = MagicMock(stdout='{"mic_processes": [], "camera_on": false}')
+        mock_run.side_effect = [helper, OSError("no pmset")]
+        result = _ORIG_PROBE(SignalProbe())
+        assert result == {
+            "mic_apps": [],
+            "camera_on": False,
+            "webrtc_assertion": False,
+        }

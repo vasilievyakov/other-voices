@@ -19,6 +19,7 @@ LOG_PATH = BASE_DIR / "logs" / "call-recorder.log"
 LOG_MAX_BYTES = 5 * 1024 * 1024  # 5MB per log file
 LOG_BACKUP_COUNT = 3  # keep 3 rotated backups
 AUDIO_CAPTURE_BIN = BASE_DIR / "bin" / "audio-capture"
+CALL_SIGNAL_BIN = BASE_DIR / "bin" / "call-signal"
 
 # Detector
 POLL_INTERVAL = 3  # seconds between checks
