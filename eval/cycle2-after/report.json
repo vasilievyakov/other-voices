@@ -1,0 +1,265 @@
+{
+ "aggregate": {
+  "degenerate_skipped": 0,
+  "sessions": 8,
+  "failed": 0,
+  "repaired": 0,
+  "coverage_correct": 8,
+  "owner_items_total": 7,
+  "owner_items_attested": 7,
+  "sessions_with_hallucinated_participants": 0,
+  "judge_scores": [
+   3,
+   5,
+   4,
+   3,
+   3,
+   1,
+   5
+  ],
+  "avg_seconds": 410.6
+ },
+ "sessions": [
+  {
+   "session_id": "20260722_110231",
+   "app_name": "Zoom",
+   "transcript_chars": 3465,
+   "seconds": 64.0,
+   "shape": {
+    "failed": false,
+    "summary_chars": 182,
+    "key_points": 6,
+    "decisions": 1,
+    "action_items": 1,
+    "participants": 1,
+    "repaired": false
+   },
+   "owner_attestation": {
+    "with_owner": 1,
+    "attested": 1
+   },
+   "hallucinated_participants": [],
+   "coverage_correct": true,
+   "judge": {
+    "grounded_score": 3,
+    "ungrounded_claims": [
+     "[1:27] SPEAKER_ME: Предлагает, чтобы агентик сходил и наполнил базу данных",
+     "entities: {'name': 'Disclosure Day', 'type': 'product'}",
+     "action_items: [\"@SPEAKER_ME: Подпереписать скилл, обернуть для корректной работы\"]",
+     "entities: {'name': 'Artran', 'type': 'company'}",
+     "entities: {'name': 'iMac', 'type': 'tool'}",
+     "coverage: 'mic_only'"
+    ]
+   },
+   "judge_coverage_pct": 100
+  },
+  {
+   "session_id": "20260722_100100",
+   "app_name": "Zoom",
+   "transcript_chars": 19604,
+   "seconds": 86.9,
+   "shape": {
+    "failed": false,
+    "summary_chars": 178,
+    "key_points": 7,
+    "decisions": 0,
+    "action_items": 0,
+    "participants": 1,
+    "repaired": false
+   },
+   "owner_attestation": {
+    "with_owner": 0,
+    "attested": 0
+   },
+   "hallucinated_participants": [],
+   "coverage_correct": true,
+   "judge": {
+    "grounded_score": 5,
+    "ungrounded_claims": []
+   },
+   "judge_coverage_pct": 100
+  },
+  {
+   "session_id": "20260721_160242",
+   "app_name": "Zoom",
+   "transcript_chars": 45285,
+   "seconds": 341.0,
+   "shape": {
+    "failed": false,
+    "summary_chars": 261,
+    "key_points": 8,
+    "decisions": 0,
+    "action_items": 0,
+    "participants": 1,
+    "repaired": false
+   },
+   "owner_attestation": {
+    "with_owner": 0,
+    "attested": 0
+   },
+   "hallucinated_participants": [],
+   "coverage_correct": true,
+   "judge": {
+    "grounded_score": 4,
+    "ungrounded_claims": [
+     "[24:46] SPEAKER_ME: система промо, если тебе надо ознакомиться с большим количеством файлов, создать субагентов, каждый из которых прочитает файл и вернет главному агенту результаты"
+    ]
+   },
+   "judge_coverage_pct": 62
+  },
+  {
+   "session_id": "20260721_130103",
+   "app_name": "Zoom",
+   "transcript_chars": 38284,
+   "seconds": 194.6,
+   "shape": {
+    "failed": false,
+    "summary_chars": 334,
+    "key_points": 8,
+    "decisions": 0,
+    "action_items": 0,
+    "participants": 1,
+    "repaired": false
+   },
+   "owner_attestation": {
+    "with_owner": 0,
+    "attested": 0
+   },
+   "hallucinated_participants": [],
+   "coverage_correct": true,
+   "judge": {
+    "grounded_score": 3,
+    "ungrounded_claims": [
+     "[37:17] SPEAKER_ME: Консалтинговый отчет слишком объемный, его нужно урезать и подправить.",
+     "entities: Mercurius (инструмент не упоминается в транскрипте)",
+     "key_points: GPT (в транскрипте упоминается GDEMO, а не GPT)"
+    ]
+   },
+   "judge_coverage_pct": 73
+  },
+  {
+   "session_id": "20260720_171437",
+   "app_name": "Zoom",
+   "transcript_chars": 82003,
+   "seconds": 850.0,
+   "shape": {
+    "failed": false,
+    "summary_chars": 221,
+    "key_points": 8,
+    "decisions": 2,
+    "action_items": 5,
+    "participants": 1,
+    "repaired": false
+   },
+   "owner_attestation": {
+    "with_owner": 5,
+    "attested": 5
+   },
+   "hallucinated_participants": [],
+   "coverage_correct": true,
+   "judge": {
+    "grounded_score": 3,
+    "ungrounded_claims": [
+     "[20:20] SPEAKER_ME объясняет, что переименование папки может нарушить пути к файлам, если они не обновлены",
+     "[28:37] SPEAKER_ME: упоминание лимитов у модели",
+     "[45:14] SPEAKER_ME: глобальная папка для настроек",
+     "[49:42] SPEAKER_ME: создание ярлыка на рабочем столе",
+     "[99:13] SPEAKER_ME: задание на дом: пройти по задачнику со скиллами и отправить результаты в группу продлёнки в телеге",
+     "[26:32] @SPEAKER_ME: скопировать вместо переноса",
+     "[49:42] @SPEAKER_ME: создать ярлык на рабочем столе",
+     "[56:34] @SPEAKER_ME: проверить глобальную папку",
+     "[99:13] @SPEAKER_ME: прислать задачник со скиллами завтра",
+     "entities: папка 8 июля, CloudMD, плод, MD"
+    ]
+   },
+   "judge_coverage_pct": 34
+  },
+  {
+   "session_id": "20260720_145950",
+   "app_name": "Zoom",
+   "transcript_chars": 91528,
+   "seconds": 849.4,
+   "shape": {
+    "failed": false,
+    "summary_chars": 306,
+    "key_points": 8,
+    "decisions": 2,
+    "action_items": 1,
+    "participants": 9,
+    "repaired": false
+   },
+   "owner_attestation": {
+    "with_owner": 1,
+    "attested": 1
+   },
+   "hallucinated_participants": [],
+   "coverage_correct": true,
+   "judge": {
+    "grounded_score": 1,
+    "ungrounded_claims": [
+     "[54:57] SPEAKER_ME: использование гранулярных скиллов для снижения вариативности работы нейронок",
+     "[34:50] SPEAKER_ME: у субагентов отдельное контекстное окно и возможность выбирать модель, на которой он работает",
+     "[73:50] SPEAKER_ME: необходимость хранения API-ключей и предотвращения их утечки",
+     "[72:04] SPEAKER_ME: API-ключ как пропуск для доступа к внешним сервисам",
+     "[82:02] SPEAKER_ME: Клод написал, что нашел все персональные данные, но всплыл серьезный compliance момент",
+     "[55:58] SPEAKER_ME: рекомендация начинать с минимального количества действий для первого этапа",
+     "[86:36] SPEAKER_ME: система должна работать без LLM, только через скрипт",
+     "Упоминание компаний: БенQ, Бенгью, Stera",
+     "Упоминание продуктов: MacBook, iPhone, iPad, монитор, дисплей, Sony Ox",
+     "Упоминание инструментов: Pilot 2 Software, USB-C порт, Kensington Lock, Trevolo Steer Speakers",
+     "Сущность 'Claud' (в транскрипте упоминается 'Клод', но не 'Claud')"
+    ]
+   },
+   "judge_coverage_pct": 31
+  },
+  {
+   "session_id": "20260720_132102",
+   "app_name": "Zoom",
+   "transcript_chars": 58892,
+   "seconds": 689.9,
+   "shape": {
+    "failed": false,
+    "summary_chars": 320,
+    "key_points": 8,
+    "decisions": 0,
+    "action_items": 0,
+    "participants": 1,
+    "repaired": false
+   },
+   "owner_attestation": {
+    "with_owner": 0,
+    "attested": 0
+   },
+   "hallucinated_participants": [],
+   "coverage_correct": true,
+   "judge": null,
+   "judge_coverage_pct": 48
+  },
+  {
+   "session_id": "20260717_140213",
+   "app_name": "Zoom",
+   "transcript_chars": 19266,
+   "seconds": 208.9,
+   "shape": {
+    "failed": false,
+    "summary_chars": 227,
+    "key_points": 4,
+    "decisions": 0,
+    "action_items": 0,
+    "participants": 4,
+    "repaired": false
+   },
+   "owner_attestation": {
+    "with_owner": 0,
+    "attested": 0
+   },
+   "hallucinated_participants": [],
+   "coverage_correct": true,
+   "judge": {
+    "grounded_score": 5,
+    "ungrounded_claims": []
+   },
+   "judge_coverage_pct": 100
+  }
+ ]
+}

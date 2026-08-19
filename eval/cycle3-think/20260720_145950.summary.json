@@ -1,0 +1,92 @@
+{
+ "summary": "Звонок охватил обсуждение прогресса проекта, технических проблем, архитектуры агентов, скиллов и workflow, а также проблемы транскрибации и обработки данных. Подчеркнута важность разбиения процессов на гранулярные этапы, использования гранулярных скиллов для минимизации вариативности, а также компромиссов между безопасностью данных и качеством вывода текста.",
+ "key_points": [
+  "[23:14] SPEAKER_ME describes BenQ MA Series monitor with 27-inch 4K IPS panel and 97% DCI-P3 color accuracy",
+  "[26:24] SPEAKER_ME notes monitor has 97% DCI-P3, 95% sRGB, 400-nit brightness, and HDR 400 certification",
+  "[53:10] Рекомендация разбивать процессы на четкие этапы с входными и выходными данными",
+  "[55:53] Заключение о необходимости начать с минимальной ценности и постепенном расширении",
+  "[54:57] SPEAKER_ME: использование гранулярных скиллов позволяет снизить вариативность работы нейронок",
+  "[76:10] SPEAKER_ME: возможность использования локального транскрибатора вместо внешних сервисов",
+  "[82:02] SPEAKER_ME: Клод написал, что нашел все персональные данные, но всплыл серьезный compliance момент из-за утечки данных через облачный вызов модели",
+  "[92:11] SPEAKER_ME: на входе будет транскрипт .md, на выходе — clear transcript.md без персональных данных"
+ ],
+ "decisions": [],
+ "action_items": [],
+ "participants": [
+  "SPEAKER_ME"
+ ],
+ "commitments": [],
+ "title": "Обсуждение проектного прогресса, архитектуры агентов и проблем транскрибации",
+ "entities": [
+  {
+   "name": "BenQ MA Series",
+   "type": "product"
+  },
+  {
+   "name": "MacBook",
+   "type": "product"
+  },
+  {
+   "name": "iPhone",
+   "type": "product"
+  },
+  {
+   "name": "DisplayPilot 2",
+   "type": "tool"
+  },
+  {
+   "name": "Руслан",
+   "type": "person"
+  },
+  {
+   "name": "Сережа",
+   "type": "person"
+  },
+  {
+   "name": "Маша",
+   "type": "person"
+  },
+  {
+   "name": "Яков",
+   "type": "person"
+  },
+  {
+   "name": "Наташа",
+   "type": "person"
+  },
+  {
+   "name": "UIT tool",
+   "type": "tool"
+  },
+  {
+   "name": "MIRMATE-диаграмму",
+   "type": "product"
+  },
+  {
+   "name": "Telegram",
+   "type": "tool"
+  },
+  {
+   "name": "Sony Ox",
+   "type": "tool"
+  },
+  {
+   "name": "PRD",
+   "type": "tool"
+  },
+  {
+   "name": "скрипты",
+   "type": "tool"
+  },
+  {
+   "name": "модели",
+   "type": "tool"
+  },
+  {
+   "name": "анонимизация",
+   "type": "process"
+  }
+ ],
+ "_chunks": 4,
+ "coverage": "mic_only"
+}

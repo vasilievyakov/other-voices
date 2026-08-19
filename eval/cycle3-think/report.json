@@ -1,0 +1,334 @@
+{
+ "aggregate": {
+  "degenerate_skipped": 0,
+  "sessions": 8,
+  "failed": 0,
+  "repaired": 0,
+  "coverage_correct": 8,
+  "owner_items_total": 2,
+  "owner_items_attested": 2,
+  "sessions_with_hallucinated_participants": 0,
+  "judge_scores": [
+   5,
+   5,
+   3,
+   3,
+   3,
+   1,
+   2,
+   3
+  ],
+  "judge_failed": 0,
+  "recall": {
+   "total": 3,
+   "found": 0
+  },
+  "citation": {
+   "checked": 57,
+   "grounded": 36,
+   "weak": 21,
+   "timestamp_missing": 0
+  },
+  "avg_seconds": 0.0
+ },
+ "sessions": [
+  {
+   "session_id": "20260722_110231",
+   "app_name": "Zoom",
+   "transcript_chars": 3465,
+   "seconds": 0.0,
+   "shape": {
+    "failed": false,
+    "summary_chars": 204,
+    "key_points": 0,
+    "decisions": 0,
+    "action_items": 0,
+    "participants": 1,
+    "repaired": false
+   },
+   "owner_attestation": {
+    "with_owner": 0,
+    "attested": 0
+   },
+   "hallucinated_participants": [],
+   "coverage_correct": true,
+   "citation": {
+    "checked": 0,
+    "grounded": 0,
+    "weak": 0,
+    "timestamp_missing": 0
+   },
+   "judge": {
+    "grounded_score": 5,
+    "ungrounded_claims": []
+   },
+   "judge_coverage_pct": 100
+  },
+  {
+   "session_id": "20260722_100100",
+   "app_name": "Zoom",
+   "transcript_chars": 19604,
+   "seconds": 0.0,
+   "shape": {
+    "failed": false,
+    "summary_chars": 207,
+    "key_points": 7,
+    "decisions": 0,
+    "action_items": 0,
+    "participants": 1,
+    "repaired": false
+   },
+   "owner_attestation": {
+    "with_owner": 0,
+    "attested": 0
+   },
+   "hallucinated_participants": [],
+   "coverage_correct": true,
+   "citation": {
+    "checked": 7,
+    "grounded": 4,
+    "weak": 3,
+    "timestamp_missing": 0
+   },
+   "recall": {
+    "total": 2,
+    "found": 0
+   },
+   "judge": {
+    "grounded_score": 5,
+    "ungrounded_claims": []
+   },
+   "judge_coverage_pct": 100
+  },
+  {
+   "session_id": "20260721_160242",
+   "app_name": "Zoom",
+   "transcript_chars": 45285,
+   "seconds": 0.0,
+   "shape": {
+    "failed": false,
+    "summary_chars": 285,
+    "key_points": 8,
+    "decisions": 0,
+    "action_items": 0,
+    "participants": 1,
+    "repaired": false
+   },
+   "owner_attestation": {
+    "with_owner": 0,
+    "attested": 0
+   },
+   "hallucinated_participants": [],
+   "coverage_correct": true,
+   "citation": {
+    "checked": 8,
+    "grounded": 8,
+    "weak": 0,
+    "timestamp_missing": 0
+   },
+   "recall": {
+    "total": 1,
+    "found": 0
+   },
+   "judge": {
+    "grounded_score": 3,
+    "ungrounded_claims": [
+     "[22:40] SPEAKER_ME: Либо ты можешь просто дать ему такую задачу, которая перегрузит его, и он поймет, что легче ему запустить будет субагентов, чем выполнять это самому",
+     "[23:51] SPEAKER_ME: он открывает новый терминал с генерацией токенов, но результат перекладывает в основного агента-оркестратора",
+     "[24:34] SPEAKER_ME: Он сам создаст субагентов, которые пойдут вначале изучать эту папку и читать ее"
+    ]
+   },
+   "judge_coverage_pct": 62
+  },
+  {
+   "session_id": "20260721_130103",
+   "app_name": "Zoom",
+   "transcript_chars": 38284,
+   "seconds": 0.0,
+   "shape": {
+    "failed": false,
+    "summary_chars": 306,
+    "key_points": 8,
+    "decisions": 0,
+    "action_items": 0,
+    "participants": 1,
+    "repaired": false
+   },
+   "owner_attestation": {
+    "with_owner": 0,
+    "attested": 0
+   },
+   "hallucinated_participants": [],
+   "coverage_correct": true,
+   "citation": {
+    "checked": 8,
+    "grounded": 7,
+    "weak": 1,
+    "timestamp_missing": 0
+   },
+   "judge": {
+    "grounded_score": 3,
+    "ungrounded_claims": [
+     "[21:30] SPEAKER_ME: Новость пришла, что рассматривают белом доме возможность запретить китайские модели использования штатов для того чтобы свои типа ну как с импортом дать их запретить.",
+     "[31:21] SPEAKER_ME: Может на сравнении с другими. Вот этих конкурентов он сам нашел, я им ничего не задавал.",
+     "[30:35] SPEAKER_ME: Я параллельно запустил и research кладину в коде и свою а при куху она у меня сейчас на кода на код силой настроена короче по ходу дела.",
+     "[35:44] SPEAKER_ME: Пайплайн фиксирует части, если лимиты закончились, и перезапускает с того этапа, где остановился.",
+     "[48:27] SPEAKER_ME: На четвертом этапе у SPEAKER_ME всё сломалось, тесты не прошли, агент не работает."
+    ]
+   },
+   "judge_coverage_pct": 73
+  },
+  {
+   "session_id": "20260720_171437",
+   "app_name": "Zoom",
+   "transcript_chars": 82003,
+   "seconds": 0.0,
+   "shape": {
+    "failed": false,
+    "summary_chars": 297,
+    "key_points": 8,
+    "decisions": 1,
+    "action_items": 2,
+    "participants": 1,
+    "repaired": false
+   },
+   "owner_attestation": {
+    "with_owner": 2,
+    "attested": 2
+   },
+   "hallucinated_participants": [],
+   "coverage_correct": true,
+   "citation": {
+    "checked": 13,
+    "grounded": 8,
+    "weak": 5,
+    "timestamp_missing": 0
+   },
+   "judge": {
+    "grounded_score": 3,
+    "ungrounded_claims": [
+     "[21:30] SPEAKER_ME: Вопрос о пробелах в названиях папок и их влиянии на терминал",
+     "[22:39] SPEAKER_ME: был и от финн . контур пробел 360 вот этот пробел 360 надо убрать и оставить финн . контур 360 без",
+     "[68:51] SPEAKER_ME: Обсуждение команды 'слэш апдейт' для синхронизации проекта",
+     "[74:03] SPEAKER_ME: Рекомендация закрыть и перезапустить приложение для активации команд"
+    ]
+   },
+   "judge_coverage_pct": 34
+  },
+  {
+   "session_id": "20260720_145950",
+   "app_name": "Zoom",
+   "transcript_chars": 91528,
+   "seconds": 0.0,
+   "shape": {
+    "failed": false,
+    "summary_chars": 360,
+    "key_points": 8,
+    "decisions": 0,
+    "action_items": 0,
+    "participants": 1,
+    "repaired": false
+   },
+   "owner_attestation": {
+    "with_owner": 0,
+    "attested": 0
+   },
+   "hallucinated_participants": [],
+   "coverage_correct": true,
+   "citation": {
+    "checked": 8,
+    "grounded": 2,
+    "weak": 6,
+    "timestamp_missing": 0
+   },
+   "judge": {
+    "grounded_score": 1,
+    "ungrounded_claims": [
+     "[23:14] SPEAKER_ME describes BenQ MA Series monitor with 27-inch 4K IPS panel and 97% DCI-P3 color accuracy",
+     "[26:24] SPEAKER_ME notes monitor has 97% DCI-P3, 95% sRGB, 400-nit brightness, and HDR 400 certification",
+     "[53:10] Рекомендация разбивать процессы на четкие этапы с входными и выходными данными",
+     "[55:53] Заключение о необходимости начать с минимальной ценности и постепенном расширении",
+     "[54:57] SPEAKER_ME: использование гранулярных скиллов позволяет снизить вариативность работы нейронок",
+     "[76:10] SPEAKER_ME: возможность использования локального транскрибатора вместо внешних сервисов",
+     "[82:02] SPEAKER_ME: Клод написал, что нашел все персональные данные, но всплыл серьезный compliance момент из-за утечки данных через облачный вызов модели",
+     "[92:11] SPEAKER_ME: на входе будет транскрипт .md, на выходе — clear transcript.md без персональных данных"
+    ]
+   },
+   "judge_coverage_pct": 31
+  },
+  {
+   "session_id": "20260720_132102",
+   "app_name": "Zoom",
+   "transcript_chars": 58892,
+   "seconds": 0.0,
+   "shape": {
+    "failed": false,
+    "summary_chars": 203,
+    "key_points": 8,
+    "decisions": 0,
+    "action_items": 0,
+    "participants": 1,
+    "repaired": false
+   },
+   "owner_attestation": {
+    "with_owner": 0,
+    "attested": 0
+   },
+   "hallucinated_participants": [],
+   "coverage_correct": true,
+   "citation": {
+    "checked": 8,
+    "grounded": 2,
+    "weak": 6,
+    "timestamp_missing": 0
+   },
+   "judge": {
+    "grounded_score": 2,
+    "ungrounded_claims": [
+     "[23:28] анализ продаж предыдущих когорт",
+     "[25:54] варианты цен 150, 70, 80",
+     "[27:06] SPEAKER_ME: Предложение сентября по второму варианту (70/80)",
+     "[35:51] SPEAKER_ME: Планирование сентября с 65/75 и возможным снижением к октябрю",
+     "[46:51] SPEAKER_ME: Упоминание необходимости добавить ссылку на 65К для Тинькова"
+    ]
+   },
+   "judge_coverage_pct": 48
+  },
+  {
+   "session_id": "20260717_140213",
+   "app_name": "Zoom",
+   "transcript_chars": 19266,
+   "seconds": 0.0,
+   "shape": {
+    "failed": false,
+    "summary_chars": 223,
+    "key_points": 5,
+    "decisions": 0,
+    "action_items": 0,
+    "participants": 1,
+    "repaired": false
+   },
+   "owner_attestation": {
+    "with_owner": 0,
+    "attested": 0
+   },
+   "hallucinated_participants": [],
+   "coverage_correct": true,
+   "citation": {
+    "checked": 5,
+    "grounded": 5,
+    "weak": 0,
+    "timestamp_missing": 0
+   },
+   "judge": {
+    "grounded_score": 3,
+    "ungrounded_claims": [
+     "\"Баня\" указан в participants, но в транскрипте SPEAKER_ME упоминает его в третьем лице как куратора, а не как участника разговора",
+     "\"Андрей\" указан в participants, но в транскрипте SPEAKER_ME упоминает его в третьем лице как человека, который стартапит, а не как участника разговора",
+     "\"Наташа\" указана в participants, но в транскрипте SPEAKER_ME упоминает её в третьем лице как знакомую, а не как участницу разговора"
+    ]
+   },
+   "judge_coverage_pct": 100
+  }
+ ]
+}

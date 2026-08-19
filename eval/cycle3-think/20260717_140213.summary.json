@@ -1,0 +1,44 @@
+{
+ "summary": "Discussion covers planning for fall programs, technical challenges with agents, and logistical considerations like access and group sizes. Next steps involve continuing technical discussions and preparing for fall sessions.",
+ "key_points": [
+  "[26:07] SPEAKER_ME: А сколько стоит программа? [26:19] SPEAKER_ME: 300.",
+  "[26:06] SPEAKER_ME: Десять.",
+  "[33:51] SPEAKER_ME: Поэтому примерно сентябрь, октябрь, ноябрь и под конец года будут лабы.",
+  "[16:21] SPEAKER_ME: Самый большой будет вопрос доступов, потому что это то, с чем мы боремся.",
+  "[16:40] SPEAKER_ME: например если есть какой-то бюджет купить какую-нибудь например api ключик который мы там типа всем раздадим и все смогут быстренько подключиться вне зависимости от своей географии"
+ ],
+ "decisions": [],
+ "action_items": [],
+ "participants": [
+  "SPEAKER_ME"
+ ],
+ "commitments": [],
+ "title": "Fall Program Planning and Agent Technology Discussion",
+ "entities": [
+  {
+   "name": "Баня",
+   "type": "person"
+  },
+  {
+   "name": "Андрей",
+   "type": "person"
+  },
+  {
+   "name": "Наташа",
+   "type": "person"
+  },
+  {
+   "name": "Open Road",
+   "type": "tool"
+  },
+  {
+   "name": "E-PAM",
+   "type": "company"
+  },
+  {
+   "name": "агенты",
+   "type": "tool"
+  }
+ ],
+ "coverage": "mic_only"
+}

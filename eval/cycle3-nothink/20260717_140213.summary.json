@@ -1,0 +1,38 @@
+{
+ "summary": "The conversation discusses the challenges of organizing training sessions, the importance of access control, and the need for practical demonstrations. The speaker mentions plans to move some activities to the fall and the importance of adapting to rapid technological changes.",
+ "key_points": [
+  "[0:00] SPEAKER_ME: Да, прекрасно. Ничего не поменялось. Все круто.",
+  "[3:19] SPEAKER_ME: Ну, Баня, ты курируешь больше в каких-то частях.",
+  "[5:18] SPEAKER_ME: мне бы не мне пока все понятно это может в принципе продолжить я думаю что я оставлю себе право если что тебя перебивать спрашивать если не понятно",
+  "[8:08] SPEAKER_ME: Они поняли, что Россия большая.",
+  "[16:21] SPEAKER_ME: Самый большой будет вопрос доступов, потому что это то, с чем мы боремся.",
+  "[26:07] SPEAKER_ME: А сколько стоит программа?",
+  "[27:07] SPEAKER_ME: Сейчас, конечно, еще плохо продажи идут, потому что у нас даже летняя группа набирается хуже, чем осень.",
+  "[33:50] SPEAKER_ME: У нас осенью будет три базовых потока и, наверное, два продвинутых."
+ ],
+ "decisions": [],
+ "action_items": [],
+ "participants": [
+  "SPEAKER_ME"
+ ],
+ "commitments": [],
+ "entities": [
+  {
+   "name": "Баня",
+   "type": "person"
+  },
+  {
+   "name": "Дима",
+   "type": "person"
+  },
+  {
+   "name": "Андрей",
+   "type": "person"
+  },
+  {
+   "name": "Nataша",
+   "type": "person"
+  }
+ ],
+ "coverage": "mic_only"
+}

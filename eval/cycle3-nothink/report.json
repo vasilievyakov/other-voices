@@ -1,0 +1,341 @@
+{
+ "aggregate": {
+  "degenerate_skipped": 0,
+  "sessions": 8,
+  "failed": 0,
+  "repaired": 0,
+  "coverage_correct": 8,
+  "owner_items_total": 0,
+  "owner_items_attested": 0,
+  "sessions_with_hallucinated_participants": 0,
+  "judge_scores": [
+   5,
+   5,
+   2,
+   3,
+   3,
+   1,
+   3,
+   3
+  ],
+  "judge_failed": 0,
+  "recall": {
+   "total": 3,
+   "found": 0
+  },
+  "citation": {
+   "checked": 63,
+   "grounded": 52,
+   "weak": 11,
+   "timestamp_missing": 0
+  },
+  "avg_seconds": 0.0
+ },
+ "sessions": [
+  {
+   "session_id": "20260722_110231",
+   "app_name": "Zoom",
+   "transcript_chars": 3465,
+   "seconds": 0.0,
+   "shape": {
+    "failed": false,
+    "summary_chars": 168,
+    "key_points": 6,
+    "decisions": 0,
+    "action_items": 0,
+    "participants": 1,
+    "repaired": false
+   },
+   "owner_attestation": {
+    "with_owner": 0,
+    "attested": 0
+   },
+   "hallucinated_participants": [],
+   "coverage_correct": true,
+   "citation": {
+    "checked": 6,
+    "grounded": 5,
+    "weak": 1,
+    "timestamp_missing": 0
+   },
+   "judge": {
+    "grounded_score": 5,
+    "ungrounded_claims": []
+   },
+   "judge_coverage_pct": 100
+  },
+  {
+   "session_id": "20260722_100100",
+   "app_name": "Zoom",
+   "transcript_chars": 19604,
+   "seconds": 0.0,
+   "shape": {
+    "failed": false,
+    "summary_chars": 197,
+    "key_points": 7,
+    "decisions": 0,
+    "action_items": 0,
+    "participants": 1,
+    "repaired": false
+   },
+   "owner_attestation": {
+    "with_owner": 0,
+    "attested": 0
+   },
+   "hallucinated_participants": [],
+   "coverage_correct": true,
+   "citation": {
+    "checked": 7,
+    "grounded": 5,
+    "weak": 2,
+    "timestamp_missing": 0
+   },
+   "recall": {
+    "total": 2,
+    "found": 0
+   },
+   "judge": {
+    "grounded_score": 5,
+    "ungrounded_claims": []
+   },
+   "judge_coverage_pct": 100
+  },
+  {
+   "session_id": "20260721_160242",
+   "app_name": "Zoom",
+   "transcript_chars": 45285,
+   "seconds": 0.0,
+   "shape": {
+    "failed": false,
+    "summary_chars": 235,
+    "key_points": 5,
+    "decisions": 0,
+    "action_items": 0,
+    "participants": 1,
+    "repaired": false
+   },
+   "owner_attestation": {
+    "with_owner": 0,
+    "attested": 0
+   },
+   "hallucinated_participants": [],
+   "coverage_correct": true,
+   "citation": {
+    "checked": 5,
+    "grounded": 5,
+    "weak": 0,
+    "timestamp_missing": 0
+   },
+   "recall": {
+    "total": 1,
+    "found": 0
+   },
+   "judge": {
+    "grounded_score": 2,
+    "ungrounded_claims": [
+     "[23:51] SPEAKER_ME: он открывает новый терминал, в котором генерится огромное количество токенов",
+     "[23:51] SPEAKER_ME: но при этом, как только он закончил эту задачу, он перекладывает в нашего основного агента-оркестратора результат своей работы,",
+     "[26:00] SPEAKER_ME: можно дать задачу и сказать, хоть как делай это, хоть дома, хоть в лифте",
+     "[33:04] SPEAKER_ME: Евгений Николаевич сказал, что мы должны решить все проблемы компании в рамках одной задачи",
+     "[35:31] SPEAKER_ME: у нас получается один вид деятельности — анализ финансового танка",
+     "Юдин",
+     "Евгений Николаевич",
+     "агент-оркестратор",
+     "огромное количество токенов"
+    ]
+   },
+   "judge_coverage_pct": 62
+  },
+  {
+   "session_id": "20260721_130103",
+   "app_name": "Zoom",
+   "transcript_chars": 38284,
+   "seconds": 0.0,
+   "shape": {
+    "failed": false,
+    "summary_chars": 235,
+    "key_points": 8,
+    "decisions": 0,
+    "action_items": 0,
+    "participants": 1,
+    "repaired": false
+   },
+   "owner_attestation": {
+    "with_owner": 0,
+    "attested": 0
+   },
+   "hallucinated_participants": [],
+   "coverage_correct": true,
+   "citation": {
+    "checked": 8,
+    "grounded": 8,
+    "weak": 0,
+    "timestamp_missing": 0
+   },
+   "judge": {
+    "grounded_score": 3,
+    "ungrounded_claims": [
+     "[35:44] SPEAKER_ME: Пайплайны фиксируют все части, если лимиты закончились, можно перезапустить заново.",
+     "[27:24] SPEAKER_ME: Есть как я запускал, заполнял просто фигурационный файл, я мол в папочке и запускал скрипта парит.",
+     "[31:21] SPEAKER_ME: Он по Меркурию прогнал, то что мы проверяли, не знаю, может на сравнении с другими.",
+     "[30:35] SPEAKER_ME: Я параллельно запустил и research кладину в коде и свою а при куху.",
+     "[37:17] SPEAKER_ME: Нужно урезать и подправить консалтинговый отчет."
+    ]
+   },
+   "judge_coverage_pct": 73
+  },
+  {
+   "session_id": "20260720_171437",
+   "app_name": "Zoom",
+   "transcript_chars": 82003,
+   "seconds": 0.0,
+   "shape": {
+    "failed": false,
+    "summary_chars": 292,
+    "key_points": 8,
+    "decisions": 0,
+    "action_items": 0,
+    "participants": 1,
+    "repaired": false
+   },
+   "owner_attestation": {
+    "with_owner": 0,
+    "attested": 0
+   },
+   "hallucinated_participants": [],
+   "coverage_correct": true,
+   "citation": {
+    "checked": 8,
+    "grounded": 5,
+    "weak": 3,
+    "timestamp_missing": 0
+   },
+   "judge": {
+    "grounded_score": 3,
+    "ungrounded_claims": [
+     "[27:03] SPEAKER_ME: CD, PUT, а потом CLOD.",
+     "[42:08] SPEAKER_ME: Смотрите, еще такой момент. Есть пятичасовые лимиты.",
+     "[55:30] SPEAKER_ME: спасибо от глобальные локальные коды мген да давайте с кодом дерзко разберемся у вас вот",
+     "[56:03] SPEAKER_ME: посмотри глобальную папку лучше глазами тоже посмотрите глобальную папку .",
+     "entities: CD, PUT, CLOD, KPI, план моды, автомод, мануал мод, статус line, фейбл, сонет 5 тасс, контекст, модель"
+    ]
+   },
+   "judge_coverage_pct": 34
+  },
+  {
+   "session_id": "20260720_145950",
+   "app_name": "Zoom",
+   "transcript_chars": 91528,
+   "seconds": 0.0,
+   "shape": {
+    "failed": false,
+    "summary_chars": 225,
+    "key_points": 8,
+    "decisions": 0,
+    "action_items": 0,
+    "participants": 1,
+    "repaired": false
+   },
+   "owner_attestation": {
+    "with_owner": 0,
+    "attested": 0
+   },
+   "hallucinated_participants": [],
+   "coverage_correct": true,
+   "citation": {
+    "checked": 8,
+    "grounded": 5,
+    "weak": 3,
+    "timestamp_missing": 0
+   },
+   "judge": {
+    "grounded_score": 1,
+    "ungrounded_claims": [
+     "[53:10] SPEAKER_ME: разбить этот каскад внутри процессов на абсолютно четкие этапы",
+     "[54:57] SPEAKER_ME: использование гранулярных скиллов для снижения вариативности работы нейронок",
+     "[55:38] SPEAKER_ME: скиллы должны быть атомарными и гранулярными для последующего объединения в workflow",
+     "[62:00] SPEAKER_ME: проект разбит на блоки, каждый из которых формирует собственные скиллы",
+     "[69:00] SPEAKER_ME: API — это туннель между сервисами, позволяющий интегрировать функции и данные",
+     "[73:31] SPEAKER_ME: API-ключи — это пропуска, которые позволяют агентам взаимодействовать с внешними сервисами",
+     "[82:02] SPEAKER_ME: Клод написал, что нашел все персональные данные",
+     "[89:04] SPEAKER_ME: у него какие-то маски должны быть, которые обнаруживают возможные вариации данных"
+    ]
+   },
+   "judge_coverage_pct": 31
+  },
+  {
+   "session_id": "20260720_132102",
+   "app_name": "Zoom",
+   "transcript_chars": 58892,
+   "seconds": 0.0,
+   "shape": {
+    "failed": false,
+    "summary_chars": 316,
+    "key_points": 8,
+    "decisions": 5,
+    "action_items": 0,
+    "participants": 1,
+    "repaired": false
+   },
+   "owner_attestation": {
+    "with_owner": 0,
+    "attested": 0
+   },
+   "hallucinated_participants": [],
+   "coverage_correct": true,
+   "citation": {
+    "checked": 13,
+    "grounded": 11,
+    "weak": 2,
+    "timestamp_missing": 0
+   },
+   "judge": {
+    "grounded_score": 3,
+    "ungrounded_claims": [
+     "[35:51] SPEAKER_ME: 65, 75 и там 53, 52 человека, условно говоря, посмотреть, как пройдет, посмотреть спрос, и дальше, на самом деле, если мы все справляемся сделать октябрьскую 55 по той же цене, а если плохой спрос, то начать уже скидки, демпинги или еще что-нибудь.",
+     "[27:06] SPEAKER_ME: вариант 70 физик, 80 Юрий.",
+     "варианты цен и скидок на сентябрь",
+     "форматы проведения семинаров"
+    ]
+   },
+   "judge_coverage_pct": 48
+  },
+  {
+   "session_id": "20260717_140213",
+   "app_name": "Zoom",
+   "transcript_chars": 19266,
+   "seconds": 0.0,
+   "shape": {
+    "failed": false,
+    "summary_chars": 277,
+    "key_points": 8,
+    "decisions": 0,
+    "action_items": 0,
+    "participants": 1,
+    "repaired": false
+   },
+   "owner_attestation": {
+    "with_owner": 0,
+    "attested": 0
+   },
+   "hallucinated_participants": [],
+   "coverage_correct": true,
+   "citation": {
+    "checked": 8,
+    "grounded": 8,
+    "weak": 0,
+    "timestamp_missing": 0
+   },
+   "judge": {
+    "grounded_score": 3,
+    "ungrounded_claims": [
+     "\"Nataша\" (имя написано с заглавной буквы и кавычками, в транскрипте упоминается как \"Наташа\" без кавычек)",
+     "Отсутствие упоминания \"Ари\" в entities, хотя он упоминается в транскрипте (23:39)",
+     "Фраза \"[5:18] SPEAKER_ME: мне бы не мне пока все понятно это может в принципе продолжить я думаю что я оставлю себе право если что тебя перебивать спрашивать если не понятно\" — в транскрипте нет дословного совпадения, только смысловая близость",
+     "Отсутствие упоминания ключевых тем из транскрипта: автоматизация конкурентного анализа (19:43-19:51), создание обучающих лендингов (20:00-20:31)"
+    ]
+   },
+   "judge_coverage_pct": 100
+  }
+ ]
+}

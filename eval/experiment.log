@@ -1,0 +1,57 @@
+Evaluating 8 sessions (0 degenerate skipped) → /Users/vasiliev/call-recorder/eval/cycle3-nothink
+  [resume] 20260722_110231 from cache
+  [summarize 1/8] 20260722_110231 0.0s citation={'checked': 6, 'grounded': 5, 'weak': 1, 'timestamp_missing': 0}
+  [resume] 20260722_100100 from cache
+  [summarize 2/8] 20260722_100100 0.0s citation={'checked': 7, 'grounded': 5, 'weak': 2, 'timestamp_missing': 0}
+  [resume] 20260721_160242 from cache
+  [summarize 3/8] 20260721_160242 0.0s citation={'checked': 5, 'grounded': 5, 'weak': 0, 'timestamp_missing': 0}
+  [resume] 20260721_130103 from cache
+  [summarize 4/8] 20260721_130103 0.0s citation={'checked': 8, 'grounded': 8, 'weak': 0, 'timestamp_missing': 0}
+  [resume] 20260720_171437 from cache
+  [summarize 5/8] 20260720_171437 0.0s citation={'checked': 8, 'grounded': 5, 'weak': 3, 'timestamp_missing': 0}
+  [resume] 20260720_145950 from cache
+  [summarize 6/8] 20260720_145950 0.0s citation={'checked': 8, 'grounded': 5, 'weak': 3, 'timestamp_missing': 0}
+  [resume] 20260720_132102 from cache
+  [summarize 7/8] 20260720_132102 0.0s citation={'checked': 13, 'grounded': 11, 'weak': 2, 'timestamp_missing': 0}
+  [resume] 20260717_140213 from cache
+  [summarize 8/8] 20260717_140213 0.0s citation={'checked': 8, 'grounded': 8, 'weak': 0, 'timestamp_missing': 0}
+  [judge 1/8] 20260722_110231 score=5
+  [judge 2/8] 20260722_100100 score=5
+  [judge 3/8] 20260721_160242 score=2
+  [judge 4/8] 20260721_130103 score=3
+  [judge 5/8] 20260720_171437 score=3
+  [judge 6/8] 20260720_145950 score=1
+  [judge 7/8] 20260720_132102 score=3
+  [judge 8/8] 20260717_140213 score=3
+{
+ "degenerate_skipped": 0,
+ "sessions": 8,
+ "failed": 0,
+ "repaired": 0,
+ "coverage_correct": 8,
+ "owner_items_total": 0,
+ "owner_items_attested": 0,
+ "sessions_with_hallucinated_participants": 0,
+ "judge_scores": [
+  5,
+  5,
+  2,
+  3,
+  3,
+  1,
+  3,
+  3
+ ],
+ "judge_failed": 0,
+ "recall": {
+  "total": 3,
+  "found": 0
+ },
+ "citation": {
+  "checked": 63,
+  "grounded": 52,
+  "weak": 11,
+  "timestamp_missing": 0
+ },
+ "avg_seconds": 0.0
+}

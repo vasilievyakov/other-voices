@@ -1,0 +1,42 @@
+{
+ "summary": "SPEAKER_ME обсуждал личные темы, включая поход в кино и технические аспекты, но не было деловых решений или действий. В разговоре не упоминались конкретные задачи, обязательства или ключевые бизнес-факты.",
+ "key_points": [],
+ "decisions": [],
+ "action_items": [],
+ "participants": [
+  "SPEAKER_ME"
+ ],
+ "commitments": [],
+ "title": "Личные разговоры и технические детали",
+ "entities": [
+  {
+   "name": "Спилберг",
+   "type": "person"
+  },
+  {
+   "name": "Нолан",
+   "type": "person"
+  },
+  {
+   "name": "Артрана",
+   "type": "person"
+  },
+  {
+   "name": "Дейсон",
+   "type": "person"
+  },
+  {
+   "name": "Тамагочи",
+   "type": "product"
+  },
+  {
+   "name": "iMac",
+   "type": "product"
+  },
+  {
+   "name": "Одиссея",
+   "type": "product"
+  }
+ ],
+ "coverage": "mic_only"
+}

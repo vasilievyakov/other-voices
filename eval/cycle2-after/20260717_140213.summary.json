@@ -1,0 +1,38 @@
+{
+ "summary": "Discussion focused on planning an advanced laboratory on agents, addressing program costs, group sizes, and autumn schedule adjustments. Next steps include refining the program for fall and preparing materials for participants.",
+ "key_points": [
+  "[26:19] Program costs 300 for six months",
+  "[26:06] Group size is ten participants",
+  "[29:16] Advanced laboratory focused on agents is being conducted",
+  "[33:50] Autumn schedule includes three basic and two advanced streams"
+ ],
+ "decisions": [],
+ "action_items": [],
+ "participants": [
+  "SPEAKER_ME",
+  "Баня",
+  "Андрей",
+  "Наташа"
+ ],
+ "commitments": [],
+ "title": "Agent Laboratory Discussion and Autumn Program Planning",
+ "entities": [
+  {
+   "name": "Баня",
+   "type": "person"
+  },
+  {
+   "name": "Андрей",
+   "type": "person"
+  },
+  {
+   "name": "Наташа",
+   "type": "person"
+  },
+  {
+   "name": "Open Road",
+   "type": "tool"
+  }
+ ],
+ "coverage": "mic_only"
+}
