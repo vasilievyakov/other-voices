@@ -828,3 +828,53 @@ class TestChatMessages:
         assert len(messages) == 3
         # Should be the most recent 3, in chronological order
         assert messages[-1]["content"] == "Q9"
+
+
+# =============================================================================
+# Source column — live pipeline rows vs imported seed rows
+# =============================================================================
+
+
+def _minimal_call(db, session_id, app_name="Zoom"):
+    db.insert_call(
+        session_id=session_id,
+        app_name=app_name,
+        started_at="2026-08-19T10:00:00",
+        ended_at="2026-08-19T10:10:00",
+        duration_seconds=600.0,
+        system_wav_path=None,
+        mic_wav_path=None,
+        transcript="hello",
+        summary=None,
+    )
+
+
+class TestSourceColumn:
+    def test_migration_adds_source_column(self, tmp_db):
+        cols = [r[1] for r in tmp_db._conn().execute("PRAGMA table_info(calls)")]
+        assert "source" in cols
+
+    def test_new_calls_default_to_live(self, tmp_db):
+        _minimal_call(tmp_db, "s1")
+        row = tmp_db._conn().execute(
+            "SELECT source FROM calls WHERE session_id='s1'"
+        ).fetchone()
+        assert row[0] == "live"
+
+    def test_mark_import_seeds_flags_rows_without_recordings(self, tmp_db, tmp_path):
+        _minimal_call(tmp_db, "with_audio")
+        _minimal_call(tmp_db, "seed_row")
+        (tmp_path / "with_audio").mkdir()
+        changed = tmp_db.mark_import_seeds(recordings_dir=tmp_path)
+        assert changed == 1
+        rows = dict(
+            tmp_db._conn().execute("SELECT session_id, source FROM calls").fetchall()
+        )
+        assert rows["with_audio"] == "live"
+        assert rows["seed_row"] == "import_seed"
+
+    def test_mark_import_seeds_idempotent(self, tmp_db, tmp_path):
+        _minimal_call(tmp_db, "seed_row")
+        tmp_db.mark_import_seeds(recordings_dir=tmp_path)
+        changed = tmp_db.mark_import_seeds(recordings_dir=tmp_path)
+        assert changed == 0

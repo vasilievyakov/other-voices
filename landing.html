@@ -1,0 +1,469 @@
+<title>Other Voices — как это работает сейчас</title>
+<style>
+  /* Единственная тема: тёмная консоль звукозаписи. Все цвета заданы явно. */
+  :root {
+    --ground: #171412;
+    --surface: #201c19;
+    --surface-2: #2a2521;
+    --line: #383129;
+    --text: #ede6dd;
+    --text-muted: #9a8f82;
+    --amber: #e8a33d;       /* живой канал, VU-метр */
+    --amber-dim: #8a6526;
+    --ok: #8db580;          /* работает */
+    --fail: #e25b45;        /* молчит / сломано */
+    --half: #c9a45a;        /* наполовину */
+    --unknown: #7d8a96;     /* не проверено */
+    --mono: ui-monospace, "SF Mono", Menlo, monospace;
+    --serif: Georgia, "Times New Roman", serif;
+    --sans: -apple-system, "Helvetica Neue", Arial, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 17px;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 860px; margin: 0 auto; padding: 0 24px; }
+
+  /* ── Шапка ───────────────────────────────────────────── */
+  header { padding: 56px 0 0; }
+  .kicker {
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center;
+  }
+  .kicker .dot { color: var(--amber); }
+  h1 {
+    font-family: var(--serif);
+    font-weight: 400;
+    font-size: clamp(34px, 5.4vw, 54px);
+    line-height: 1.12;
+    letter-spacing: -0.01em;
+    margin: 20px 0 18px;
+    text-wrap: balance;
+  }
+  h1 em { font-style: italic; color: var(--amber); }
+  .lede {
+    font-size: 19px;
+    color: var(--text-muted);
+    max-width: 620px;
+    margin: 0 0 40px;
+    text-wrap: pretty;
+  }
+  .lede strong { color: var(--text); font-weight: 600; }
+
+  /* ── Герой: две дорожки ─────────────────────────────── */
+  .tape {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .tape-head {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--line);
+    font-family: var(--mono); font-size: 12px; letter-spacing: 0.08em;
+    color: var(--text-muted);
+  }
+  .rec { display: flex; align-items: center; gap: 8px; color: var(--text); }
+  .rec::before {
+    content: ""; width: 9px; height: 9px; border-radius: 50%;
+    background: var(--fail); display: inline-block;
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .rec::before { animation: pulse 2.2s ease-in-out infinite; }
+    @keyframes pulse { 50% { opacity: 0.35; } }
+  }
+  canvas { display: block; width: 100%; height: 220px; }
+  .tape-legend {
+    display: flex; flex-wrap: wrap; gap: 6px 28px;
+    padding: 12px 16px;
+    border-top: 1px solid var(--line);
+    font-family: var(--mono); font-size: 12px; letter-spacing: 0.06em;
+  }
+  .tape-legend .live { color: var(--amber); }
+  .tape-legend .dead { color: var(--fail); }
+
+  /* ── Секции ─────────────────────────────────────────── */
+  section { padding: 64px 0 0; }
+  h2 {
+    font-family: var(--serif);
+    font-weight: 400;
+    font-size: clamp(26px, 3.6vw, 34px);
+    line-height: 1.2;
+    margin: 0 0 8px;
+    text-wrap: balance;
+  }
+  .sub { color: var(--text-muted); margin: 0 0 32px; max-width: 600px; }
+
+  /* Три опоры */
+  .pillars { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+  @media (max-width: 700px) { .pillars { grid-template-columns: 1fr; } }
+  .pillar {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    padding: 20px;
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  .pillar h3 { margin: 0; font-size: 17px; font-weight: 600; font-family: var(--sans); }
+  .pillar p { margin: 0; font-size: 15px; color: var(--text-muted); }
+  .verdict {
+    font-family: var(--mono); font-size: 12px; letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+  .v-ok { color: var(--ok); }
+  .v-half { color: var(--half); }
+  .v-fail { color: var(--fail); }
+
+  /* Пайплайн */
+  .stage {
+    display: grid;
+    grid-template-columns: 150px 1fr;
+    gap: 18px;
+    padding: 22px 0;
+    border-top: 1px solid var(--line);
+  }
+  .stage:last-of-type { border-bottom: 1px solid var(--line); }
+  @media (max-width: 620px) { .stage { grid-template-columns: 1fr; gap: 6px; } }
+  .stage-name {
+    font-family: var(--mono); font-size: 13px; letter-spacing: 0.05em;
+    color: var(--text-muted); padding-top: 3px;
+  }
+  .stage-body h3 { margin: 0 0 6px; font-size: 17px; font-weight: 600; }
+  .stage-body p { margin: 0 0 6px; font-size: 15.5px; color: var(--text-muted); max-width: 60ch; }
+  .stage-body p:last-child { margin-bottom: 0; }
+  .chip {
+    display: inline-block;
+    font-family: var(--mono); font-size: 11px; letter-spacing: 0.1em;
+    padding: 3px 8px; border-radius: 2px; margin-left: 10px;
+    vertical-align: 2px;
+  }
+  .c-ok { color: var(--ok); border: 1px solid var(--ok); }
+  .c-fail { color: var(--fail); border: 1px solid var(--fail); }
+  .c-half { color: var(--half); border: 1px solid var(--half); }
+  .c-unknown { color: var(--unknown); border: 1px solid var(--unknown); }
+
+  /* Цифры недели */
+  .numbers {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px;
+  }
+  @media (max-width: 700px) { .numbers { grid-template-columns: repeat(2, 1fr); } }
+  .num {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 3px;
+    padding: 18px 20px;
+  }
+  .num b {
+    display: block;
+    font-family: var(--mono); font-weight: 500;
+    font-size: 30px; line-height: 1.1;
+    font-variant-numeric: tabular-nums;
+    margin-bottom: 6px;
+  }
+  .num span { font-size: 13.5px; color: var(--text-muted); line-height: 1.4; display: block; }
+  .num.bad b { color: var(--fail); }
+  .num.good b { color: var(--ok); }
+
+  /* Разрывы */
+  .break {
+    border-top: 1px solid var(--line);
+    padding: 26px 0;
+    display: grid; grid-template-columns: 56px 1fr; gap: 16px;
+  }
+  .break:last-of-type { border-bottom: 1px solid var(--line); }
+  .break-no {
+    font-family: var(--serif); font-style: italic;
+    font-size: 34px; color: var(--amber-dim); line-height: 1;
+  }
+  .break h3 { margin: 0 0 8px; font-size: 19px; font-weight: 600; }
+  .break p { margin: 0 0 8px; color: var(--text-muted); font-size: 15.5px; max-width: 62ch; }
+  .break p:last-child { margin-bottom: 0; }
+  .break .fact { font-family: var(--mono); font-size: 13px; color: var(--text); }
+
+  /* Что вернёт обещание */
+  .fix {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 3px;
+    padding: 22px 24px; margin-bottom: 14px;
+    display: grid; grid-template-columns: 120px 1fr; gap: 18px;
+  }
+  @media (max-width: 620px) { .fix { grid-template-columns: 1fr; gap: 8px; } }
+  .fix-cost {
+    font-family: var(--mono); font-size: 13px; color: var(--amber);
+    letter-spacing: 0.04em; padding-top: 2px;
+  }
+  .fix h3 { margin: 0 0 6px; font-size: 17px; font-weight: 600; }
+  .fix p { margin: 0; font-size: 15px; color: var(--text-muted); max-width: 62ch; }
+  .fix code {
+    font-family: var(--mono); font-size: 13px; color: var(--text);
+    background: var(--surface-2); padding: 1px 6px; border-radius: 2px;
+    white-space: nowrap;
+  }
+
+  footer {
+    margin-top: 72px; padding: 26px 0 48px;
+    border-top: 1px solid var(--line);
+    font-family: var(--mono); font-size: 12.5px; line-height: 1.8;
+    color: var(--text-muted);
+  }
+  a { color: var(--amber); }
+  :focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+</style>
+
+<div class="wrap">
+
+  <header>
+    <div class="kicker">
+      <span>Other Voices</span><span class="dot">·</span>
+      <span>Call Recorder</span><span class="dot">·</span>
+      <span>Состояние на 19 августа 2026</span>
+    </div>
+    <h1>Память о каждом звонке.<br>Пока — <em>о половине</em> каждого звонка.</h1>
+    <p class="lede">
+      Обещание продукта: всё, что было сказано в рабочих звонках, само записывается,
+      расшифровывается и превращается в саммари — целиком на твоём Mac, без облака.
+      Эта страница показывает, какая часть обещания выполняется сегодня,
+      <strong>на живых цифрах из лога демона</strong>.
+    </p>
+  </header>
+
+  <div class="tape" role="img" aria-label="Две дорожки записи: микрофон пишется, канал собеседников молчит с 10 июня">
+    <div class="tape-head">
+      <span class="rec">REC · согласие получено</span>
+      <span>session 20260818_165750 · Zoom · 2 ч 17 мин</span>
+    </div>
+    <canvas id="wave" width="1720" height="440"></canvas>
+    <div class="tape-legend">
+      <span class="live">▮ твой микрофон — пишется</span>
+      <span class="dead">▯ собеседники — тишина с 10 июня</span>
+    </div>
+  </div>
+
+  <section>
+    <h2>Обещание держится на трёх опорах</h2>
+    <p class="sub">USP целиком: «полная память всех звонков, автоматически и приватно». Разложим на части и посмотрим на каждую.</p>
+    <div class="pillars">
+      <div class="pillar">
+        <span class="verdict v-ok">Стоит</span>
+        <h3>Приватно</h3>
+        <p>Запись, Whisper-транскрипция, диаризация и саммари через Ollama — всё исполняется локально. Ни один байт звонка не покидает машину.</p>
+      </div>
+      <div class="pillar">
+        <span class="verdict v-half">Стоит наполовину</span>
+        <h3>Все звонки</h3>
+        <p>Из шести платформ надёжно ловится Zoom. Google Meet — треть всей живой базы — невидим с 12 августа. Остальные четыре платформы вживую не срабатывали ни разу.</p>
+      </div>
+      <div class="pillar">
+        <span class="verdict v-fail">Лежит</span>
+        <h3>Весь разговор</h3>
+        <p>В каждой записи с 10 июня слышен один голос — твой. Канал собеседников физически не пишется: у рекордера отозвано право на захват системного звука.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Пайплайн, стадия за стадией</h2>
+    <p class="sub">Порядок соответствует реальному пути звонка через систему.</p>
+
+    <div class="stage">
+      <div class="stage-name">01 · детекция</div>
+      <div class="stage-body">
+        <h3>Демон замечает звонок <span class="chip c-half">наполовину</span></h3>
+        <p>Каждые три секунды демон осматривает процессы. Zoom определяется безошибочно: процесс CptHost существует только внутри звонка — 127 живых записей в базе.</p>
+        <p>Google Meet молчит с 12 августа. Выяснилось, что его детекция все месяцы срабатывала на побочный Google-трафик браузера, и фильтр, убравший ложные тревоги, убрал и её. Teams, Discord, Telegram и FaceTime сидят на той же UDP-эвристике — вживую она не сработала ни разу: все записи Telegram и FaceTime в базе оказались синтетикой старого импорта.</p>
+      </div>
+    </div>
+
+    <div class="stage">
+      <div class="stage-name">02 · согласие</div>
+      <div class="stage-body">
+        <h3>Диалог «Записать звонок?» <span class="chip c-ok">работает</span></h3>
+        <p>Появился 12 августа. Запись начинается только после кнопки «Записать»; молчание, отказ или конец звонка оставляют микрофон нетронутым. За неделю — восемь диалогов, восемь согласий, время ответа три-семь секунд, ложных срабатываний ноль.</p>
+      </div>
+    </div>
+
+    <div class="stage">
+      <div class="stage-name">03 · захват</div>
+      <div class="stage-body">
+        <h3>Пишется один канал из двух <span class="chip c-fail">молчит</span></h3>
+        <p>Задумано два канала: mic.wav — твой голос, system.wav — голоса собеседников через ScreenCaptureKit. Второй канал мёртв с 10 июня: после пересборки бинаря macOS отозвала право Screen Recording, и каждая пересборка с ad-hoc подписью отзывает его снова.</p>
+        <p class="fact">70 дней подряд каждая запись содержит половину разговора.</p>
+      </div>
+    </div>
+
+    <div class="stage">
+      <div class="stage-name">04 · транскрипция</div>
+      <div class="stage-body">
+        <h3>mlx_whisper расшифровывает локально <span class="chip c-ok">работает</span></h3>
+        <p>JSON с сегментами и таймстампами. На этой неделе — от 880 до 15 881 знака за звонок.</p>
+      </div>
+    </div>
+
+    <div class="stage">
+      <div class="stage-name">05 · диаризация</div>
+      <div class="stage-body">
+        <h3>Спикеры размечаются, но собеседников нет <span class="chip c-half">наполовину</span></h3>
+        <p>Твой голос помечается как SPEAKER_ME; раскладка собеседников на SPEAKER_1…N готова и ждёт system-канал, которого нет.</p>
+      </div>
+    </div>
+
+    <div class="stage">
+      <div class="stage-name">06 · саммари</div>
+      <div class="stage-body">
+        <h3>Ollama пишет выжимку по уликам <span class="chip c-ok">работает</span></h3>
+        <p>qwen3:14b с evidence-only промптами: имена и действия берутся только из транскрипта, пустые списки разрешены. Односторонние записи распознаются и получают пометку mic_only — саммари честно строится по твоим репликам, вторую сторону модель не сочиняет.</p>
+      </div>
+    </div>
+
+    <div class="stage">
+      <div class="stage-name">07 · просмотр</div>
+      <div class="stage-body">
+        <h3>SwiftUI-приложение <span class="chip c-ok">работает</span></h3>
+        <p>Список с группировкой по датам, полнотекстовый поиск, плеер с регулировкой скорости, экспорт в Markdown и текст.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Неделя в цифрах</h2>
+    <p class="sub">12–19 августа, из лога демона и базы звонков.</p>
+    <div class="numbers">
+      <div class="num good"><b>8 из 8</b><span>диалогов согласия получили «Записать» за 3–7 секунд</span></div>
+      <div class="num good"><b>0</b><span>ложных срабатываний — раньше несколько в день выбивали наушники</span></div>
+      <div class="num"><b>8</b><span>звонков записано и суммаризировано, самый длинный — 2 ч 17 мин</span></div>
+      <div class="num bad"><b>0</b><span>звонков Google Meet замечено — при 62 живых записях Meet в базе</span></div>
+      <div class="num bad"><b>70</b><span>дней в записях отсутствуют голоса собеседников</span></div>
+      <div class="num"><b>189</b><span>живых звонков в базе: Zoom 127, Meet 62. Ещё 37 строк — синтетика старого импорта, помечена и исключена из цифр</span></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Где обещание расходится с делом</h2>
+    <p class="sub">Три разрыва, по убыванию ущерба.</p>
+
+    <div class="break">
+      <div class="break-no">1</div>
+      <div>
+        <h3>Слышен только ты</h3>
+        <p>Главный удар по USP. Саммари двухчасового звонка 18 августа построено по одним твоим репликам: вопросы собеседников, их возражения и обещания в память продукта попадают только пересказанными твоим голосом.</p>
+        <p class="fact">Причина известна, лечится за пять минут руками — см. ниже.</p>
+      </div>
+    </div>
+
+    <div class="break">
+      <div class="break-no">2</div>
+      <div>
+        <h3>Из шести платформ вживую работали две, осталась одна</h3>
+        <p>Zoom держит детекцию честным признаком — процессом звонка. Meet такого признака в текущей схеме лишён: медиапоток соло-встречи вообще молчит, а UDP-сокеты реального звонка детектору не видны. Нужен другой сигнал — кандидаты есть, нужен один совместный эксперимент. Остальные платформы детекцию вживую не проходили ни разу.</p>
+      </div>
+    </div>
+
+    <div class="break">
+      <div class="break-no">3</div>
+      <div>
+        <h3>«Автоматически» стало «с подтверждением»</h3>
+        <p>Единственный разрыв, выбранный сознательно. Раньше демон хватал микрофон без спроса и переключал Bose QC45 в телефонный профиль посреди музыки. Теперь тишину наушников охраняет вопрос ценой в один клик. Если считать это отступлением от USP — его можно вернуть настройкой, ложных срабатываний больше нет.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Что вернёт обещание</h2>
+    <p class="sub">По возрастанию цены.</p>
+
+    <div class="fix">
+      <div class="fix-cost">5 минут<br>руками</div>
+      <div>
+        <h3>Вернуть голоса собеседников</h3>
+        <p>System Settings → Privacy &amp; Security → Screen &amp; System Audio Recording → включить <code>audio-capture</code>, затем <code>bash restart-daemon.sh</code>. Закрывает разрыв № 1 для всех будущих записей. Пока бинарь подписан ad-hoc, право слетает при каждой пересборке — насовсем это закрывает только сертификат Apple Development.</p>
+      </div>
+    </div>
+
+    <div class="fix">
+      <div class="fix-cost">10 минут<br>вместе</div>
+      <div>
+        <h3>Новая детекция Meet</h3>
+        <p>Один звонок Meet с телефоном вторым участником — под наблюдением за сокетами и занятостью микрофона. По результату выбирается новый сигнал детекции: занятость входного устройства, power assertion браузера или вкладка Meet. Закрывает разрыв № 2.</p>
+      </div>
+    </div>
+
+    <div class="fix">
+      <div class="fix-cost">~1 час<br>кода</div>
+      <div>
+        <h3>Записывать с правильного микрофона</h3>
+        <p>Сейчас захват берёт системный вход по умолчанию — микрофон Bose по Bluetooth. Пин на Shure MV7+ с запретом Bluetooth-входов поднимет качество записи и оставит наушники в покое даже после «Записать». Отложено 12 августа осознанно.</p>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    Цифры сняты 19 августа 2026 из logs/call-recorder.log и data/calls.db;<br>37 синтетических строк старого импорта помечены source=import_seed и в цифры не входят.<br>
+    Страница ни к чему не обращается по сети — как и сам продукт.
+  </footer>
+
+</div>
+
+<script>
+(function () {
+  var canvas = document.getElementById("wave");
+  var ctx = canvas.getContext("2d");
+
+  function draw() {
+    var dpr = window.devicePixelRatio || 1;
+    var w = canvas.clientWidth, h = canvas.clientHeight;
+    canvas.width = w * dpr;
+    canvas.height = h * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, w, h);
+
+    var midTop = h * 0.3, midBot = h * 0.74;
+    var barW = 3, gap = 2, n = Math.floor(w / (barW + gap));
+
+    // верхняя дорожка: живой микрофонный сигнал (детерминированный псевдошум)
+    ctx.fillStyle = "#e8a33d";
+    for (var i = 0; i < n; i++) {
+      var t = i / n;
+      var env = 0.35 + 0.65 * Math.abs(Math.sin(t * 21) * Math.sin(t * 4.7 + 1.3));
+      var jit = 0.5 + 0.5 * Math.sin(i * 12.9898) * Math.sin(i * 78.233);
+      var amp = Math.max(2, env * (0.55 + 0.45 * jit) * h * 0.21);
+      // паузы в речи
+      if (Math.sin(t * 9.1 + 0.6) > 0.82) amp = 2;
+      ctx.globalAlpha = 0.55 + 0.45 * env;
+      ctx.fillRect(i * (barW + gap), midTop - amp, barW, amp * 2);
+    }
+    ctx.globalAlpha = 1;
+
+    // нижняя дорожка: ровная линия
+    ctx.strokeStyle = "#e25b45";
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(0, midBot);
+    ctx.lineTo(w, midBot);
+    ctx.stroke();
+
+    // подписи каналов
+    ctx.font = "11px ui-monospace, Menlo, monospace";
+    ctx.fillStyle = "#9a8f82";
+    ctx.fillText("CH 1 · MIC", 12, 16);
+    ctx.fillText("CH 2 · SYSTEM", 12, midBot - 12);
+    ctx.fillStyle = "#e25b45";
+    ctx.fillText("— NO SIGNAL SINCE 2026-06-10", 110, midBot - 12);
+  }
+
+  draw();
+  var pending = null;
+  window.addEventListener("resize", function () {
+    clearTimeout(pending);
+    pending = setTimeout(draw, 120);
+  });
+})();
+</script>

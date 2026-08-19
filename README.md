@@ -2,7 +2,7 @@
 
 A macOS app that automatically records, transcribes, and summarizes your calls — Zoom, Meet, Teams, Discord, Telegram, FaceTime. Everything runs locally. No cloud. No subscriptions.
 
-![macOS](https://img.shields.io/badge/macOS-14%2B-blue) ![Python](https://img.shields.io/badge/Python-3.11%2B-yellow) ![Swift](https://img.shields.io/badge/Swift-6.0-orange) ![License](https://img.shields.io/badge/license-MIT-green) ![Tests](https://img.shields.io/badge/tests-395-brightgreen)
+![macOS](https://img.shields.io/badge/macOS-14%2B-blue) ![Python](https://img.shields.io/badge/Python-3.11%2B-yellow) ![Swift](https://img.shields.io/badge/Swift-6.0-orange) ![License](https://img.shields.io/badge/license-MIT-green) ![Tests](https://img.shields.io/badge/tests-355-brightgreen)
 
 <!-- ![Other Voices — three-column call browser](screenshot.png) -->
 
@@ -222,7 +222,7 @@ call-recorder/
 │
 ├── swift/AudioCapture.swift      # ScreenCaptureKit audio capture (330 lines)
 ├── cli.py                        # CLI interface (5 commands)
-├── tests/                        # 258 Python tests
+├── tests/                        # 355 Python tests
 ├── setup.sh                      # One-command installation
 └── launchd/                      # macOS launch agent config
 ```
@@ -294,7 +294,7 @@ Override via environment variables or edit `src/config.py` directly.
 ## Tests
 
 ```bash
-# Python (258 tests)
+# Python (355 tests)
 cd ~/call-recorder && .venv/bin/python3 -m pytest tests/ -v
 
 # Swift (137 tests)

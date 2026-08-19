@@ -80,6 +80,10 @@ class Database:
             conn.execute("ALTER TABLE calls ADD COLUMN notes TEXT")
         if "transcript_segments" not in columns:
             conn.execute("ALTER TABLE calls ADD COLUMN transcript_segments TEXT")
+        if "source" not in columns:
+            # 'live' = written by the daemon pipeline; 'import_seed' = rows
+            # inserted by import_transcripts.py with no audio on disk
+            conn.execute("ALTER TABLE calls ADD COLUMN source TEXT DEFAULT 'live'")
 
         # Entities table (Phase 2)
         conn.execute("""
@@ -173,6 +177,26 @@ class Database:
                 ),
             )
         log.info(f"Saved call {session_id} to database")
+
+    def mark_import_seeds(self, recordings_dir: Path) -> int:
+        """Flag rows that have no recording folder on disk as import_seed.
+
+        Returns the number of rows changed. Idempotent.
+        """
+        with self._conn() as conn:
+            sessions = [
+                row[0]
+                for row in conn.execute(
+                    "SELECT session_id FROM calls WHERE source != 'import_seed'"
+                )
+            ]
+            seeds = [s for s in sessions if not (recordings_dir / s).is_dir()]
+            for session_id in seeds:
+                conn.execute(
+                    "UPDATE calls SET source = 'import_seed' WHERE session_id = ?",
+                    (session_id,),
+                )
+        return len(seeds)
 
     def update_notes(self, session_id: str, notes: str | None):
         """Update user notes for a call."""
