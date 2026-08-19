@@ -174,8 +174,14 @@ def main():
     # Phase 1: all summaries with qwen3:14b resident — alternating 14b/32b per
     # session thrashed the model cache and timed a judge out (board cycle 3).
     for i, s in enumerate(sessions):
+        cached = out_dir / f"{s['session_id']}.summary.json"
         t0 = time.monotonic()
-        summary = summarizer.summarize(s["transcript"])
+        if cached.exists():
+            # Resume after an external kill: the summary is already on disk
+            summary = json.loads(cached.read_text())
+            print(f"  [resume] {s['session_id']} from cache")
+        else:
+            summary = summarizer.summarize(s["transcript"])
         elapsed = time.monotonic() - t0
         entry = {
             "session_id": s["session_id"],
