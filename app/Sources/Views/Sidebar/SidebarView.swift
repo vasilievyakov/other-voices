@@ -64,11 +64,18 @@ struct SidebarView: View {
         }
     }
 
+    // The People section shows people. Tools, configs and gadgets extracted as
+    // entities («iMac», «Kensington Lock») made half the list unusable for the
+    // person-briefing flow (board cycle 3, Ive).
+    private var people: [Entity] {
+        store.entities.filter { $0.type == "person" }
+    }
+
     @ViewBuilder
     private var peopleSection: some View {
-        if !store.entities.isEmpty {
+        if !people.isEmpty {
             Section("People") {
-                ForEach(store.entities, id: \.name) { entity in
+                ForEach(people, id: \.name) { entity in
                     Label {
                         Text(entity.name)
                     } icon: {

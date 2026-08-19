@@ -105,6 +105,9 @@ DIARIZATION_NUM_SPEAKERS = 0
 OLLAMA_BASE_URL = "http://localhost:11434"
 OLLAMA_URL = f"{OLLAMA_BASE_URL}/api/generate"
 OLLAMA_MODEL = "qwen3:14b"
+# qwen3 reasoning mode: 2-2.5K chars of hidden thinking per chunk. Overridable
+# per run (OLLAMA_THINK=false) for the cycle-3 speed/quality experiment.
+OLLAMA_THINK = os.environ.get("OLLAMA_THINK", "true").strip().lower() != "false"
 OLLAMA_HEALTH_TIMEOUT = 5  # seconds for health check
 
 # Notifications

@@ -628,7 +628,11 @@ class TestActionItemOwnerValidation:
                 ]
             )
         )
-        transcript = "[0:00] SPEAKER_ME: " + "I will handle the real one myself. " * 3
+        transcript = (
+            "[0:00] SPEAKER_ME: "
+            + "I will handle the real one myself. " * 3
+            + "\n[1:00] SPEAKER_ME: still on the real one."
+        )
         result = self.s.summarize(transcript)
         joined = " ".join(result["action_items"])
         assert "Ghostface" not in joined
@@ -826,7 +830,11 @@ class TestCommitmentsExtraction:
             "summary": "s",
             "participants": ["Вася"],
             "commitments": [
-                {"committer": "Вася", "recipient": "SPEAKER_ME", "text": "пришлёт смету"}
+                {
+                    "committer": "Вася",
+                    "recipient": "SPEAKER_ME",
+                    "text": "пришлёт смету",
+                }
             ],
         }
         out = self.s._finalize(summary, "Вася обещал смету", "full")
@@ -851,7 +859,11 @@ class TestCodeOwnedReduce:
                 "action_items": [],
                 "participants": ["SPEAKER_ME"],
                 "commitments": [
-                    {"committer": "SPEAKER_ME", "text": "пришлю смету", "recipient": "Вася"}
+                    {
+                        "committer": "SPEAKER_ME",
+                        "text": "пришлю смету",
+                        "recipient": "Вася",
+                    }
                 ],
             },
             {
@@ -929,7 +941,9 @@ class TestParticipantAttestation:
     def test_hallucinated_participant_dropped(self):
         """Regression: «Андрей» in 20260720_132102 never appears in transcript."""
         summary = {"summary": "s", "participants": ["Анна", "Андрей", "SPEAKER_1"]}
-        out = self.s._finalize(summary, "Анна согласилась продолжить. SPEAKER_1: да", "full")
+        out = self.s._finalize(
+            summary, "Анна согласилась продолжить. SPEAKER_1: да", "full"
+        )
         assert out["participants"] == ["Анна", "SPEAKER_1"]
 
 
@@ -948,3 +962,36 @@ class TestInflectedNameAttestation:
         summary = {"summary": "s", "participants": ["Игорь"]}
         out = self.s._finalize(summary, "передайте Игоря отчёт", "full")
         assert out["participants"] == ["Игорь"]
+
+
+class TestTimestampGuardrail:
+    def setup_method(self):
+        self.s = Summarizer()
+
+    TRANSCRIPT = "[0:30] SPEAKER_ME: начало\n[40:00] SPEAKER_ME: конец звонка"
+
+    def test_impossible_timestamp_dropped(self):
+        summary = {"summary": "s", "key_points": ["[150:00] пункт из будущего"]}
+        out = self.s._finalize(summary, self.TRANSCRIPT, "full")
+        assert out["key_points"] == []
+
+    def test_real_timestamp_kept(self):
+        summary = {"summary": "s", "key_points": ["[40:10] почти совпадающий пункт"]}
+        out = self.s._finalize(summary, self.TRANSCRIPT, "full")
+        assert out["key_points"] == ["[40:10] почти совпадающий пункт"]
+
+    def test_untimestamped_untouched(self):
+        summary = {"summary": "s", "key_points": ["без метки"]}
+        out = self.s._finalize(summary, self.TRANSCRIPT, "full")
+        assert out["key_points"] == ["без метки"]
+
+
+class TestThinkFlag:
+    @patch("src.summarizer.urllib.request.urlopen")
+    def test_payload_carries_think_flag(self, mock_urlopen):
+        mock_urlopen.return_value = _mock_ollama('{"summary": "ok"}')
+        s = Summarizer()
+        s._call_ollama("prompt")
+        payload = json.loads(mock_urlopen.call_args[0][0].data.decode("utf-8"))
+        assert "think" in payload
+        assert isinstance(payload["think"], bool)

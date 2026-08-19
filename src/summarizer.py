@@ -9,7 +9,7 @@ import urllib.request
 import urllib.error
 
 from .chunking import chunk_transcript
-from .config import OLLAMA_MODEL, OLLAMA_URL
+from .config import OLLAMA_MODEL, OLLAMA_THINK, OLLAMA_URL
 from .templates import TEMPLATES, build_prompt
 
 log = logging.getLogger("call-recorder")
@@ -258,6 +258,7 @@ class Summarizer:
                 "model": OLLAMA_MODEL,
                 "messages": [{"role": "user", "content": prompt}],
                 "stream": False,
+                "think": OLLAMA_THINK,
                 "format": format_schema or self._response_schema("default"),
                 "options": {
                     "temperature": 0.1,
@@ -607,6 +608,33 @@ class Summarizer:
             summary["commitments"] = self._process_commitments(
                 summary["commitments"], summary.get("participants") or [], transcript
             )
+        # Timestamps that don't exist in the transcript are an unambiguous
+        # fabrication signal — drop mechanically (overlap-based judgment stays
+        # in the eval, never auto-drops in prod; board cycle 3, Karpathy).
+        moments = [
+            self._parse_ts(line.strip())
+            for line in (transcript or "").splitlines()
+        ]
+        moments = [t for t in moments if t is not None]
+        if moments:
+            for field in ("key_points", "decisions", "action_items"):
+                items = summary.get(field)
+                if not isinstance(items, list):
+                    continue
+                kept_items = []
+                for item in items:
+                    ts = self._parse_ts(item.strip()) if isinstance(item, str) else None
+                    if ts is not None and not any(
+                        abs(ts - t) <= 30 for t in moments
+                    ):
+                        log.info(
+                            f"Validation: dropping {field} item with nonexistent "
+                            f"timestamp: {item!r}"
+                        )
+                        continue
+                    kept_items.append(item)
+                summary[field] = kept_items
+
         # A summary a human can read: cap list sizes deterministically —
         # 52 concatenated key_points is a dump, not care (board cycle 2).
         for field, cap in (("key_points", 8), ("decisions", 5)):

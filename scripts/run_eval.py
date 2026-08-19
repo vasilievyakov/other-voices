@@ -22,6 +22,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from src.config import DB_PATH, OLLAMA_BASE_URL  # noqa: E402
 from src.evaluation import (  # noqa: E402
+    citation_check,
+    labeled_recall,
     coverage_correct,
     hallucinated_participants,
     owner_attestation,
@@ -96,8 +98,14 @@ def judge_grounding(transcript: str, summary: dict) -> dict | None:
             result = json.loads(resp.read().decode("utf-8"))
         return json.loads(result["message"]["content"])
     except Exception as e:
-        print(f"  judge failed: {e}")
+        print(f"  judge failed: {type(e).__name__}: {e}")
         return None
+
+
+_labels_path = Path(__file__).resolve().parent.parent / "eval" / "golden-labels.json"
+RECALL_LABELS: dict = (
+    json.loads(_labels_path.read_text())["sessions"] if _labels_path.exists() else {}
+)
 
 
 def load_golden_ids() -> list[str] | None:
@@ -162,6 +170,9 @@ def main():
 
     summarizer = Summarizer()
     results = []
+    summaries = {}
+    # Phase 1: all summaries with qwen3:14b resident — alternating 14b/32b per
+    # session thrashed the model cache and timed a judge out (board cycle 3).
     for i, s in enumerate(sessions):
         t0 = time.monotonic()
         summary = summarizer.summarize(s["transcript"])
@@ -174,23 +185,42 @@ def main():
             "shape": summary_shape(summary),
         }
         if summary:
+            summaries[s["session_id"]] = summary
             entry["owner_attestation"] = owner_attestation(summary, s["transcript"])
             entry["hallucinated_participants"] = hallucinated_participants(
                 summary, s["transcript"]
             )
             entry["coverage_correct"] = coverage_correct(summary, s["transcript"])
-            if i < args.judge:
-                entry["judge"] = judge_grounding(s["transcript"], summary)
-                entry["judge_coverage_pct"] = round(
-                    min(1.0, 28000 / max(len(s["transcript"]), 1)) * 100
+            entry["citation"] = citation_check(summary, s["transcript"])
+            if s["session_id"] in RECALL_LABELS:
+                entry["recall"] = labeled_recall(
+                    summary, RECALL_LABELS[s["session_id"]]
                 )
             (out_dir / f"{s['session_id']}.summary.json").write_text(
                 json.dumps(summary, ensure_ascii=False, indent=1), encoding="utf-8"
             )
         results.append(entry)
         print(
-            f"  [{i + 1}/{len(sessions)}] {s['session_id']} "
-            f"{entry['seconds']}s failed={entry['shape'].get('failed')}"
+            f"  [summarize {i + 1}/{len(sessions)}] {s['session_id']} "
+            f"{entry['seconds']}s citation={entry.get('citation')}"
+        )
+
+    # Phase 2: all judging with qwen3:32b resident; one retry per session.
+    for i, (s, entry) in enumerate(zip(sessions, results)):
+        if i >= args.judge or entry["session_id"] not in summaries:
+            continue
+        summary = summaries[entry["session_id"]]
+        verdict = judge_grounding(s["transcript"], summary)
+        if verdict is None:
+            print(f"  [judge {i + 1}] retrying {s['session_id']}...")
+            verdict = judge_grounding(s["transcript"], summary)
+        entry["judge"] = verdict
+        entry["judge_coverage_pct"] = round(
+            min(1.0, 28000 / max(len(s["transcript"]), 1)) * 100
+        )
+        print(
+            f"  [judge {i + 1}/{min(args.judge, len(sessions))}] "
+            f"{s['session_id']} score={verdict and verdict.get('grounded_score')}"
         )
 
     ok = [r for r in results if not r["shape"].get("failed")]
@@ -211,6 +241,15 @@ def main():
             1 for r in ok if r.get("hallucinated_participants")
         ),
         "judge_scores": [r["judge"]["grounded_score"] for r in judged],
+        "judge_failed": sum(1 for r in ok if r.get("judge") is None and "judge" in r),
+        "recall": {
+            k: sum((r.get("recall") or {}).get(k, 0) for r in ok)
+            for k in ("total", "found")
+        },
+        "citation": {
+            k: sum((r.get("citation") or {}).get(k, 0) for r in ok)
+            for k in ("checked", "grounded", "weak", "timestamp_missing")
+        },
         "avg_seconds": round(
             sum(r["seconds"] for r in results) / max(len(results), 1), 1
         ),

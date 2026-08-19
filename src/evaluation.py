@@ -78,3 +78,114 @@ def summary_shape(summary: dict | None) -> dict:
         "participants": len(summary.get("participants") or []),
         "repaired": bool(summary.get("_repaired")),
     }
+
+
+# Same window the pipeline uses for chunk-overlap dedup — one shared meaning.
+TIMESTAMP_WINDOW_SECONDS = 30
+
+_OVERLAP_THRESHOLD = 0.35
+
+
+def _transcript_moments(transcript: str) -> list[tuple[int, str]]:
+    """Per-line (seconds, text) pairs from a [MM:SS]-annotated transcript."""
+    moments = []
+    for line in (transcript or "").splitlines():
+        ts = Summarizer._parse_ts(line.strip())
+        if ts is None:
+            continue
+        text = re.sub(r"^\[[\d:]+\]\s*", "", line.strip())
+        text = re.sub(r"^SPEAKER[_ ]?\w+\s*:\s*", "", text)
+        moments.append((ts, text))
+    return moments
+
+
+def _tokens(text: str) -> set[str]:
+    return {t for t in re.findall(r"\w+", (text or "").lower()) if len(t) > 2}
+
+
+def citation_check(summary: dict, transcript: str) -> dict:
+    """Mechanically verify timestamped claims against the FULL transcript.
+
+    The LLM judge is blind outside its context slice and intolerant to
+    paraphrase (two false «1» scores in cycle 2); this check sees 100% of the
+    transcript by construction. Token overlap is recall of the claim's tokens
+    in the ±window text: grounded ≥ threshold, else weak (human review, never
+    auto-drop). A timestamp with no transcript line nearby is counted apart.
+    """
+    moments = _transcript_moments(transcript)
+    result = {"checked": 0, "grounded": 0, "weak": 0, "timestamp_missing": 0}
+
+    for field in ("key_points", "decisions", "action_items"):
+        for item in summary.get(field) or []:
+            if not isinstance(item, str):
+                continue
+            ts = Summarizer._parse_ts(item.strip())
+            if ts is None:
+                continue
+            result["checked"] += 1
+            window = [
+                text
+                for t, text in moments
+                if abs(t - ts) <= TIMESTAMP_WINDOW_SECONDS
+            ]
+            if not window:
+                result["timestamp_missing"] += 1
+                continue
+            claim = re.sub(r"^\[[\d:]+\]\s*", "", item.strip())
+            claim = re.sub(r"^@?SPEAKER[_ ]?\w+\s*:\s*", "", claim)
+            claim_tokens = _tokens(claim)
+            window_tokens = _tokens(" ".join(window))
+            if not claim_tokens:
+                result["weak"] += 1
+                continue
+            overlap = len(claim_tokens & window_tokens) / len(claim_tokens)
+            if overlap >= _OVERLAP_THRESHOLD:
+                result["grounded"] += 1
+            else:
+                result["weak"] += 1
+
+    transcript_tokens = _tokens(transcript)
+    for c in summary.get("commitments") or []:
+        quote = (c or {}).get("quote") if isinstance(c, dict) else None
+        if not quote:
+            continue
+        result["checked"] += 1
+        q_tokens = _tokens(quote)
+        if q_tokens and len(q_tokens & transcript_tokens) / len(q_tokens) >= 0.6:
+            result["grounded"] += 1
+        else:
+            result["weak"] += 1
+
+    return result
+
+
+def labeled_recall(summary: dict, labels: list[dict]) -> dict:
+    """First recall measure: did hand-labeled promises reach the summary?
+
+    A labeled promise counts as found when any commitment (what+quote) or
+    action item overlaps its tokens (≥0.3) or carries a timestamp within 90s.
+    """
+    candidates: list[tuple[set, int | None]] = []
+    for c in summary.get("commitments") or []:
+        if isinstance(c, dict):
+            text = f"{c.get('what') or ''} {c.get('quote') or ''}"
+            candidates.append((_tokens(text), None))
+    for item in summary.get("action_items") or []:
+        if isinstance(item, str):
+            candidates.append((_tokens(item), Summarizer._parse_ts(item.strip())))
+
+    found = 0
+    for label in labels:
+        label_tokens = _tokens(label.get("text") or "")
+        label_ts = Summarizer._parse_ts(f"[{label.get('ts')}]")
+        hit = False
+        for tokens, ts in candidates:
+            if label_tokens and len(label_tokens & tokens) / len(label_tokens) >= 0.3:
+                hit = True
+                break
+            if label_ts is not None and ts is not None and abs(ts - label_ts) <= 90:
+                hit = True
+                break
+        if hit:
+            found += 1
+    return {"total": len(labels), "found": found}
