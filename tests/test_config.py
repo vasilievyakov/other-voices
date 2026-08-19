@@ -88,10 +88,11 @@ class TestConfigConstants:
         assert isinstance(NOTIFY_ENABLED, bool)
 
 
-class TestAudioCaptureBundle:
-    def test_capture_binary_lives_inside_app_bundle(self):
-        """Standalone binaries cannot stably hold the Screen Recording TCC
-        grant — macOS expects a bundle identity (board backlog item 11)."""
+class TestAudioCaptureBinary:
+    def test_capture_binary_is_the_bare_july_build(self):
+        """Owner's decision 2026-08-19: bare binary held its TCC grant for
+        months; the bundle hit attribution trouble in the daemon context.
+        Rebuilds still revoke the grant — that tradeoff is accepted."""
         from src.config import AUDIO_CAPTURE_BIN
 
-        assert "AudioCapture.app/Contents/MacOS" in str(AUDIO_CAPTURE_BIN)
+        assert str(AUDIO_CAPTURE_BIN).endswith("bin/audio-capture")
