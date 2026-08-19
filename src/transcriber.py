@@ -273,6 +273,36 @@ class Transcriber:
         return sorted(all_segments, key=lambda x: x["start"])
 
     @staticmethod
+    def _merge_turns(
+        segments: list[dict],
+        max_gap: float = 1.0,
+        max_words: int = 40,
+    ) -> list[dict]:
+        """Merge fragmented same-speaker segments into coherent turns.
+
+        Whisper splits spontaneous speech into 2-4-word lines; a promise smeared
+        across four lines is invisible to extraction. Merge consecutive segments
+        of the SAME speaker when the pause between them is <= max_gap seconds,
+        capped at max_words per turn so the merged line doesn't become a wall
+        of text. The turn keeps the FIRST segment's start (commitments usually
+        open the phrase). Speaker changes never merge — attribution is sacred.
+        """
+        turns: list[dict] = []
+        for seg in segments:
+            if (
+                turns
+                and seg["speaker"] == turns[-1]["speaker"]
+                and seg["start"] - turns[-1]["end"] <= max_gap
+                and len(turns[-1]["text"].split()) + len(seg["text"].split())
+                <= max_words
+            ):
+                turns[-1]["text"] = f"{turns[-1]['text']} {seg['text']}".strip()
+                turns[-1]["end"] = seg["end"]
+            else:
+                turns.append(dict(seg))
+        return turns
+
+    @staticmethod
     def _format_speaker_text(merged_segments: list[dict]) -> str:
         """Build unified text from merged segments with speaker labels and timestamps."""
         lines = []
@@ -340,6 +370,7 @@ class Transcriber:
 
         # Merge by timestamp
         merged = self._merge_by_timestamp(segments_me, segments_others)
+        merged = self._merge_turns(merged)
 
         # Build unified text with speaker labels
         full_text = self._format_speaker_text(merged)

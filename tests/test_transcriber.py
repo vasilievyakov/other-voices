@@ -515,3 +515,51 @@ class TestTranscribeSeparateDiarization:
 
         mock_diar.assert_not_called()
         assert {s["speaker"] for s in result["segments"]} == {"SPEAKER_ME"}
+
+
+# =============================================================================
+# Night build A: merge fragmented same-speaker turns (IE-expert spec)
+# =============================================================================
+
+from src.transcriber import Transcriber
+
+
+class TestMergeTurns:
+    def _seg(self, start, end, text, speaker="SPEAKER_ME"):
+        return {"start": start, "end": end, "text": text, "speaker": speaker}
+
+    def test_fragmented_promise_merges_into_one_turn(self):
+        segs = [
+            self._seg(10.0, 11.2, "я тогда"),
+            self._seg(11.5, 12.8, "пришлю договор"),
+            self._seg(13.0, 14.1, "в пятницу"),
+        ]
+        out = Transcriber._merge_turns(segs)
+        assert len(out) == 1
+        assert out[0]["text"] == "я тогда пришлю договор в пятницу"
+        assert out[0]["start"] == 10.0
+        assert out[0]["end"] == 14.1
+
+    def test_long_pause_splits_turns(self):
+        segs = [
+            self._seg(10.0, 11.0, "первая мысль"),
+            self._seg(14.0, 15.0, "вторая мысль"),
+        ]
+        out = Transcriber._merge_turns(segs)
+        assert len(out) == 2
+
+    def test_speaker_change_never_merges(self):
+        segs = [
+            self._seg(10.0, 11.0, "вопрос", "SPEAKER_1"),
+            self._seg(11.2, 12.0, "ответ", "SPEAKER_ME"),
+        ]
+        out = Transcriber._merge_turns(segs)
+        assert len(out) == 2
+
+    def test_word_cap_limits_turn(self):
+        segs = [
+            self._seg(10.0 + i, 10.5 + i, "слово " * 15) for i in range(5)
+        ]
+        out = Transcriber._merge_turns(segs)
+        assert len(out) >= 2
+        assert all(len(t["text"].split()) <= 45 for t in out)

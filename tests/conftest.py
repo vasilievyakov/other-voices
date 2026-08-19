@@ -147,3 +147,14 @@ def make_conn_no_raddr():
     conn = MagicMock()
     conn.raddr = None
     return conn
+
+
+@pytest.fixture(autouse=True)
+def _no_live_commitments_llm(monkeypatch):
+    """Unit tests must never call the live Ollama from commitments2.
+
+    Tests that need extraction behavior inject an llm stub explicitly or
+    patch src.daemon.extract_commitments."""
+    import src.commitments2 as c2
+
+    monkeypatch.setattr(c2, "_call_llm", lambda prompt, temperature=0.25: None)

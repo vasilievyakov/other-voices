@@ -739,9 +739,11 @@ class TestCommitmentsPersisted:
     @patch("src.daemon.check_ollama", return_value=True)
     @patch("src.daemon.notify")
     @patch("src.daemon.write_status")
-    def test_commitments_from_summary_land_in_table(
+    def test_summarizer_commitments_do_not_reach_table_without_v2(
         self, mock_status, mock_notify, mock_check, tmp_db, sample_session
     ):
+        """v2 is the single source: with empty v2 the summarizer's in-JSON
+        commitments must NOT land in the table (overwrite contract)."""
         from src.daemon import process_recording
 
         transcriber = MagicMock()
@@ -769,6 +771,49 @@ class TestCommitmentsPersisted:
         process_recording(sample_session, transcriber, summarizer, tmp_db)
 
         stored = tmp_db.get_commitments(sample_session["session_id"])
+        assert stored == []
+        call = tmp_db.get_call(sample_session["session_id"])
+        summary = json.loads(call["summary_json"])
+        assert summary["commitments"] == []
+
+
+class TestCommitmentsV2Wiring:
+    @patch("src.daemon.check_ollama", return_value=True)
+    @patch("src.daemon.notify")
+    @patch("src.daemon.write_status")
+    @patch("src.daemon.extract_commitments")
+    def test_v2_is_single_source_of_truth(
+        self, mock_extract, mock_status, mock_notify, mock_check, tmp_db, sample_session
+    ):
+        from src.daemon import process_recording
+
+        v2_item = {
+            "type": "outgoing", "who": "SPEAKER_ME", "to_whom": "Вася",
+            "what": "прислать смету", "deadline": "пятница",
+            "quote": "пришлю смету в пятницу", "uncertain": 0,
+            "confidence_votes": "3/3", "verified": "exact",
+        }
+        mock_extract.return_value = [v2_item]
+        transcriber = MagicMock()
+        transcriber.transcribe_separate.return_value = {
+            "text": "[0:00] SPEAKER_ME: пришлю смету в пятницу",
+            "segments": [],
+            "transcript_me": ["пришлю смету в пятницу"],
+            "transcript_others": ["ок"],
+        }
+        summarizer = MagicMock()
+        # старый путь вернул СВОИ commitments — они должны быть вытеснены v2
+        summarizer.summarize.return_value = {
+            "summary": "s",
+            "commitments": [{"type": "outgoing", "who": "SPEAKER_ME", "what": "старое"}],
+        }
+
+        process_recording(sample_session, transcriber, summarizer, tmp_db)
+
+        stored = tmp_db.get_commitments(sample_session["session_id"])
         assert len(stored) == 1
-        assert stored[0]["direction"] == "outgoing"
-        assert stored[0]["text"] == "пришлю договор"
+        assert stored[0]["text"] == "прислать смету"
+        assert stored[0]["uncertain"] == 0
+        call = tmp_db.get_call(sample_session["session_id"])
+        summary = json.loads(call["summary_json"])
+        assert summary["commitments"][0]["what"] == "прислать смету"

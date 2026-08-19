@@ -23,6 +23,7 @@ from .config import (
     DETECTION_CONFIRMATIONS,
     check_ollama,
 )
+from .commitments2 import extract_commitments
 from .consent import ConsentGate
 from .database import Database
 from .detector import CallDetector
@@ -454,6 +455,7 @@ def process_recording(
     # ── Step 2: Summarize (requires Ollama) ──
     summary = None
     entities = []
+    commitments_v2: list = []
     template_name = session.get("template_name", "default")
     if _ollama_available:
         write_status(
@@ -497,6 +499,23 @@ def process_recording(
             f"SKIPPED — Ollama unavailable [session={session_id}]",
         )
 
+    # Commitments v2 — the narrow staged extractor is the single source of
+    # truth; the summarizer's in-JSON field is overwritten by it (board: one
+    # question — one call; the big JSON call kept losing this field).
+    if transcript and _ollama_available:
+        with _Timer() as t_commit:
+            commitments_v2 = extract_commitments(transcript)
+        _log(
+            logging.INFO,
+            "commitments",
+            f"Extraction v2: {len(commitments_v2)} commitment(s), "
+            f"uncertain={sum(1 for c in commitments_v2 if c.get('uncertain'))} "
+            f"[session={session_id}]",
+            duration_ms=t_commit.elapsed_ms,
+        )
+        if summary is not None:
+            summary["commitments"] = commitments_v2
+
     # ── Step 3: Save to database ──
     write_status("processing", app_name, session_id, session["started_at"], "saving")
     with _Timer() as t_save:
@@ -517,10 +536,9 @@ def process_recording(
         if entities:
             db.insert_entities(session_id, entities)
 
-        # Commitments feed the follow-through layer (owner's "комбайн"):
-        # get_open_commitments()/get_commitment_counts() finally get data.
-        if summary and isinstance(summary.get("commitments"), list):
-            db.insert_commitments(session_id, summary["commitments"])
+        # Commitments feed the follow-through layer (owner's "комбайн")
+        if commitments_v2:
+            db.insert_commitments(session_id, commitments_v2)
 
     _log(
         logging.INFO,
