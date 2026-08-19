@@ -319,3 +319,20 @@ class TestAntiHallucinationRules:
         off = build_prompt("default", _RU_TEXT)
         assert "ОДНОСТОРОННЯЯ ЗАПИСЬ" in on
         assert "ОДНОСТОРОННЯЯ ЗАПИСЬ" not in off
+
+
+class TestOneSidedOwnPromises:
+    def test_notice_allows_own_commitments(self):
+        from src.templates import _ONE_SIDED_NOTICE
+
+        for lang in ("ru", "en"):
+            notice = _ONE_SIDED_NOTICE[lang]
+            assert "чаще всего будут пустыми" not in notice
+            assert "usually be empty" not in notice
+        assert "собственные слова" in _ONE_SIDED_NOTICE["ru"]
+
+    def test_prompt_asks_for_commitments(self):
+        from src.templates import build_prompt
+
+        prompt = build_prompt("default", "Обсудили бюджет и сроки проекта на год")
+        assert "commitments" in prompt

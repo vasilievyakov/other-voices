@@ -1,4 +1,5 @@
 import SwiftUI
+import AppKit
 
 struct DaemonStatusCard: View {
     @Environment(DaemonMonitor.self) private var daemon
@@ -166,22 +167,36 @@ struct DaemonStatusCard: View {
 
     // MARK: - Mic-only warning
 
-    private func micOnlyWarningView(_ streak: Int) -> some View {
-        HStack(spacing: 6) {
-            Image(systemName: "person.2.slash")
-                .foregroundStyle(.orange)
-                .font(.system(size: 10))
+    static let screenRecordingSettingsURL = URL(
+        string: "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture"
+    )!
 
-            Text(
-                streak == 1
-                    ? "Last call captured your mic only"
-                    : "\(streak) calls in a row captured your mic only"
-            )
+    private func micOnlyWarningView(_ streak: Int) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: 6) {
+                Image(systemName: "person.2.slash")
+                    .foregroundStyle(.orange)
+                    .font(.system(size: 10))
+
+                Text(
+                    streak == 1
+                        ? "Last call captured your mic only"
+                        : "\(streak) calls in a row captured your mic only"
+                )
+                .font(.caption2)
+                .foregroundStyle(.orange)
+            }
+
+            // The product knew about this breakage for 70 days and whispered.
+            // The fix is one click away — offer it, don't hint at it.
+            Button("Open Screen Recording settings") {
+                NSWorkspace.shared.open(Self.screenRecordingSettingsURL)
+            }
+            .buttonStyle(.link)
             .font(.caption2)
-            .foregroundStyle(.secondary)
         }
         .padding(.top, 6)
-        .help("Other participants are missing from recordings. Grant Screen & System Audio Recording to audio-capture, then restart the daemon.")
+        .help("Other participants are missing from recordings. Grant Screen & System Audio Recording to AudioCapture.app, then restart the daemon.")
     }
 
     // MARK: - Card background

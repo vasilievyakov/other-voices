@@ -517,6 +517,11 @@ def process_recording(
         if entities:
             db.insert_entities(session_id, entities)
 
+        # Commitments feed the follow-through layer (owner's "комбайн"):
+        # get_open_commitments()/get_commitment_counts() finally get data.
+        if summary and isinstance(summary.get("commitments"), list):
+            db.insert_commitments(session_id, summary["commitments"])
+
     _log(
         logging.INFO,
         "save",

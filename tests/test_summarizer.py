@@ -356,8 +356,16 @@ class TestSummarizerChunked:
         self.summarizer = Summarizer()
 
     def _make_long_text(self, chars: int = 60000) -> str:
-        line = "Speaker A: This is a test line for chunking purposes.\n"
-        return line * (chars // len(line) + 1)
+        # Varied lines: identical repeats would (correctly) trip the
+        # degenerate-transcript detector, which real long calls do not.
+        lines = []
+        i = 0
+        while sum(len(l) for l in lines) < chars:
+            lines.append(
+                f"Speaker A: This is test line number {i} about topic {i % 7}.\n"
+            )
+            i += 1
+        return "".join(lines)
 
     @patch("src.summarizer.urllib.request.urlopen")
     def test_long_transcript_uses_chunks(self, mock_urlopen):
@@ -642,8 +650,10 @@ class TestStructuredOutput:
         assert "format" in payload
         assert payload["format"]["type"] == "object"
         assert "summary" in payload["format"]["properties"]
-        # templates add sections beyond the core keys — must stay allowed
-        assert payload["format"].get("additionalProperties", False) is True
+        # Board cycle 1: schema is CLOSED per template — the decoder must not
+        # be able to invent key names ("participants:[" regression).
+        assert payload["format"]["additionalProperties"] is False
+        assert "commitments" in payload["format"]["properties"]
 
     @patch("src.summarizer.urllib.request.urlopen")
     def test_repair_still_works_as_fallback(self, mock_urlopen):
@@ -698,3 +708,124 @@ class TestOwnerValidationViaParticipants:
         summary = {"action_items": ["@Максим: собрать отчёт"]}
         out = self.s._validate_action_items(summary, "это максимум возможного")
         assert out["action_items"] == []
+
+
+# =============================================================================
+# Cycle 1 board fixes: degenerate detector, closed schema, commitments
+# =============================================================================
+
+
+def _degenerate_transcript(n=100):
+    return "\n".join(
+        f"[{i // 2}:{'00' if i % 2 == 0 else '30'}] SPEAKER_ME: Продолжение следует..."
+        for i in range(n)
+    )
+
+
+class TestDegenerateTranscript:
+    def setup_method(self):
+        self.s = Summarizer()
+
+    @patch("src.summarizer.urllib.request.urlopen")
+    def test_degenerate_skips_ollama(self, mock_urlopen):
+        """Whisper hallucination loop → flagged result, no LLM call."""
+        result = self.s.summarize(_degenerate_transcript())
+        assert result is not None
+        assert result["transcript_quality"] == "degenerate"
+        assert result["coverage"] == "mic_only"
+        assert result["action_items"] == []
+        mock_urlopen.assert_not_called()
+
+    def test_real_dialog_not_degenerate(self):
+        lines = [
+            f"[{i}:00] SPEAKER_{1 + i % 2}: реплика номер {i} про бюджет и сроки"
+            for i in range(20)
+        ]
+        assert self.s._is_degenerate("\n".join(lines)) is False
+
+    def test_short_transcript_not_degenerate(self):
+        assert self.s._is_degenerate("[0:00] SPEAKER_ME: привет") is False
+
+
+class TestClosedSchema:
+    def setup_method(self):
+        self.s = Summarizer()
+
+    def test_schema_closed_for_default(self):
+        schema = self.s._response_schema("default")
+        assert schema["additionalProperties"] is False
+        assert "key_points" in schema["properties"]
+        assert "commitments" in schema["properties"]
+        assert "summary" in schema["required"]
+
+    def test_schema_uses_template_sections(self):
+        schema = self.s._response_schema("sales_call")
+        assert "objections" in schema["properties"]
+        assert schema["additionalProperties"] is False
+
+    def test_mangled_keys_dropped_in_finalize(self):
+        """Regression: eval/cycle1-baseline/20260817_130256 — junk key names."""
+        summary = {
+            "summary": "x",
+            "participants:[": "SPEAKER_ME",
+            "key_points[]: [], ": ", ",
+        }
+        out = self.s._finalize(summary, "текст звонка про бюджет", "full")
+        assert "participants:[" not in out
+        assert "key_points[]: [], " not in out
+        assert out["summary"] == "x"
+
+    def test_template_sections_survive_whitelist(self):
+        summary = {"summary": "x", "objections": ["дорого"]}
+        out = self.s._finalize(
+            summary, "клиент сказал дорого", "full", template_name="sales_call"
+        )
+        assert out["objections"] == ["дорого"]
+
+
+class TestCommitmentsExtraction:
+    def setup_method(self):
+        self.s = Summarizer()
+
+    def test_own_commitment_becomes_outgoing(self):
+        summary = {
+            "summary": "s",
+            "participants": ["Вася"],
+            "commitments": [
+                {
+                    "committer": "SPEAKER_ME",
+                    "recipient": "Вася",
+                    "text": "пришлю договор",
+                    "deadline": "пятница",
+                }
+            ],
+        }
+        transcript = "[0:00] SPEAKER_ME: пришлю договор в пятницу"
+        out = self.s._finalize(summary, transcript, "mic_only")
+        assert len(out["commitments"]) == 1
+        c = out["commitments"][0]
+        assert c["type"] == "outgoing"
+        assert c["who"] == "SPEAKER_ME"
+        assert c["to_whom"] == "Вася"
+        assert c["what"] == "пришлю договор"
+        assert c["deadline"] == "пятница"
+
+    def test_unattested_committer_dropped(self):
+        summary = {
+            "summary": "s",
+            "participants": [],
+            "commitments": [{"committer": "Призрак", "recipient": "", "text": "x"}],
+        }
+        out = self.s._finalize(summary, "разговор без имён", "full")
+        assert out["commitments"] == []
+
+    def test_participant_commitment_is_incoming(self):
+        summary = {
+            "summary": "s",
+            "participants": ["Вася"],
+            "commitments": [
+                {"committer": "Вася", "recipient": "SPEAKER_ME", "text": "пришлёт смету"}
+            ],
+        }
+        out = self.s._finalize(summary, "Вася обещал смету", "full")
+        assert out["commitments"][0]["type"] == "incoming"

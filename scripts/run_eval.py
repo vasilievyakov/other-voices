@@ -84,19 +84,30 @@ def judge_grounding(transcript: str, summary: dict) -> dict | None:
         return None
 
 
-def pick_sessions(n: int) -> list[dict]:
+def pick_sessions(n: int) -> tuple[list[dict], int]:
+    """Most recent live sessions with REAL content.
+
+    Whisper-hallucination loops (degenerate transcripts) are excluded — the
+    cycle-1 baseline accidentally measured the same artifact 8 times. Returns
+    (sessions, degenerate_skipped).
+    """
     conn = sqlite3.connect(DB_PATH)
     rows = conn.execute(
         """SELECT session_id, app_name, transcript FROM calls
            WHERE source = 'live' AND transcript IS NOT NULL
              AND length(transcript) >= 500
-           ORDER BY session_id DESC LIMIT ?""",
-        (n,),
+           ORDER BY session_id DESC""",
     ).fetchall()
     conn.close()
-    return [
-        {"session_id": sid, "app_name": app, "transcript": t} for sid, app, t in rows
-    ]
+    picked: list[dict] = []
+    degenerate = 0
+    for sid, app, t in rows:
+        if Summarizer._is_degenerate(t):
+            degenerate += 1
+            continue
+        if len(picked) < n:
+            picked.append({"session_id": sid, "app_name": app, "transcript": t})
+    return picked, degenerate
 
 
 def main():
@@ -109,8 +120,11 @@ def main():
     out_dir = Path(__file__).resolve().parent.parent / "eval" / args.cycle
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    sessions = pick_sessions(args.sessions)
-    print(f"Evaluating {len(sessions)} sessions → {out_dir}")
+    sessions, degenerate_skipped = pick_sessions(args.sessions)
+    print(
+        f"Evaluating {len(sessions)} sessions "
+        f"({degenerate_skipped} degenerate skipped) → {out_dir}"
+    )
 
     summarizer = Summarizer()
     results = []
@@ -145,6 +159,7 @@ def main():
     ok = [r for r in results if not r["shape"].get("failed")]
     judged = [r for r in ok if r.get("judge")]
     aggregate = {
+        "degenerate_skipped": degenerate_skipped,
         "sessions": len(results),
         "failed": len(results) - len(ok),
         "repaired": sum(1 for r in ok if r["shape"].get("repaired")),

@@ -733,3 +733,42 @@ class TestPlatformCanaryInStatus:
 
         data = _json.loads((tmp_path / "status.json").read_text())
         assert data["platform_canary"] == ["Google Meet"]
+
+
+class TestCommitmentsPersisted:
+    @patch("src.daemon.check_ollama", return_value=True)
+    @patch("src.daemon.notify")
+    @patch("src.daemon.write_status")
+    def test_commitments_from_summary_land_in_table(
+        self, mock_status, mock_notify, mock_check, tmp_db, sample_session
+    ):
+        from src.daemon import process_recording
+
+        transcriber = MagicMock()
+        transcriber.transcribe_separate.return_value = {
+            "text": "[0:00] SPEAKER_ME: пришлю договор в пятницу",
+            "segments": [],
+            "transcript_me": ["пришлю договор в пятницу"],
+            "transcript_others": ["ок"],
+        }
+        summarizer = MagicMock()
+        summarizer.summarize.return_value = {
+            "summary": "s",
+            "commitments": [
+                {
+                    "type": "outgoing",
+                    "who": "SPEAKER_ME",
+                    "to_whom": "Вася",
+                    "what": "пришлю договор",
+                    "deadline": "пятница",
+                    "quote": "пришлю договор в пятницу",
+                }
+            ],
+        }
+
+        process_recording(sample_session, transcriber, summarizer, tmp_db)
+
+        stored = tmp_db.get_commitments(sample_session["session_id"])
+        assert len(stored) == 1
+        assert stored[0]["direction"] == "outgoing"
+        assert stored[0]["text"] == "пришлю договор"

@@ -43,7 +43,7 @@ struct SummaryView: View {
 
             if let actions = summary.actionItems, !actions.isEmpty {
                 VStack(alignment: .leading, spacing: 6) {
-                    Text("Action Items")
+                    Text("Commitments")
                         .font(.subheadline)
                         .fontWeight(.semibold)
                         .foregroundStyle(.secondary)

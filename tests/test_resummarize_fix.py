@@ -164,8 +164,14 @@ class TestResummarizeChunking:
 
     def _make_long_transcript(self, chars: int = 30000) -> str:
         """Create a transcript longer than CHUNK_MAX_CHARS (25000)."""
-        line = "Speaker A: This is a test line for chunking verification.\n"
-        return line * (chars // len(line) + 1)
+        # Varied lines: identical repeats would (correctly) trip the
+        # degenerate-transcript detector.
+        lines = []
+        i = 0
+        while sum(len(l) for l in lines) < chars:
+            lines.append(f"Speaker A: Chunking verification line {i} topic {i % 9}.\n")
+            i += 1
+        return "".join(lines)
 
     @patch("src.summarizer.urllib.request.urlopen")
     def test_long_transcript_is_chunked(self, mock_urlopen, tmp_path):

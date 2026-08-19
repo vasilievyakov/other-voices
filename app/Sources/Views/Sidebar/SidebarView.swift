@@ -35,12 +35,12 @@ struct SidebarView: View {
             .tag(SidebarItem.allCalls)
 
             Label {
-                Text("Action Items")
+                Text("Commitments")
             } icon: {
                 Image(systemName: SidebarItem.actionItems.icon)
             }
             .badge(store.allActionItems().count)
-            .accessibilityLabel("Action Items")
+            .accessibilityLabel("Commitments")
             .tag(SidebarItem.actionItems)
 
         }

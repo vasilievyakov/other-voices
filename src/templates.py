@@ -568,18 +568,41 @@ _ONE_SIDED_NOTICE = {
     "en": (
         "IMPORTANT — ONE-SIDED RECORDING: This transcript captured only ONE side of the "
         "call (the local microphone, SPEAKER_ME). The other participants' words were NOT "
-        "recorded. Summarize only what SPEAKER_ME actually says. Do NOT invent the other "
-        "side's replies, questions, decisions, or commitments. participants should contain "
-        "only SPEAKER_ME unless another name is explicitly spoken. action_items and "
-        "decisions will usually be empty [] — do not fabricate them."
+        "recorded. Do NOT invent the other side's replies, questions, decisions, or "
+        "commitments. BUT: SPEAKER_ME's own words are fully legitimate material — extract "
+        "key_points SPEAKER_ME raises, decisions SPEAKER_ME voices, and action_items or "
+        "commitments SPEAKER_ME explicitly makes ('I will send the contract on Friday' is "
+        "an action item and an outgoing commitment). participants should contain only "
+        "SPEAKER_ME unless another name is explicitly spoken. Empty lists are fine when "
+        "SPEAKER_ME truly commits to nothing — never fabricate the other side."
     ),
     "ru": (
         "ВАЖНО — ОДНОСТОРОННЯЯ ЗАПИСЬ: В этом транскрипте записана только ОДНА сторона "
         "звонка (локальный микрофон, SPEAKER_ME). Слова остальных участников НЕ записаны. "
-        "Резюмируй только то, что реально говорит SPEAKER_ME. НЕ придумывай реплики, вопросы, "
-        "решения и обязательства другой стороны. В participants должен быть только SPEAKER_ME, "
-        "если в тексте явно не названо другое имя. action_items и decisions чаще всего будут "
-        "пустыми [] — не выдумывай их."
+        "НЕ придумывай реплики, вопросы, решения и обязательства другой стороны. НО: слова "
+        "самого SPEAKER_ME — полноценный материал: извлекай key_points, которые он "
+        "поднимает, решения, которые он озвучивает, и action_items/обязательства, которые "
+        "он явно даёт («пришлю договор в пятницу» — это и action item, и обязательство). "
+        "В participants — только SPEAKER_ME, если явно не названо другое имя. Пустые списки "
+        "допустимы, когда SPEAKER_ME действительно ничего не обещает — но не гаси его "
+        "собственные слова."
+    ),
+}
+
+_COMMITMENTS_RULE = {
+    "en": (
+        "\nADDITIONALLY return a top-level field \"commitments\": a list of objects "
+        "{committer, recipient, text, deadline, quote} — ONLY promises explicitly made in "
+        "the transcript, with the committer's exact words in quote. committer is the "
+        "speaker label or spoken name of who promised; recipient — who it was promised to, "
+        "if said. An empty list is correct when nothing was promised."
+    ),
+    "ru": (
+        "\nДОПОЛНИТЕЛЬНО верни поле верхнего уровня \"commitments\": список объектов "
+        "{committer, recipient, text, deadline, quote} — ТОЛЬКО обещания, явно данные в "
+        "транскрипте, с дословной цитатой в quote. committer — спикер-метка или названное "
+        "имя того, кто обещал; recipient — кому обещано, если названо. Пустой список — "
+        "правильный ответ, если обещаний не было."
     ),
 }
 
@@ -751,7 +774,7 @@ def build_prompt(
     )
 
     # 5b. Evidence rules (anti-hallucination, applied to every template)
-    evidence_rules = _EVIDENCE_RULES[lang]
+    evidence_rules = _EVIDENCE_RULES[lang] + _COMMITMENTS_RULE[lang]
 
     # 6. Example
     example_json = _EXAMPLES.get(effective_name, {}).get(lang, "")
