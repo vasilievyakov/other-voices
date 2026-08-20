@@ -181,3 +181,13 @@ class TestCycle1Polish:
         out = extract_commitments(transcript, llm, votes=3)
         assert len(out) == 1
         assert "Telegram" in out[0]["quote"]
+
+
+class TestModalNeedsVerb:
+    def test_bare_affirmation_not_candidate(self):
+        t = "[30:00] SPEAKER_ME: Да, да, да, обязательно."
+        assert not find_candidates(t)
+
+    def test_modal_with_action_verb_kept(self):
+        t = "[30:00] SPEAKER_ME: обязательно пришлю завтра утром"
+        assert find_candidates(t)

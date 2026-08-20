@@ -235,6 +235,44 @@ def cmd_brief(db, args):
     print(render_brief(brief))
 
 
+def cmd_archive(db, args):
+    """archive [--yes] — пакетно закрыть (dismissed) обязательства старше 30 дней.
+
+    Запускается только рукой владельца — это и есть осознанное действие,
+    которого требует жизненный цикл (статусы никогда не меняет LLM)."""
+    from datetime import datetime
+
+    stale_ids = []
+    with db._conn() as conn:
+        rows = conn.execute(
+            """SELECT c.id, c.text, ca.started_at FROM commitments c
+               JOIN calls ca ON ca.session_id = c.session_id
+               WHERE c.status = 'open'"""
+        ).fetchall()
+    for cid, text, started in rows:
+        try:
+            age = (datetime.now() - datetime.fromisoformat(started)).days
+        except (ValueError, TypeError):
+            continue
+        if age > 30:
+            stale_ids.append((cid, text, age))
+
+    if not stale_ids:
+        print("Обязательств старше 30 дней нет.")
+        return
+    if "--yes" not in args:
+        print(f"Будет закрыто (dismissed) {len(stale_ids)} обязательств старше 30 дней.")
+        for _, text, age in stale_ids[:10]:
+            print(f"  - {text[:80]} ({age} дн.)")
+        if len(stale_ids) > 10:
+            print(f"  ... и ещё {len(stale_ids) - 10}")
+        print("Подтверди: cli.py archive --yes")
+        return
+    for cid, _, _ in stale_ids:
+        db.update_commitment_status(cid, "dismissed")
+    print(f"Закрыто: {len(stale_ids)}.")
+
+
 def cmd_digest(db, args):
     """digest — утренний счёт открытых обязательств."""
     from src.digests import build_morning_digest
@@ -268,6 +306,7 @@ def main():
         "entities": cmd_entities,
         "brief": cmd_brief,
         "digest": cmd_digest,
+        "archive": cmd_archive,
     }
 
     if cmd not in commands:

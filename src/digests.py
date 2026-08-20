@@ -123,12 +123,17 @@ def build_morning_digest(db, now: datetime | None = None) -> str:
         except ValueError:
             return None
 
-    burning, outgoing, incoming = [], [], []
+    # Buckets: горит = 7-30 days; older goes to a collapsed archive count —
+    # backfilled workshop history must not scream «97 горит» (status stays
+    # open: only the owner closes, but the digest doesn't lie about urgency).
+    burning, outgoing, incoming, archive = [], [], [], []
     for c in open_items:
         if c.get("uncertain"):
             continue
         age = _age_days(c)
-        if age is not None and age > 7:
+        if age is not None and age > 30:
+            archive.append(c)
+        elif age is not None and age > 7:
             burning.append((age, c))
         elif c.get("direction") == "outgoing":
             outgoing.append(c)
@@ -164,6 +169,13 @@ def build_morning_digest(db, now: datetime | None = None) -> str:
 
     _block("## Ты должен", outgoing)
     _block("## Тебе должны", incoming)
+
+    if archive:
+        lines.append(
+            f"Архив: {len(archive)} обязательств старше месяца — реши их судьбу "
+            f"разом (`cli.py archive`), в счёт дня они не входят."
+        )
+        lines.append("")
 
     if not burning and not outgoing and not incoming:
         lines.append(

@@ -132,3 +132,24 @@ class TestMorningDigest:
     def test_empty_digest_is_honest(self, tmp_db):
         md = build_morning_digest(tmp_db, now=NOW)
         assert "не значит" in md
+
+
+class TestArchiveBucket:
+    def test_stale_items_collapse_into_archive_count(self, tmp_db):
+        _call_with_summary(tmp_db, "ancient", started="2026-06-01T10:00:00")
+        _call_with_summary(tmp_db, "recent_burn", started="2026-08-10T10:00:00")
+        tmp_db.insert_commitments(
+            "ancient",
+            [{"type": "outgoing", "who": "SPEAKER_ME", "to_whom": None,
+              "what": "древнее из воркшопа", "quote": "сейчас открою", "uncertain": 0}],
+        )
+        tmp_db.insert_commitments(
+            "recent_burn",
+            [{"type": "outgoing", "who": "SPEAKER_ME", "to_whom": None,
+              "what": "настоящий недавний долг", "quote": "пришлю", "uncertain": 0}],
+        )
+        md = build_morning_digest(tmp_db, now=NOW)
+        assert "1 горит" in md.splitlines()[0]
+        assert "настоящий недавний долг" in md
+        assert "древнее из воркшопа" not in md
+        assert "Архив" in md and "1" in md.split("Архив")[1][:40]

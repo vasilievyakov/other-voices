@@ -52,8 +52,14 @@ CANDIDATE_PATTERNS = [
         r"отправлю|напишу|поставлю)\b",
         re.IGNORECASE,
     ),
-    # modal reinforcement of an obligation
-    re.compile(r"\b(обязательно|не забуду|я обещаю|беру на себя)\b", re.IGNORECASE),
+    # modal reinforcement — only WITH an action verb («Да, да, обязательно.»
+    # без глагола — вежливое поддакивание, не обещание; polish cycle 3)
+    re.compile(
+        r"(?=.*\b(?:обязательно|не забуду|я обещаю|беру на себя)\b)"
+        r"(?=.*\b(?:сдела|приш[лн]|скин|отправ|подготов|провер|напиш|позвон|"
+        r"созвон|постав|собер|организ|оформ|переда|уточн|запиш)\w*)",
+        re.IGNORECASE,
+    ),
     # 1pl strong perfective — rare, unconditionally commissive
     re.compile(
         r"\b(созвонимся|синхронизируемся|встретимся|договоримся|скинем|"

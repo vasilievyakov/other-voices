@@ -159,6 +159,12 @@ def citation_check(summary: dict, transcript: str) -> dict:
     return result
 
 
+def _stems(text: str) -> set[str]:
+    """Crude Russian stemming for recall matching: 5-char prefixes bridge
+    «скинуть»↔«скину», «собрать»↔«соберу» stays apart (accepted cost)."""
+    return {t[:5] for t in re.findall(r"\w+", (text or "").lower()) if len(t) > 2}
+
+
 def labeled_recall(summary: dict, labels: list[dict]) -> dict:
     """First recall measure: did hand-labeled promises reach the summary?
 
@@ -169,14 +175,14 @@ def labeled_recall(summary: dict, labels: list[dict]) -> dict:
     for c in summary.get("commitments") or []:
         if isinstance(c, dict):
             text = f"{c.get('what') or ''} {c.get('quote') or ''}"
-            candidates.append((_tokens(text), None))
+            candidates.append((_stems(text), None))
     for item in summary.get("action_items") or []:
         if isinstance(item, str):
-            candidates.append((_tokens(item), Summarizer._parse_ts(item.strip())))
+            candidates.append((_stems(item), Summarizer._parse_ts(item.strip())))
 
     found = 0
     for label in labels:
-        label_tokens = _tokens(label.get("text") or "")
+        label_tokens = _stems(label.get("text") or "")
         label_ts = Summarizer._parse_ts(f"[{label.get('ts')}]")
         hit = False
         for tokens, ts in candidates:
