@@ -153,3 +153,17 @@ class TestArchiveBucket:
         assert "настоящий недавний долг" in md
         assert "древнее из воркшопа" not in md
         assert "Архив" in md and "1" in md.split("Архив")[1][:40]
+
+
+class TestHeaderMatchesBody:
+    def test_burning_outgoing_counted_in_debt_total(self, tmp_db):
+        _call_with_summary(tmp_db, "old", started="2026-08-10T10:00:00")
+        tmp_db.insert_commitments(
+            "old",
+            [{"type": "outgoing", "who": "SPEAKER_ME", "to_whom": None,
+              "what": "горящий долг", "quote": "сделаю", "uncertain": 0}],
+        )
+        md = build_morning_digest(tmp_db, now=NOW)
+        header = md.splitlines()[0]
+        assert "1 горит" in header
+        assert "1 ты должен" in header  # горящий outgoing — всё ещё твой долг

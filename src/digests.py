@@ -141,10 +141,15 @@ def build_morning_digest(db, now: datetime | None = None) -> str:
             incoming.append(c)
     burning.sort(key=lambda t: -t[0])
 
+    # Header counts ALL non-archive debt by direction — «0 ты должен» above
+    # a list of your own promises is a crack in trust (Ive, night final).
+    burn_out = sum(1 for _, c in burning if c.get("direction") == "outgoing")
+    burn_in = sum(1 for _, c in burning if c.get("direction") == "incoming")
     date_str = now.strftime("%Y-%m-%d")
     lines = [
-        f"# {date_str} — {len(burning)} горит · {len(outgoing)} ты должен · "
-        f"{len(incoming)} тебе должны",
+        f"# {date_str} — {len(burning)} горит · "
+        f"{len(outgoing) + burn_out} ты должен · "
+        f"{len(incoming) + burn_in} тебе должны",
         "",
     ]
 
