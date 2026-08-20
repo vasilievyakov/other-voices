@@ -292,6 +292,9 @@ def main():
         print("  show <session_id>           Show full details of a call")
         print("  actions [days]              Show action items (default: 7 days)")
         print("  entities                    List all people and companies")
+        print('  brief "<имя>"               Досье по человеку: долги + контекст')
+        print("  digest                      Утренний счёт открытых обязательств")
+        print("  archive [--yes]             Закрыть обязательства старше 30 дней")
         sys.exit(0)
 
     db = Database()
