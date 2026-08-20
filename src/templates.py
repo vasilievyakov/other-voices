@@ -645,15 +645,6 @@ _EXAMPLES = {
                     {"name": "Mark", "type": "person"},
                     {"name": "Irina", "type": "person"},
                 ],
-                "commitments": [
-                    {
-                        "committer": "Mark",
-                        "recipient": "Anna",
-                        "text": "prepare the revised budget",
-                        "deadline": "Friday",
-                        "quote": "I will prepare the revised budget by Friday",
-                    }
-                ],
             },
             indent=2,
         ),
@@ -688,15 +679,6 @@ _EXAMPLES = {
                     {"name": "Анна", "type": "person"},
                     {"name": "Марк", "type": "person"},
                     {"name": "Ирина", "type": "person"},
-                ],
-                "commitments": [
-                    {
-                        "committer": "Марк",
-                        "recipient": "Анна",
-                        "text": "подготовить обновлённый бюджет",
-                        "deadline": "пятница",
-                        "quote": "я подготовлю обновлённый бюджет к пятнице",
-                    }
                 ],
             },
             ensure_ascii=False,
