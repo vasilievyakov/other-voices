@@ -659,7 +659,6 @@ class TestStructuredOutput:
         # Board cycle 1: schema is CLOSED per template — the decoder must not
         # be able to invent key names ("participants:[" regression).
         assert payload["format"]["additionalProperties"] is False
-        assert "commitments" in payload["format"]["properties"]
 
     @patch("src.summarizer.urllib.request.urlopen")
     def test_repair_still_works_as_fallback(self, mock_urlopen):
@@ -761,7 +760,8 @@ class TestClosedSchema:
         schema = self.s._response_schema("default")
         assert schema["additionalProperties"] is False
         assert "key_points" in schema["properties"]
-        assert "commitments" in schema["properties"]
+        # commitments live in the narrow v2 call, not the big summary schema
+        assert "commitments" not in schema["properties"]
         assert "summary" in schema["required"]
 
     def test_schema_uses_template_sections(self):

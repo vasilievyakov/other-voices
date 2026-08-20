@@ -227,21 +227,10 @@ class Summarizer:
                 "required": ["name", "type"],
             },
         }
-        properties["commitments"] = {
-            "type": "array",
-            "items": {
-                "type": "object",
-                "properties": {
-                    "committer": {"type": "string"},
-                    "recipient": {"type": "string"},
-                    "text": {"type": "string"},
-                    "deadline": {"type": "string"},
-                    "quote": {"type": "string"},
-                },
-                "required": ["committer", "text"],
-            },
-        }
-        required.append("commitments")
+        # commitments deliberately NOT in this schema: extraction v2
+        # (src/commitments2.py) is the single source; keeping the field here
+        # wasted decode budget on a result the daemon discards (Karpathy,
+        # night final).
         return {
             "type": "object",
             "properties": properties,

@@ -331,8 +331,9 @@ class TestOneSidedOwnPromises:
             assert "usually be empty" not in notice
         assert "собственные слова" in _ONE_SIDED_NOTICE["ru"]
 
-    def test_prompt_asks_for_commitments(self):
+    def test_prompt_does_not_ask_for_commitments(self):
+        """Extraction v2 owns commitments; the big prompt must not compete."""
         from src.templates import build_prompt
 
         prompt = build_prompt("default", "Обсудили бюджет и сроки проекта на год")
-        assert "commitments" in prompt
+        assert chr(34)+"commitments"+chr(34) not in prompt  # нет JSON-ключа в схеме

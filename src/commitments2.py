@@ -8,7 +8,9 @@ in decoding (5→2→0 on identical input). This module decomposes the task:
                    cohortatives («давайте синхронимся»), immediacy deictics
                    («сейчас скину»), modal reinforcement;
   stage 2 (LLM):   one NARROW classification call per candidate with a ±1-turn
-                   context window, repeated `votes` times, consensus >= 2;
+                   context window, repeated `votes` times; consensus >= 2 of 3
+                   is confident, a single yes-vote is KEPT but flagged
+                   uncertain (visibility over silent drops — board rule);
   stage 3 (code):  verbatim-quote verification (exact after normalization,
                    fuzzy fallback), committer attestation, dedup by quote
                    overlap.

@@ -274,17 +274,8 @@ def _build_json_schema(template: dict, lang: str) -> str:
     # 4. Entities always present in schema (not as separate instruction)
     schema["entities"] = [{"name": "<name>", "type": "<person|company|product|tool>"}]
 
-    # 5. Commitments — first-class: the model must see the field in the schema
-    # block, not only in a prose rule (board cycle 2, Murati/Sutskever)
-    schema["commitments"] = [
-        {
-            "committer": "<speaker label or spoken name>",
-            "recipient": "<who it was promised to, if said>",
-            "text": "<what was promised>",
-            "deadline": "<deadline, if said>",
-            "quote": "<verbatim quote from transcript>",
-        }
-    ]
+    # commitments intentionally absent: extracted by the narrow v2 call
+    # (src/commitments2.py), not by this big summary call.
 
     return json.dumps(schema, ensure_ascii=False, indent=2)
 
@@ -804,7 +795,7 @@ def build_prompt(
     )
 
     # 5b. Evidence rules (anti-hallucination, applied to every template)
-    evidence_rules = _EVIDENCE_RULES[lang] + _COMMITMENTS_RULE[lang]
+    evidence_rules = _EVIDENCE_RULES[lang]
 
     # 6. Example
     example_json = _EXAMPLES.get(effective_name, {}).get(lang, "")
