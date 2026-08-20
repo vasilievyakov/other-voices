@@ -1,0 +1,503 @@
+<title>Other Voices и рынок ассистентов встреч — август 2026</title>
+<style>
+  :root {
+    --bg: #f7f6f2;
+    --surface: #ffffff;
+    --ink: #1f2430;
+    --muted: #5c6472;
+    --line: #dcdad2;
+    --accent: #2b4a8c;
+    --accent-soft: #e8edf7;
+    --good: #2e6b46;
+    --good-bg: #e4efe7;
+    --part: #8a6414;
+    --part-bg: #f5edd8;
+    --none: #963c3c;
+    --none-bg: #f5e2e0;
+    --ours: #fbf4e4;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #14161c;
+      --surface: #1c1f27;
+      --ink: #e6e4dd;
+      --muted: #9aa0ac;
+      --line: #333845;
+      --accent: #8fafe8;
+      --accent-soft: #232c40;
+      --good: #7cc79a;
+      --good-bg: #1e3328;
+      --part: #d9b45e;
+      --part-bg: #38301a;
+      --none: #d98a84;
+      --none-bg: #3a2422;
+      --ours: #2b2618;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #14161c;
+    --surface: #1c1f27;
+    --ink: #e6e4dd;
+    --muted: #9aa0ac;
+    --line: #333845;
+    --accent: #8fafe8;
+    --accent-soft: #232c40;
+    --good: #7cc79a;
+    --good-bg: #1e3328;
+    --part: #d9b45e;
+    --part-bg: #38301a;
+    --none: #d98a84;
+    --none-bg: #3a2422;
+    --ours: #2b2618;
+  }
+  * { box-sizing: border-box; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font: 16px/1.6 system-ui, -apple-system, "Segoe UI", sans-serif;
+    margin: 0;
+    padding: 0 0 6rem;
+  }
+  main { max-width: 76rem; margin: 0 auto; padding: 0 1.5rem; }
+  h1, h2, h3 {
+    font-family: "Iowan Old Style", Palatino, Georgia, serif;
+    line-height: 1.2;
+    text-wrap: balance;
+  }
+  h1 { font-size: clamp(1.9rem, 4vw, 2.8rem); margin: 0 0 .5rem; }
+  h2 { font-size: 1.5rem; margin: 3.5rem 0 .75rem; }
+  h3 { font-size: 1.1rem; margin: 0 0 .4rem; }
+  header.page {
+    border-bottom: 1px solid var(--line);
+    padding: 3.5rem 0 2rem;
+    margin-bottom: 2rem;
+  }
+  .eyebrow {
+    font-size: .75rem;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 1rem;
+  }
+  .lede { max-width: 44rem; color: var(--muted); font-size: 1.05rem; }
+  p { max-width: 44rem; }
+  .segments { display: grid; grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); gap: 1rem; margin: 1.5rem 0; }
+  .segment {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 1rem 1.2rem;
+    font-size: .9rem;
+  }
+  .segment b { display: block; margin-bottom: .3rem; }
+  .segment span { color: var(--muted); }
+  .tablewrap {
+    overflow-x: auto;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    background: var(--surface);
+    margin: 1.5rem 0;
+  }
+  table { border-collapse: collapse; width: 100%; min-width: 78rem; font-size: .82rem; }
+  th, td { padding: .55rem .7rem; vertical-align: top; border-bottom: 1px solid var(--line); text-align: left; }
+  thead th {
+    font-size: .7rem;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    background: var(--surface);
+    position: sticky;
+    top: 0;
+  }
+  td:first-child, th:first-child { min-width: 9rem; font-weight: 600; }
+  tr.grp td {
+    background: var(--accent-soft);
+    color: var(--accent);
+    font-size: .72rem;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    font-weight: 600;
+    border-bottom: 1px solid var(--line);
+  }
+  tr.ours td { background: var(--ours); }
+  td small { display: block; color: var(--muted); font-weight: 400; margin-top: .15rem; }
+  .m { display: inline-block; padding: .05rem .45rem; border-radius: 3px; font-weight: 600; font-size: .78rem; white-space: nowrap; }
+  .m.g { color: var(--good); background: var(--good-bg); }
+  .m.p { color: var(--part); background: var(--part-bg); }
+  .m.n { color: var(--none); background: var(--none-bg); }
+  .price { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-variant-numeric: tabular-nums; font-size: .8rem; }
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(19rem, 1fr)); gap: 1rem; margin: 1.5rem 0; }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 1.2rem 1.4rem;
+  }
+  .card p { font-size: .9rem; color: var(--muted); margin: 0 0 .6rem; }
+  .card .vs {
+    font-size: .8rem;
+    border-top: 1px solid var(--line);
+    padding-top: .6rem;
+    margin-top: .6rem;
+  }
+  .card .vs b { color: var(--accent); }
+  ol.todo { max-width: 48rem; padding-left: 1.4rem; }
+  ol.todo li { margin-bottom: 1rem; }
+  ol.todo b { display: block; }
+  ol.todo span { color: var(--muted); font-size: .9rem; }
+  .note {
+    border-left: 3px solid var(--accent);
+    background: var(--surface);
+    padding: .9rem 1.2rem;
+    max-width: 44rem;
+    font-size: .9rem;
+    color: var(--muted);
+    margin: 1.5rem 0;
+  }
+  footer {
+    margin-top: 4rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--line);
+    font-size: .8rem;
+    color: var(--muted);
+    max-width: 44rem;
+  }
+</style>
+
+<main>
+<header class="page">
+  <div class="eyebrow">Other Voices — разбор рынка</div>
+  <h1>Мы и ассистенты встреч: положение на август 2026</h1>
+  <p class="lede">Шестнадцать продуктов, проверенных по свежим источникам, против того, что собрано
+  в Other Voices. Три вопроса: что у нас уже есть такого, чего нет ни у кого; где рынок ушел вперед;
+  что доделывать в первую очередь.</p>
+</header>
+
+<h2>Система координат</h2>
+<p>Рынок разделился на три лагеря, и в 2026 году границы между ними стираются.</p>
+<div class="segments">
+  <div class="segment"><b>Локальные и botless</b>
+    <span>Granola ($1.5B, март 2026), MacWhisper, Krisp, опенсорс (anarlog, screenpipe). Захват системного
+    звука без бота — стандарт сегмента. Limitless куплен Meta и закрыт для новых пользователей.</span></div>
+  <div class="segment"><b>Облачные лидеры</b>
+    <span>Otter, Fireflies, Fathom, tl;dv, Circleback, Read AI. Все шестеро в 2025–2026 добавили
+    desktop-захват без бота и выпустили MCP-серверы. Otter и Fireflies — под коллективными исками
+    о записи без согласия.</span></div>
+  <div class="segment"><b>Встроенные в платформы</b>
+    <span>Zoom AI Companion, Gemini в Meet, Teams Copilot, Notion, Apple Intelligence. Плюс новичок:
+    Wispr Flow запустил Notetaker 5 августа 2026. Тренд — агентные follow-up прямо из заметок.</span></div>
+</div>
+<p>Три сквозных тренда года: бот в звонке умирает (все уходят на системный звук), MCP-доступ к транскриптам
+стал обязательным, а трекинг обязательств переезжает из заметки в агентов. При этом выделенного реестра
+долгов по людям — кто, кому, что и к какому сроку обещал — как продуктовой фичи нет ни у кого.</p>
+
+<h2>Сводная таблица</h2>
+<div class="tablewrap">
+<table>
+<thead><tr>
+  <th>Продукт</th><th>Захват</th><th>Обработка</th><th>Договоренности</th>
+  <th>Память между встречами</th><th>Подготовка к встрече</th><th>Русский</th><th>Consent</th><th>Цена</th>
+</tr></thead>
+<tbody>
+<tr class="ours">
+  <td>Other Voices</td>
+  <td>системный звук + микрофон, без бота</td>
+  <td><span class="m g">всё локально</span><small>mlx-whisper + qwen3 через Ollama, ни байта в облако</small></td>
+  <td><span class="m g">да</span><small>трехступенчатое извлечение, цитата проверена кодом дословно, неуверенное отдельно</small></td>
+  <td><span class="m g">да</span><small>брифы по людям с долгами, утренний дайджест, черновики follow-up</small></td>
+  <td><span class="m p">по запросу</span><small>brief из истории; календаря нет</small></td>
+  <td><span class="m g">да</span><small>извлечение заточено под русскую морфологию</small></td>
+  <td><span class="m p">частично</span><small>диалог владельцу перед записью; вторая сторона без уведомления</small></td>
+  <td class="price">0</td>
+</tr>
+<tr class="grp"><td colspan="9">Локальные и botless</td></tr>
+<tr>
+  <td>Granola</td>
+  <td>системный звук, без бота</td>
+  <td><span class="m p">гибрид</span><small>захват локальный, ASR и LLM в облаке (Deepgram, Claude, GPT); аудио не хранится</small></td>
+  <td><span class="m p">частично</span><small>дополняет твои заметки цитатами; чат с inline-ссылками</small></td>
+  <td><span class="m p">частично</span><small>People views, рецепт «Prep my day»; реестра долгов нет</small></td>
+  <td><span class="m g">да</span><small>Briefs (май 2026): кто участвует, где остановились</small></td>
+  <td><span class="m g">да</span></td>
+  <td><span class="m g">да</span><small>автосообщение в чат встречи + watermark</small></td>
+  <td class="price">0–35 $/мес</td>
+</tr>
+<tr>
+  <td>Wispr Flow Notetaker</td>
+  <td>системный звук, без бота</td>
+  <td><span class="m n">облако</span><small>транскрипция всегда облачная, Cloud Sync обязателен</small></td>
+  <td><span class="m p">частично</span><small>«кто что должен» в саммари, линки на момент транскрипта</small></td>
+  <td><span class="m p">частично</span><small>вопросы по всей истории; MCP наружу</small></td>
+  <td><span class="m g">да</span><small>pre-meeting briefs со ссылками на источники</small></td>
+  <td><span class="m n">не заявлен</span></td>
+  <td><span class="m n">нет</span><small>«вы обязаны предупредить всех» — из их же документации</small></td>
+  <td class="price">0–15 $/мес</td>
+</tr>
+<tr>
+  <td>Krisp</td>
+  <td>уровень аудиодрайвера, опциональный бот</td>
+  <td><span class="m n">облако</span><small>on-device транскрипция только в Enterprise</small></td>
+  <td><span class="m p">да</span><small>action items с исполнителями и дедлайнами; цитат-доказательств нет</small></td>
+  <td><span class="m p">частично</span><small>Centralized Action Items со всех встреч</small></td>
+  <td><span class="m p">заявлена</span><small>брифы в маркетинге, механика не раскрыта</small></td>
+  <td><span class="m g">да</span><small>16 языков</small></td>
+  <td><span class="m p">частично</span><small>опциональный бот «для прозрачности»</small></td>
+  <td class="price">8–15 $/мес</td>
+</tr>
+<tr>
+  <td>MacWhisper</td>
+  <td>системный звук, без бота (beta)</td>
+  <td><span class="m g">всё локально</span><small>Whisper и Parakeet on-device; LLM свой через Ollama</small></td>
+  <td><span class="m n">нет</span><small>на выходе транскрипт; саммари через свой ключ</small></td>
+  <td><span class="m n">нет</span></td>
+  <td><span class="m n">нет</span></td>
+  <td><span class="m g">да</span></td>
+  <td><span class="m n">нет</span></td>
+  <td class="price">~69 $ навсегда</td>
+</tr>
+<tr>
+  <td>anarlog / screenpipe</td>
+  <td>системный звук; screenpipe еще и экран</td>
+  <td><span class="m g">локально возможно</span><small>Whisper on-device + Ollama; screenpipe с июня 2026 source-available</small></td>
+  <td><span class="m p">частично</span><small>саммари и чат по встрече; проверенных цитат нет</small></td>
+  <td><span class="m n">нет</span><small>данные доступны через API, собирать самому</small></td>
+  <td><span class="m p">календарь</span><small>детекция встреч; брифов нет</small></td>
+  <td><span class="m p">через Whisper</span></td>
+  <td><span class="m n">нет</span></td>
+  <td class="price">0–25 $/мес</td>
+</tr>
+<tr class="grp"><td colspan="9">Облачные лидеры</td></tr>
+<tr>
+  <td>Circleback</td>
+  <td>desktop без бота или бот</td>
+  <td><span class="m n">облако</span><small>OpenAI и Anthropic, без обучения на данных</small></td>
+  <td><span class="m g">лучшие на рынке</span><small>владелец + дедлайн + контекст; по обзорам — точнее всех</small></td>
+  <td><span class="m g">да</span><small>единый task list, сводки по человеку и компании (июль 2026)</small></td>
+  <td><span class="m p">частично</span><small>через сводки по людям; отдельного брифа нет</small></td>
+  <td><span class="m p">да</span><small>с оговоркой: на неанглийском точность ниже</small></td>
+  <td><span class="m n">нет</span><small>индикатора для второй стороны нет, ответственность на клиенте</small></td>
+  <td class="price">21–30 $/мес, free нет</td>
+</tr>
+<tr>
+  <td>Fireflies</td>
+  <td>бот + desktop без бота</td>
+  <td><span class="m n">облако</span><small>AWS; вендоры с zero-day retention</small></td>
+  <td><span class="m p">да</span><small>action items + Task Manager; аудиоцитаты Soundbites</small></td>
+  <td><span class="m g">да</span><small>Contacts по людям, AskFred, черновики follow-up</small></td>
+  <td><span class="m g">да</span><small>Meeting Prep письмом за час до звонка (дек 2025)</small></td>
+  <td><span class="m g">да</span><small>100+ языков</small></td>
+  <td><span class="m p">бот виден</span><small>иск BIPA о голосовой биометрии (дек 2025)</small></td>
+  <td class="price">0–39 $/мес</td>
+</tr>
+<tr>
+  <td>Otter</td>
+  <td>бот + desktop без бота</td>
+  <td><span class="m n">облако</span><small>обучает свои модели на записях пользователей</small></td>
+  <td><span class="m p">да</span><small>action items без цитат-доказательств</small></td>
+  <td><span class="m p">частично</span><small>AI Chat по истории, MCP</small></td>
+  <td><span class="m p">через MCP</span><small>«спроси ChatGPT» — их официальный сценарий</small></td>
+  <td><span class="m n">нет</span></td>
+  <td><span class="m n">слабый</span><small>класс-экшн о записи без согласия (авг 2025)</small></td>
+  <td class="price">0–30 $/мес</td>
+</tr>
+<tr>
+  <td>Fathom</td>
+  <td>бот; botless на Mac в beta (апр 2026)</td>
+  <td><span class="m n">облако</span><small>opt-out из обучения есть в настройках</small></td>
+  <td><span class="m p">да</span><small>action items с таймкодами; Ask Fathom отвечает с цитатами</small></td>
+  <td><span class="m p">частично</span><small>Customer view, Deal view</small></td>
+  <td><span class="m n">нет</span></td>
+  <td><span class="m g">да</span><small>38 языков</small></td>
+  <td><span class="m p">частично</span><small>видимый бот либо захват с ведома пользователя</small></td>
+  <td class="price">0–34 $/мес</td>
+</tr>
+<tr>
+  <td>tl;dv</td>
+  <td>бот + botless</td>
+  <td><span class="m p">облако в ЕС</span><small>Франкфурт, GDPR-native; Enterprise — изолированный AI</small></td>
+  <td><span class="m p">да</span><small>action items + шаблоны MEDDICC/BANT; клипы как доказательство</small></td>
+  <td><span class="m p">частично</span><small>multi-meeting отчеты, AI-агенты обновляют CRM</small></td>
+  <td><span class="m n">нет</span></td>
+  <td><span class="m g">да</span><small>включая русский интерфейс</small></td>
+  <td><span class="m p">бот виден</span></td>
+  <td class="price">0–59 $/мес</td>
+</tr>
+<tr>
+  <td>Read AI</td>
+  <td>бот + desktop</td>
+  <td><span class="m n">облако</span><small>обучение строго opt-in</small></td>
+  <td><span class="m p">слабее</span><small>по независимым тестам action items генеричнее конкурентов</small></td>
+  <td><span class="m p">да</span><small>Search Copilot, агент Ada, Monday Briefing</small></td>
+  <td><span class="m p">частично</span><small>Monday Briefing; брифа перед каждым звонком нет</small></td>
+  <td><span class="m g">да</span><small>полная поддержка всех фич</small></td>
+  <td><span class="m g">лучший в облаке</span><small>любой участник: «Read Stop» или «Opt Out» с удалением данных</small></td>
+  <td class="price">0–40 $/мес</td>
+</tr>
+<tr class="grp"><td colspan="9">Встроенные в платформы</td></tr>
+<tr>
+  <td>Zoom AI Companion</td>
+  <td>встроен; My Notes пишет и чужие платформы</td>
+  <td><span class="m n">облако</span></td>
+  <td><span class="m p">да</span><small>action items с атрибуцией спикеров и цитатами</small></td>
+  <td><span class="m p">да</span><small>workflows: черновик follow-up через 30 минут после звонка</small></td>
+  <td><span class="m g">да</span><small>агенды и материалы из прошлых взаимодействий</small></td>
+  <td><span class="m g">да</span><small>30+ языков</small></td>
+  <td><span class="m g">да</span><small>значок всем участникам + disclaimer</small></td>
+  <td class="price">10–14 $/мес</td>
+</tr>
+<tr>
+  <td>Gemini в Meet</td>
+  <td>серверная функция Meet</td>
+  <td><span class="m n">облако</span></td>
+  <td><span class="m p">да</span><small>Summary / Decisions / Next Steps со статусами решений</small></td>
+  <td><span class="m n">нет</span></td>
+  <td><span class="m n">нет</span></td>
+  <td><span class="m n">нет</span><small>8 языков, русского нет</small></td>
+  <td><span class="m g">да</span><small>значок всем участникам</small></td>
+  <td class="price">в Workspace / AI Pro</td>
+</tr>
+<tr>
+  <td>Teams Copilot</td>
+  <td>встроен, на транскрипции Teams</td>
+  <td><span class="m n">облако</span><small>с окт 2026 — recap без хранения транскрипта</small></td>
+  <td><span class="m p">да</span><small>recommended tasks, главы, скриншоты экрана</small></td>
+  <td><span class="m p">частично</span><small>фильтр встреч по открытым action items</small></td>
+  <td><span class="m g">да</span><small>агенда из писем, чатов и прошлых встреч</small></td>
+  <td><span class="m p">частично</span><small>в Teams-фичах гарантированы 8 языков без русского</small></td>
+  <td><span class="m g">да</span><small>стандартное уведомление о транскрипции</small></td>
+  <td class="price">10–30 $/мес</td>
+</tr>
+<tr>
+  <td>Notion AI</td>
+  <td>desktop, системный звук без бота</td>
+  <td><span class="m n">облако</span></td>
+  <td><span class="m p">да</span><small>саммари с кликабельными ссылками на строки транскрипта</small></td>
+  <td><span class="m p">частично</span><small>заметки в workspace, custom agents по завершении встречи</small></td>
+  <td><span class="m n">нет</span></td>
+  <td><span class="m g">да</span><small>19 языков</small></td>
+  <td><span class="m n">нет</span><small>согласие подтверждает пользователь галочкой</small></td>
+  <td class="price">20+ $/мес</td>
+</tr>
+<tr>
+  <td>Apple Intelligence</td>
+  <td>системная запись Phone / FaceTime / Notes</td>
+  <td><span class="m g">на устройстве</span><small>+ Private Cloud Compute</small></td>
+  <td><span class="m n">нет</span><small>общее саммари без action items</small></td>
+  <td><span class="m n">нет</span></td>
+  <td><span class="m n">нет</span></td>
+  <td><span class="m n">нет</span><small>запись звонков в РФ недоступна</small></td>
+  <td><span class="m g">эталон</span><small>голосовой анонс записи обеим сторонам, повторяется в течение звонка</small></td>
+  <td class="price">бесплатно в ОС</td>
+</tr>
+</tbody>
+</table>
+</div>
+
+<h2>Четыре вещи, которых нет ни у кого</h2>
+<div class="cards">
+  <div class="card">
+    <h3>Полностью локальный конвейер с извлечением</h3>
+    <p>Захват, транскрипция, саммари и извлечение договоренностей — все на твоей машине. Полностью
+    локальны еще MacWhisper (отдает голый транскрипт) и опенсорс (саммари без структурного извлечения).
+    Granola и Wispr локальны только на этапе захвата.</p>
+    <div class="vs"><b>Ближайший конкурент:</b> anarlog — локальный стек есть, извлечения обязательств нет.</div>
+  </div>
+  <div class="card">
+    <h3>Цитата как улика, проверенная кодом</h3>
+    <p>Каждая договоренность несет дословную цитату, и код сверяет ее с транскриптом до записи в базу.
+    Fathom, Notion и Zoom дают ссылки на транскрипт, но их цитаты порождает модель — дословность никто
+    не проверяет.</p>
+    <div class="vs"><b>Ближайший конкурент:</b> Notion AI — ссылки на строки транскрипта без верификации.</div>
+  </div>
+  <div class="card">
+    <h3>Реестр долгов по людям</h3>
+    <p>Брифы «должен / тебе должны / последний разговор», утренний дайджест с горящим, направление
+    каждого обязательства. Circleback в июле 2026 добавил сводки по людям, Granola — People views,
+    но счета долгов с направлениями не ведет никто.</p>
+    <div class="vs"><b>Ближайший конкурент:</b> Circleback person summaries + единый task list.</div>
+  </div>
+  <div class="card">
+    <h3>Статус меняет только рука владельца</h3>
+    <p>LLM никогда не закрывает и не переоценивает обязательства; неуверенные извлечения живут отдельно
+    и в счетчики не попадают. У рынка обратная философия: агенты сами двигают задачи и обновляют CRM —
+    быстрее, но доверять счетчику нельзя.</p>
+    <div class="vs"><b>Контраст:</b> tl;dv и Circleback — агенты сами правят сделки и создают тикеты.</div>
+  </div>
+</div>
+
+<h2>Где рынок впереди</h2>
+<div class="cards">
+  <div class="card">
+    <h3>Подготовка к встрече</h3>
+    <p>Granola Briefs, Fireflies Meeting Prep (письмо за час до звонка), Zoom с агендами из прошлых
+    взаимодействий, брифы Wispr со ссылками на источники. У нас — brief по запросу из CLI, календарь
+    не подключен.</p>
+  </div>
+  <div class="card">
+    <h3>Интеграции и MCP</h3>
+    <p>MCP-сервер в 2025–2026 выпустили все облачные игроки плюс Granola и screenpipe; транскрипты
+    доступны из Claude и ChatGPT. У нас — файлы в digests/ и CLI. Для личного инструмента на базе
+    Claude Code MCP-сервер напрашивается сам.</p>
+  </div>
+  <div class="card">
+    <h3>Имена спикеров</h3>
+    <p>Wispr и Fathom дают спикеров по именам с правкой в один клик. У нас собеседник — SPEAKER_ME
+    и SPEAKER_1, а follow-up адресуется «Собеседнику».</p>
+  </div>
+  <div class="card">
+    <h3>Языки</h3>
+    <p>Fireflies — 100+ языков, Granola переключается между языками внутри одной встречи. Наша стадия
+    кандидатов заточена под русский: английский звонок даст ноль договоренностей без единого
+    предупреждения.</p>
+  </div>
+  <div class="card">
+    <h3>Consent второй стороны</h3>
+    <p>Apple анонсирует запись голосом обеим сторонам, Zoom и Meet показывают значок каждому, Read AI
+    дает любому участнику остановить запись и стереть данные. Мы уведомляем только владельца — как Wispr
+    и Notion, по чьей модели ответственность лежит на пользователе. Иски против Otter и Fireflies
+    показывают, куда дует ветер.</p>
+  </div>
+  <div class="card">
+    <h3>Команды и мобильность</h3>
+    <p>У рынка — шаринг, командные пространства, мобильные приложения для очных встреч. Мы — строго
+    личный инструмент одного человека на одном Mac. Это осознанная позиция, но границу стоит понимать.</p>
+  </div>
+</div>
+
+<h2>Что доделывать — в порядке отдачи</h2>
+<ol class="todo">
+  <li><b>Аудит точности: 88 строк слепой разметки (~15 минут)</b>
+    <span>Полнота измерена, точность — нет. Без нее реестр долгов юридически наш, а фактически
+    недоверенный. Рынок метрик тоже не публикует — первая честная цифра сразу станет отличием.</span></li>
+  <li><b>Нормализация «глагол — предмет — срок»</b>
+    <span>Сейчас обязательство — сырая цитата ASR. Планка задана Circleback: владелец, дедлайн, контекст.
+    Заголовок делается отдельно от цитаты; цитата остается уликой.</span></li>
+  <li><b>Дедлайны в даты и детекция закрытий</b>
+    <span>«В пятницу» должно стать ISO-датой от даты звонка, а «я отправил» на следующем звонке —
+    предложением закрыть долг (подтверждает рука владельца). Ни у кого из рынка нет и этого.</span></li>
+  <li><b>Брифы перед встречей через календарь (EventKit)</b>
+    <span>Механика brief уже есть — осталось привязать к событию календаря и показывать заранее.
+    Это ровно Granola Briefs и Fireflies Meeting Prep, только локально. Решение владельца.</span></li>
+  <li><b>MCP-сервер поверх базы</b>
+    <span>Стандарт рынка 2026. Транскрипты, долги и брифы становятся доступны из Claude без CLI —
+    дешевый шаг с большой отдачей для владельца-разработчика.</span></li>
+  <li><b>Канарейка стадии кандидатов и английские маркеры</b>
+    <span>Ноль кандидатов на длинном звонке — сигнал тревоги, а не пустой результат. Затем — английский
+    набор маркеров.</span></li>
+  <li><b>Имена спикеров</b>
+    <span>Ручное переименование SPEAKER_1 в имя из одного клика — уровень Wispr — сразу чинит
+    и адресата follow-up.</span></li>
+  <li><b>Consent второй стороны</b>
+    <span>Решение владельца: юридический фон ужесточается, эталон задан Apple. Минимальный шаг —
+    строка в чат встречи, как у Granola.</span></li>
+</ol>
+
+<div class="note">Деньги: рынок берет 8–59 $ за место в месяц, свободные планы урезаны лимитами
+(Otter — 300 минут, Read AI — 5 встреч, tl;dv — 10 саммари на всю жизнь аккаунта). Other Voices стоит
+ноль в месяц и работает без интернета; платится это железом M-серии и временем на доводку.</div>
+
+<footer>Составлено 20 августа 2026. Факты о продуктах проверены веб-поиском по официальным сайтам,
+документации и прессе; ошибки возможны там, где вендоры не раскрывают механику. Колонка Other Voices
+описывает фактическое состояние репозитория: точность извлечения пока не аудирована, детекция Meet
+не проверена живым звонком.</footer>
+</main>
