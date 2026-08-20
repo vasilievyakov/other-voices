@@ -87,6 +87,26 @@ func runCallTests() {
         expect(c.day == 20, "day")
     }
 
+    test("parseDate_naiveLocalMicroseconds") {
+        // Daemon writes datetime.now().isoformat(): local time, no timezone suffix
+        let date = Call.parseDate("2026-07-22T15:30:05.123456")
+        let c = Calendar(identifier: .gregorian).dateComponents(in: .current, from: date)
+        expect(c.year == 2026, "year: got \(String(describing: c.year))")
+        expect(c.month == 7, "month: got \(String(describing: c.month))")
+        expect(c.day == 22, "day: got \(String(describing: c.day))")
+        expect(c.hour == 15, "hour: got \(String(describing: c.hour))")
+        expect(c.minute == 30, "minute: got \(String(describing: c.minute))")
+    }
+
+    test("parseDate_naiveLocalNoFraction") {
+        let date = Call.parseDate("2026-07-21T09:05:00")
+        let c = Calendar(identifier: .gregorian).dateComponents(in: .current, from: date)
+        expect(c.year == 2026, "year: got \(String(describing: c.year))")
+        expect(c.month == 7, "month: got \(String(describing: c.month))")
+        expect(c.day == 21, "day: got \(String(describing: c.day))")
+        expect(c.hour == 9, "hour: got \(String(describing: c.hour))")
+    }
+
     test("id_equals_sessionId") {
         let call = makeCall()
         expect(call.id == call.sessionId, "id should equal sessionId")
@@ -413,6 +433,43 @@ func runDaemonStatusTests() {
         expect(s.appName == nil)
     }
 
+    test("recordingDuration_parsesNaiveLocalStartedAt") {
+        // The recorder stamps started_at as naive local isoformat with
+        // microseconds — the live-recording timer must survive that format.
+        let started = Call.naiveLocal.string(from: Date().addingTimeInterval(-30))
+        let s = makeDaemonStatus(state: "recording", startedAt: started)
+        let dur = s.recordingDuration
+        expect(dur != nil, "duration nil for naive started_at")
+        if let dur {
+            expect(dur > 25 && dur < 40, "got \(dur)")
+        }
+    }
+
+    test("extractionCanary decodes from status json") {
+        let json = """
+        {"daemon_pid": 1, "timestamp": "2026-08-20T10:00:00.000+00:00",
+         "state": "idle", "extraction_canary": "sess-9"}
+        """.data(using: .utf8)!
+        let s = try JSONDecoder().decode(DaemonStatus.self, from: json)
+        expect(s.extractionCanary == "sess-9", "got \(String(describing: s.extractionCanary))")
+    }
+
+    test("extractionCanary absent decodes as nil") {
+        let json = """
+        {"daemon_pid": 1, "timestamp": "2026-08-20T10:00:00.000+00:00", "state": "idle"}
+        """.data(using: .utf8)!
+        let s = try JSONDecoder().decode(DaemonStatus.self, from: json)
+        expect(s.extractionCanary == nil)
+    }
+
+    test("actionItemCutoff_naiveLocalFormat") {
+        // Cutoff must be comparable to stored naive local started_at strings —
+        // never SQLite's UTC datetime('now') with a space separator.
+        let ref = Call.naiveLocalBasic.date(from: "2026-08-20T10:00:00")!
+        let cutoff = SQLiteDatabase.actionItemCutoff(days: 7, from: ref)
+        expect(cutoff == "2026-08-13T10:00:00", "got \(cutoff)")
+    }
+
     test("isActive_idle") {
         let s = makeDaemonStatus(state: "idle")
         expect(s.isActive == true, "idle should be active")
@@ -702,6 +759,61 @@ func runTemplateTests() {
     }
 }
 
+// MARK: - Commitment Title Tests
+
+func makeCommitment(
+    text: String = "прислать смету",
+    title: String? = nil,
+    deadline: String? = nil,
+    deadlineDate: String? = nil
+) -> Commitment {
+    Commitment(
+        id: 1,
+        sessionId: "s1",
+        direction: "outgoing",
+        who: "SPEAKER_ME",
+        text: text,
+        quote: "пришлю смету",
+        deadline: deadline,
+        uncertain: false,
+        appName: "Zoom",
+        callDate: "2026-08-19",
+        title: title,
+        deadlineDate: deadlineDate
+    )
+}
+
+func runCommitmentTitleTests() {
+    print("\n--- Commitment Title Tests ---")
+
+    test("displayTitle_usesTitleWhenPresent") {
+        let c = makeCommitment(title: "прислать смету — пятница")
+        expect(c.displayTitle == "прислать смету — пятница", "got \(c.displayTitle)")
+    }
+
+    test("displayTitle_fallsBackToText_whenNil") {
+        let c = makeCommitment(title: nil)
+        expect(c.displayTitle == "прислать смету", "got \(c.displayTitle)")
+    }
+
+    test("displayTitle_fallsBackToText_whenEmpty") {
+        let c = makeCommitment(title: "")
+        expect(c.displayTitle == "прислать смету", "got \(c.displayTitle)")
+    }
+
+    test("deadlineDate_stored") {
+        let c = makeCommitment(deadline: "пятница", deadlineDate: "2026-08-21")
+        expect(c.deadlineDate == "2026-08-21")
+        expect(c.deadline == "пятница")
+    }
+
+    test("deadlineDate_nil_by_default") {
+        let c = makeCommitment()
+        expect(c.deadlineDate == nil)
+        expect(c.title == nil)
+    }
+}
+
 // MARK: - Main
 
 @main
@@ -718,6 +830,10 @@ struct TestRunner {
         runTranscriptSegmentTests()
         runCallSegmentTests()
         runTemplateTests()
+        runCommitmentTitleTests()
+        runSegmentSpeakerTests()
+        runSpeakerDisplayTests()
+        runSpeakerDbTests()
 
         print("\n=============================")
         print("\(passed) passed, \(failed) failed")

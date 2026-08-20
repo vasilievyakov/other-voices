@@ -17,11 +17,27 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from src.commitments2 import _tokens, extract_commitments, find_candidates  # noqa: E402
+import src.commitments2 as commitments2  # noqa: E402
+from scripts.audit_commitments import (  # noqa: E402
+    AUDIT_PATH,
+    fetch_commitments,
+    parse_verdicts,
+    score_verdicts,
+)
+from src.commitments2 import (  # noqa: E402
+    CLASSIFY_PROMPT,
+    _tokens,
+    extract_commitments,
+    find_candidates,
+)
 from src.config import DB_PATH  # noqa: E402
-from src.evaluation import labeled_recall  # noqa: E402
+from src.evaluation import _stems, labeled_recall  # noqa: E402
 
 print = functools.partial(print, flush=True)
+
+REGRESSION_SET_PATH = (
+    Path(__file__).resolve().parent.parent / "eval" / "regression-set.json"
+)
 
 _labels_path = Path(__file__).resolve().parent.parent / "eval" / "golden-labels.json"
 LABELS: dict = (
@@ -55,6 +71,186 @@ def self_consistency(runs: list[list[dict]]) -> float | None:
     return round(sum(h for _, _, h in unique) / (len(unique) * len(runs)), 3)
 
 
+# Same threshold labeled_recall uses end-to-end: a label matches a text when
+# >= 0.3 of its stems occur in it. The funnel repeats one matching rule at
+# every stage so a stage transition, not a rule change, explains each loss.
+_MATCH_THRESHOLD = 0.3
+
+
+def _label_matches(label_stems: set, text: str) -> bool:
+    if not label_stems:
+        return False
+    return len(label_stems & _stems(text)) / len(label_stems) >= _MATCH_THRESHOLD
+
+
+class _RecordingLLM:
+    """Wraps an llm callable keeping (prompt, verdict) pairs, so the funnel
+    can attribute yes-votes to candidates without re-implementing the
+    extractor's voting loop."""
+
+    def __init__(self, inner):
+        self._inner = inner
+        self.calls: list[tuple[str, dict | None]] = []
+
+    def __call__(self, prompt, temperature=0.25, schema=None):
+        verdict = self._inner(prompt, temperature=temperature, schema=schema)
+        self.calls.append((prompt, verdict))
+        return verdict
+
+
+def build_funnel(
+    labels: list[dict],
+    candidates: list[dict],
+    yes_votes: list[bool],
+    extracted: list[dict],
+) -> dict:
+    """Attribute every golden label to the funnel stage where it died.
+
+    stage1: some candidate's context window covers the label;
+    stage2: a covering candidate got at least one LLM yes-vote;
+    stage3: a final item with verified != "failed" matches the label
+            (verification, attestation and dedup all live in code stage 3).
+    """
+    surviving_texts = [
+        f"{item.get('what') or ''} {item.get('quote') or ''}"
+        for item in extracted
+        if item.get("verified") != "failed"
+    ]
+    covered: list[str] = []
+    stage2: list[str] = []
+    stage3: list[str] = []
+    lost: list[dict] = []
+    for label in labels:
+        name = label.get("text") or ""
+        stems = _stems(name)
+        covering = [
+            i
+            for i, cand in enumerate(candidates)
+            if _label_matches(stems, cand["context"])
+        ]
+        if not covering:
+            lost.append({"label": name, "ts": label.get("ts"), "stage": "stage1"})
+            continue
+        covered.append(name)
+        if not any(yes_votes[i] for i in covering):
+            lost.append({"label": name, "ts": label.get("ts"), "stage": "stage2"})
+            continue
+        stage2.append(name)
+        if not any(_label_matches(stems, text) for text in surviving_texts):
+            lost.append({"label": name, "ts": label.get("ts"), "stage": "stage3"})
+            continue
+        stage3.append(name)
+    return {
+        "labels": len(labels),
+        "stage1_coverage": {"count": len(covered), "covered": covered},
+        "stage2_survival": {"count": len(stage2), "survived": stage2},
+        "stage3_survival": {"count": len(stage3), "survived": stage3},
+        "lost": lost,
+    }
+
+
+def eval_funnel(
+    transcript: str, labels: list[dict], llm=None, votes: int = 3
+) -> tuple[list[dict], dict]:
+    """One real extraction run plus its per-label funnel.
+
+    The recording wrapper intercepts the extractor's own LLM calls; prompts
+    are re-derived per candidate with the extractor's own template, so no
+    voting logic is duplicated here."""
+    candidates = find_candidates(transcript)
+    recorder = _RecordingLLM(llm or commitments2._call_llm)
+    extracted = extract_commitments(transcript, llm=recorder, votes=votes)
+    yes_votes = []
+    for cand in candidates:
+        prompt = CLASSIFY_PROMPT.format(context=cand["context"], line=cand["line"])
+        yes_votes.append(
+            any(
+                isinstance(verdict, dict) and verdict.get("is_commitment")
+                for recorded_prompt, verdict in recorder.calls
+                if recorded_prompt == prompt
+            )
+        )
+    return extracted, build_funnel(labels, candidates, yes_votes, extracted)
+
+
+def regression_check(rows: list[dict], extracted_by_session: dict) -> dict:
+    """Score the current run against the owner-curated regression set.
+
+    An open row the run failed to reproduce is a regression (lost a promise
+    the owner kept); a dismissed row it reproduced is a regression too
+    (resurrected what the owner rejected). Rows from sessions the run did not
+    evaluate are not judged."""
+    open_total = open_kept = dismissed_total = dismissed_reproduced = 0
+    evaluated = 0
+    regressions: list[dict] = []
+    for row in rows:
+        sid = row.get("session_id")
+        if sid not in extracted_by_session:
+            continue
+        status = row.get("status")
+        if status not in ("open", "dismissed"):
+            continue
+        evaluated += 1
+        stems = _stems(f"{row.get('text') or ''} {row.get('verbatim_quote') or ''}")
+        reproduced = any(
+            _label_matches(stems, f"{item.get('what') or ''} {item.get('quote') or ''}")
+            for item in extracted_by_session[sid]
+        )
+        if status == "open":
+            open_total += 1
+            if reproduced:
+                open_kept += 1
+            else:
+                regressions.append(
+                    {
+                        "id": row.get("id"),
+                        "session_id": sid,
+                        "kind": "open_lost",
+                        "text": row.get("text"),
+                    }
+                )
+        else:
+            dismissed_total += 1
+            if reproduced:
+                dismissed_reproduced += 1
+                regressions.append(
+                    {
+                        "id": row.get("id"),
+                        "session_id": sid,
+                        "kind": "dismissed_reproduced",
+                        "text": row.get("text"),
+                    }
+                )
+    return {
+        "rows_total": len(rows),
+        "rows_evaluated": evaluated,
+        "open_total": open_total,
+        "open_kept": open_kept,
+        "kept_open_rate": round(open_kept / open_total, 3) if open_total else None,
+        "dismissed_total": dismissed_total,
+        "dismissed_reproduced": dismissed_reproduced,
+        "reproduced_dismissed_rate": (
+            round(dismissed_reproduced / dismissed_total, 3)
+            if dismissed_total
+            else None
+        ),
+        "regressions": regressions,
+    }
+
+
+def precision_block(audit_path=AUDIT_PATH, db_path=DB_PATH) -> dict:
+    """Owner-labeled precision for the report; honest null until labeled."""
+    audit_path = Path(audit_path)
+    if not audit_path.exists():
+        return {"precision": None, "note": "awaiting owner labels"}
+    rows = fetch_commitments(db_path, include_dismissed=True)
+    verdicts = parse_verdicts(audit_path.read_text(encoding="utf-8"))
+    result = score_verdicts(verdicts, rows)
+    if not result["marked"]:
+        return {"precision": None, "note": "awaiting owner labels"}
+    return result
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("cycle")
@@ -84,9 +280,16 @@ def main():
         sid = s["session_id"]
         candidates = len(find_candidates(s["transcript"]))
         runs = []
+        funnel = None
         t0 = time.monotonic()
         for k in range(args.k):
-            runs.append(extract_commitments(s["transcript"]))
+            if k == args.k - 1:
+                # last run doubles as the funnel run: same pipeline, with
+                # per-candidate yes-votes recorded for stage attribution
+                extracted, funnel = eval_funnel(s["transcript"], LABELS.get(sid, []))
+                runs.append(extracted)
+            else:
+                runs.append(extract_commitments(s["transcript"]))
             print(f"  [{sid}] run {k + 1}/{args.k}: {len(runs[-1])} commitment(s)")
         elapsed = round(time.monotonic() - t0, 1)
 
@@ -115,6 +318,7 @@ def main():
             entry["recall"] = labeled_recall(
                 {"commitments": union_last, "action_items": []}, LABELS[sid]
             )
+            entry["funnel"] = funnel
         results.append(entry)
         print(f"  [{sid}] counts={entry['counts']} sc={entry['self_consistency']}")
 
@@ -128,7 +332,36 @@ def main():
         "recall_found": sum(r["found"] for r in recalls),
         "total_seconds": round(sum(r["seconds"] for r in results), 1),
     }
-    report = {"aggregate": aggregate, "sessions": results}
+    funnels = [(r["session_id"], r["funnel"]) for r in results if "funnel" in r]
+    aggregate["funnel"] = {
+        "labels": sum(f["labels"] for _, f in funnels),
+        "stage1_covered": sum(f["stage1_coverage"]["count"] for _, f in funnels),
+        "stage2_survived": sum(f["stage2_survival"]["count"] for _, f in funnels),
+        "stage3_survived": sum(f["stage3_survival"]["count"] for _, f in funnels),
+        "lost": [
+            dict(item, session_id=sid) for sid, f in funnels for item in f["lost"]
+        ],
+    }
+
+    if REGRESSION_SET_PATH.exists():
+        regression = regression_check(
+            json.loads(REGRESSION_SET_PATH.read_text(encoding="utf-8"))["rows"],
+            {r["session_id"]: r["extracted"] for r in results},
+        )
+    else:
+        regression = {
+            "note": (
+                "eval/regression-set.json missing — "
+                "run scripts/freeze_regression_set.py"
+            )
+        }
+
+    report = {
+        "aggregate": aggregate,
+        "regression": regression,
+        "precision": precision_block(),
+        "sessions": results,
+    }
     (out_dir / "commitments-report.json").write_text(
         json.dumps(report, ensure_ascii=False, indent=1), encoding="utf-8"
     )

@@ -94,9 +94,28 @@ package struct Call: Identifiable {
         return f
     }()
 
+    // Daemon writes datetime.now().isoformat(): local time, no timezone suffix
+    nonisolated(unsafe) package static let naiveLocal: DateFormatter = {
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "en_US_POSIX")
+        f.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSSSS"
+        f.timeZone = .current
+        return f
+    }()
+
+    nonisolated(unsafe) package static let naiveLocalBasic: DateFormatter = {
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "en_US_POSIX")
+        f.dateFormat = "yyyy-MM-dd'T'HH:mm:ss"
+        f.timeZone = .current
+        return f
+    }()
+
     package static func parseDate(_ string: String) -> Date {
         iso8601.date(from: string)
             ?? iso8601Basic.date(from: string)
+            ?? naiveLocal.date(from: string)
+            ?? naiveLocalBasic.date(from: string)
             ?? Date()
     }
 

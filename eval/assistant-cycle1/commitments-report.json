@@ -1,0 +1,140 @@
+{
+ "aggregate": {
+  "sessions": 8,
+  "k": 3,
+  "mean_self_consistency": 1.0,
+  "recall_total": 9,
+  "recall_found": 6,
+  "total_seconds": 972.4
+ },
+ "sessions": [
+  {
+   "session_id": "20260722_110231",
+   "candidates": 0,
+   "counts": [
+    0,
+    0,
+    0
+   ],
+   "self_consistency": null,
+   "uncertain_rate": 0.0,
+   "verified_exact_rate": 0.0,
+   "seconds": 0.0
+  },
+  {
+   "session_id": "20260722_100100",
+   "candidates": 6,
+   "counts": [
+    4,
+    4,
+    4
+   ],
+   "self_consistency": 1.0,
+   "uncertain_rate": 0.0,
+   "verified_exact_rate": 1.0,
+   "seconds": 80.0,
+   "recall": {
+    "total": 2,
+    "found": 2
+   }
+  },
+  {
+   "session_id": "20260721_160242",
+   "candidates": 2,
+   "counts": [
+    0,
+    0,
+    0
+   ],
+   "self_consistency": null,
+   "uncertain_rate": 0.0,
+   "verified_exact_rate": 0.0,
+   "seconds": 24.9,
+   "recall": {
+    "total": 1,
+    "found": 0
+   }
+  },
+  {
+   "session_id": "20260721_130103",
+   "candidates": 4,
+   "counts": [
+    3,
+    3,
+    3
+   ],
+   "self_consistency": 1.0,
+   "uncertain_rate": 0.0,
+   "verified_exact_rate": 1.0,
+   "seconds": 129.6,
+   "recall": {
+    "total": 2,
+    "found": 2
+   }
+  },
+  {
+   "session_id": "20260720_171437",
+   "candidates": 20,
+   "counts": [
+    5,
+    5,
+    5
+   ],
+   "self_consistency": 1.0,
+   "uncertain_rate": 0.0,
+   "verified_exact_rate": 1.0,
+   "seconds": 430.9,
+   "recall": {
+    "total": 1,
+    "found": 0
+   }
+  },
+  {
+   "session_id": "20260720_145950",
+   "candidates": 4,
+   "counts": [
+    1,
+    1,
+    1
+   ],
+   "self_consistency": 1.0,
+   "uncertain_rate": 0.0,
+   "verified_exact_rate": 1.0,
+   "seconds": 85.3
+  },
+  {
+   "session_id": "20260720_132102",
+   "candidates": 9,
+   "counts": [
+    4,
+    4,
+    4
+   ],
+   "self_consistency": 1.0,
+   "uncertain_rate": 0.0,
+   "verified_exact_rate": 1.0,
+   "seconds": 192.6,
+   "recall": {
+    "total": 2,
+    "found": 2
+   }
+  },
+  {
+   "session_id": "20260717_140213",
+   "candidates": 2,
+   "counts": [
+    0,
+    0,
+    0
+   ],
+   "self_consistency": null,
+   "uncertain_rate": 0.0,
+   "verified_exact_rate": 0.0,
+   "seconds": 29.1,
+   "recall": {
+    "total": 1,
+    "found": 0
+   }
+  }
+ ]
+}

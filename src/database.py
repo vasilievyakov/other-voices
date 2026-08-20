@@ -132,6 +132,31 @@ class Database:
             )
         """)
 
+        commitment_columns = {
+            row[1] for row in conn.execute("PRAGMA table_info(commitments)").fetchall()
+        }
+        if "title" not in commitment_columns:
+            conn.execute("ALTER TABLE commitments ADD COLUMN title TEXT")
+        if "deadline_date" not in commitment_columns:
+            conn.execute("ALTER TABLE commitments ADD COLUMN deadline_date TEXT")
+        if "verified" not in commitment_columns:
+            # verify_quote verdict ('exact'|'fuzzy'|'failed'). NULL for rows
+            # written before this column existed — re-extraction is forbidden,
+            # so an honest NULL beats a guessed value.
+            conn.execute("ALTER TABLE commitments ADD COLUMN verified TEXT")
+
+        # Speaker names: owner-set display names for diarization labels.
+        # Diarization doesn't know names and the pipeline never guesses them
+        # (owner decision 2026-08-20) — rows here exist only by the owner's hand.
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS speaker_names (
+                session_id TEXT NOT NULL REFERENCES calls(session_id) ON DELETE CASCADE,
+                label      TEXT NOT NULL,
+                name       TEXT NOT NULL,
+                PRIMARY KEY (session_id, label)
+            )
+        """)
+
     def _conn(self) -> sqlite3.Connection:
         conn = sqlite3.connect(str(self.db_path))
         conn.row_factory = sqlite3.Row
@@ -451,6 +476,9 @@ class Database:
                 "deadline_type": None,
                 "significance": None,
                 "uncertain": 1 if raw.get("uncertain") else 0,
+                "title": raw.get("title"),
+                "deadline_date": raw.get("deadline_date"),
+                "verified": raw.get("verified"),
             }
 
         # Prompt 1 (Murati) format: uses "direction" directly
@@ -508,6 +536,9 @@ class Database:
                     normalized["deadline_type"],
                     normalized["significance"],
                     normalized["uncertain"],
+                    normalized.get("title"),
+                    normalized.get("deadline_date"),
+                    normalized.get("verified"),
                 )
             )
 
@@ -519,8 +550,8 @@ class Database:
                 """INSERT INTO commitments
                    (session_id, direction, who_label, who_name, to_label, to_name,
                     text, verbatim_quote, timestamp, deadline_raw, deadline_type,
-                    significance, uncertain)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                    significance, uncertain, title, deadline_date, verified)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                 rows,
             )
 
@@ -560,7 +591,11 @@ class Database:
     def update_commitment_status(
         self, commitment_id: int, status: str, resolved_at: str | None = None
     ):
-        """Mark a commitment as done or dismissed."""
+        """Mark a commitment as done or dismissed (stamps resolution time)."""
+        if status in ("done", "dismissed") and resolved_at is None:
+            resolved_at = datetime.now().isoformat()
+        if status == "open":
+            resolved_at = None
         with self._conn() as conn:
             conn.execute(
                 "UPDATE commitments SET status = ?, resolved_at = ? WHERE id = ?",
@@ -582,6 +617,47 @@ class Database:
             if d in counts:
                 counts[d] = row["cnt"]
         return counts
+
+    # --- Speaker names ---
+
+    def set_speaker_name(self, session_id: str, label: str, name: str | None):
+        """Owner-set display name for a diarization label.
+
+        Writes the mapping and pushes the name into commitments.who_name
+        (and to_name where to_label matches) for this session. An empty
+        name removes the mapping and returns those columns to NULL.
+        """
+        name = (name or "").strip()
+        value = name or None
+        with self._conn() as conn:
+            if value:
+                conn.execute(
+                    """INSERT OR REPLACE INTO speaker_names (session_id, label, name)
+                       VALUES (?, ?, ?)""",
+                    (session_id, label, value),
+                )
+            else:
+                conn.execute(
+                    "DELETE FROM speaker_names WHERE session_id = ? AND label = ?",
+                    (session_id, label),
+                )
+            conn.execute(
+                "UPDATE commitments SET who_name = ? WHERE session_id = ? AND who_label = ?",
+                (value, session_id, label),
+            )
+            conn.execute(
+                "UPDATE commitments SET to_name = ? WHERE session_id = ? AND to_label = ?",
+                (value, session_id, label),
+            )
+
+    def get_speaker_names(self, session_id: str) -> dict:
+        """Owner-set label -> name mapping for one session."""
+        with self._conn() as conn:
+            rows = conn.execute(
+                "SELECT label, name FROM speaker_names WHERE session_id = ?",
+                (session_id,),
+            ).fetchall()
+        return {row["label"]: row["name"] for row in rows}
 
     def get_action_items(self, days: int = 7) -> list[dict]:
         """Get all action items from calls in the last N days."""

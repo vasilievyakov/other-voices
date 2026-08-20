@@ -21,6 +21,23 @@ KILL_GRACE = 10
 RECORD_BUTTON = "Записать"
 DECLINE_BUTTON = "Нет"
 
+# Without a bot in the meeting we cannot post into its chat — the honest
+# minimum for second-party consent is the warn phrase one Cmd-V away.
+CONSENT_PHRASE = (
+    "Я записываю этот звонок для собственных заметок — запись и расшифровка "
+    "остаются только на моем компьютере. Скажи, если ты против."
+)
+
+
+def offer_consent_phrase() -> bool:
+    """Put the warn-the-other-side phrase on the clipboard. Soft-fails."""
+    try:
+        subprocess.run(["pbcopy"], input=CONSENT_PHRASE.encode("utf-8"), timeout=5)
+        return True
+    except Exception as e:
+        log.warning(f"Consent phrase clipboard failed: {e}", extra={"stage": "consent"})
+        return False
+
 
 class ConsentPrompt:
     """A single non-blocking «Записать звонок?» dialog."""

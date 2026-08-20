@@ -179,3 +179,33 @@ class TestNoDefaultButton:
         ConsentPrompt("Google Meet")
         script = " ".join(mock_popen.call_args[0][0])
         assert "default button" not in script
+
+
+class TestConsentPhrase:
+    """The honest minimum for second-party consent: the warn phrase is one
+    Cmd-V away the moment recording starts."""
+
+    def test_phrase_lands_on_clipboard(self, monkeypatch):
+        import src.consent as consent_mod
+
+        seen = {}
+
+        def fake_run(cmd, **kwargs):
+            seen["cmd"] = cmd
+            seen["input"] = kwargs.get("input")
+
+        monkeypatch.setattr(consent_mod.subprocess, "run", fake_run)
+        assert consent_mod.offer_consent_phrase() is True
+        assert seen["cmd"] == ["pbcopy"]
+        text = seen["input"].decode("utf-8").lower()
+        assert "запис" in text
+        assert "компьютер" in text
+
+    def test_clipboard_failure_is_soft(self, monkeypatch):
+        import src.consent as consent_mod
+
+        def boom(*args, **kwargs):
+            raise OSError("no clipboard")
+
+        monkeypatch.setattr(consent_mod.subprocess, "run", boom)
+        assert consent_mod.offer_consent_phrase() is False

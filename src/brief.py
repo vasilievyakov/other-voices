@@ -49,7 +49,7 @@ def build_brief(db, name: str, now: datetime | None = None) -> dict | None:
             if c.get("status") != "open":
                 continue
             entry = {
-                "what": c.get("text") or "",
+                "what": c.get("title") or c.get("text") or "",
                 "deadline": c.get("deadline_raw"),
                 "quote": c.get("verbatim_quote"),
                 "session_id": c["session_id"],

@@ -21,14 +21,23 @@ from .config import (
     DATA_DIR,
     MIN_CALL_DURATION,
     DETECTION_CONFIRMATIONS,
+    CALENDAR_PEEK_BIN,
+    MEETING_CHECK_INTERVAL,
     check_ollama,
 )
 from .brief import build_brief, render_brief
-from .commitments2 import extract_commitments
-from .consent import ConsentGate
+from .commitments2 import extract_commitments, find_candidates, normalize_title
+from .consent import ConsentGate, offer_consent_phrase
 from .database import Database
+from .deadlines import parse_deadline
 from .digests import write_followup, write_morning_digest
 from .detector import CallDetector
+from .meetings import (
+    event_key,
+    parse_peek_output,
+    upcoming_window,
+    write_premeeting_note,
+)
 from .recorder import AudioRecorder
 from .summarizer import Summarizer
 from .templates import export_templates_json
@@ -230,6 +239,50 @@ _platform_canary: list[str] = []
 _last_canary_warning: float | None = None
 CANARY_WARNING_INTERVAL = 86400  # seconds
 
+# A long call whose transcript yields zero stage-1 candidates signals a blind
+# extractor (wrong language, drifted markers) — not an honestly empty call.
+_extraction_canary: str | None = None
+EXTRACTION_CANARY_MIN_SECONDS = 2400  # ~p90 (2512s) of zero-candidate non-degenerate calls, sweep 2026-08-20, eval/stage1-sweep.json
+
+
+def _update_extraction_canary(session_id: str, duration: float, transcript: str):
+    global _extraction_canary
+    if duration <= EXTRACTION_CANARY_MIN_SECONDS or not transcript:
+        return
+    if find_candidates(transcript):
+        _extraction_canary = None
+    else:
+        _extraction_canary = session_id
+        _log(
+            logging.WARNING,
+            "commitments",
+            f"Stage-1 canary: 0 candidates in a {int(duration / 60)}-minute "
+            f"call [session={session_id}]",
+        )
+
+
+def _enrich_commitments(commitments: list[dict], started_at: str):
+    """Add title and deadline_date to extracted commitments (in place).
+
+    Runs only on the Ollama-up path: normalize_title needs the LLM. The
+    deadline phrase usually lives inside the quote, so the quote is the
+    fallback source for the date.
+    """
+    try:
+        call_date = datetime.fromisoformat(started_at).date()
+    except (TypeError, ValueError):
+        call_date = None
+    for c in commitments:
+        deadline = c.get("deadline") or ""
+        quote = c.get("quote") or ""
+        parsed = None
+        if call_date is not None:
+            parsed = parse_deadline(deadline, call_date) or parse_deadline(
+                quote, call_date
+            )
+        c["deadline_date"] = parsed.isoformat() if parsed else None
+        c["title"] = normalize_title(quote, deadline)
+
 
 def _notify_person_debts(db, session_id: str, limit: int = 2):
     """Post-call care moment (Pedregal): surface standing debt with the
@@ -268,6 +321,50 @@ def _maybe_write_morning_digest(db):
         notify("Other Voices", f"Утренний дайджест готов: {Path(path).name}")
     except Exception as e:
         _log(logging.WARNING, "digest", f"Morning digest failed: {e}")
+
+
+# Meetings already notified about — dedup by id+start (recurring events share
+# an id), so one meeting fires exactly one notification per daemon lifetime.
+_seen_meetings: set[str] = set()
+
+
+def _check_meetings(db):
+    """Poll bin/calendar-peek and notify once per meeting starting soon.
+
+    The helper is optional equipment: a missing binary, a TCC denial
+    ({"error": "no-access"}) or garbage output all degrade to silence —
+    the recorder must never fall over its calendar sidecar.
+    """
+    if not CALENDAR_PEEK_BIN.exists():
+        return
+    try:
+        proc = subprocess.run(
+            [str(CALENDAR_PEEK_BIN), "2"],
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+    except (subprocess.SubprocessError, OSError) as e:
+        _log(logging.WARNING, "meetings", f"calendar-peek failed: {e}")
+        return
+    events = parse_peek_output(proc.stdout)
+    if events is None:
+        return
+    for event in upcoming_window(events, datetime.now()):
+        key = event_key(event)
+        if key in _seen_meetings:
+            continue
+        _seen_meetings.add(key)
+        try:
+            result = write_premeeting_note(db, event)
+        except Exception as e:
+            _log(logging.WARNING, "meetings", f"Pre-meeting note failed: {e}")
+            continue
+        if result is None:
+            continue
+        path, title = result
+        _log(logging.INFO, "meetings", f"Pre-meeting brief: {title} -> {path}")
+        notify(title, f"Бриф по участникам: {path}")
 
 
 def _refresh_platform_canary(db):
@@ -322,6 +419,7 @@ def write_status(
         "system_audio_ok": _system_audio_ok,
         "mic_only_streak": _mic_only_streak,
         "platform_canary": _platform_canary,
+        "extraction_canary": _extraction_canary,
     }
     tmp_path = STATUS_PATH.with_suffix(".tmp")
     try:
@@ -540,6 +638,11 @@ def process_recording(
             f"SKIPPED — Ollama unavailable [session={session_id}]",
         )
 
+    # Stage-1 canary runs on the regex stage alone — no LLM required, so a
+    # long silent extraction is flagged even when Ollama is down.
+    if transcript:
+        _update_extraction_canary(session_id, duration, transcript)
+
     # Commitments v2 — the narrow staged extractor is the single source of
     # truth; the summarizer's in-JSON field is overwritten by it (board: one
     # question — one call; the big JSON call kept losing this field).
@@ -554,6 +657,7 @@ def process_recording(
             f"[session={session_id}]",
             duration_ms=t_commit.elapsed_ms,
         )
+        _enrich_commitments(commitments_v2, session["started_at"])
         if summary is not None:
             summary["commitments"] = commitments_v2
 
@@ -713,6 +817,7 @@ def main():
     notify("Call Recorder", "Демон запущен, мониторинг звонков активен")
     write_status("idle")
     last_heartbeat = time.monotonic()
+    last_meeting_check = time.monotonic()
 
     _log(logging.INFO, "startup", "=" * 50)
 
@@ -738,6 +843,15 @@ def main():
                     write_status("idle")
                 last_heartbeat = time.monotonic()
 
+            # Pre-meeting briefs: poll the calendar helper every ~2 minutes
+            # (same cheap monotonic-timer pattern as the heartbeat).
+            if time.monotonic() - last_meeting_check >= MEETING_CHECK_INTERVAL:
+                last_meeting_check = time.monotonic()
+                try:
+                    _check_meetings(db)
+                except Exception as e:
+                    _log(logging.WARNING, "meetings", f"Meeting check failed: {e}")
+
             if consent.tick(in_call, app_name, recorder.is_recording):
                 # User granted recording — re-check Ollama each time
                 _ollama_available = check_ollama()
@@ -747,7 +861,14 @@ def main():
                     f"Call detected: {app_name} "
                     f"[ollama={'up' if _ollama_available else 'DOWN'}]",
                 )
-                notify("Call Recorder", f"Запись начата: {app_name}")
+                if offer_consent_phrase():
+                    notify(
+                        "Call Recorder",
+                        f"Запись начата: {app_name}. Фраза-предупреждение "
+                        "собеседнику — в буфере обмена (Cmd-V в чат).",
+                    )
+                else:
+                    notify("Call Recorder", f"Запись начата: {app_name}")
                 recorder.start(app_name)
                 write_status(
                     "recording",

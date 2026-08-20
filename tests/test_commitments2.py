@@ -191,3 +191,70 @@ class TestModalNeedsVerb:
     def test_modal_with_action_verb_kept(self):
         t = "[30:00] SPEAKER_ME: обязательно пришлю завтра утром"
         assert find_candidates(t)
+
+
+class TestNormalizeTitle:
+    """Title = «глагол-предмет-срок» compressed from the quote; the quote
+    itself is untouched evidence. A title that invents words is discarded."""
+
+    @staticmethod
+    def _stub(title):
+        return lambda prompt, temperature=0.25, schema=None: {"title": title}
+
+    def test_grounded_title_accepted(self):
+        from src.commitments2 import normalize_title
+
+        t = normalize_title(
+            "сейчас я тебе скину ссылку в Telegram, погоди",
+            llm=self._stub("скину ссылку в Telegram"),
+        )
+        assert t == "скину ссылку в Telegram"
+
+    def test_invented_words_rejected(self):
+        from src.commitments2 import normalize_title
+
+        t = normalize_title(
+            "сейчас скину ссылку",
+            llm=self._stub("подготовить отчет к пятнице"),
+        )
+        assert t is None
+
+    def test_deadline_words_count_as_source(self):
+        from src.commitments2 import normalize_title
+
+        t = normalize_title(
+            "я пришлю договор",
+            deadline="в пятницу",
+            llm=self._stub("пришлю договор в пятницу"),
+        )
+        assert t == "пришлю договор в пятницу"
+
+    def test_empty_and_failed_llm_rejected(self):
+        from src.commitments2 import normalize_title
+
+        assert normalize_title("скину файл", llm=self._stub("")) is None
+        assert (
+            normalize_title(
+                "скину файл", llm=lambda p, temperature=0.25, schema=None: None
+            )
+            is None
+        )
+
+    def test_overlong_title_rejected(self):
+        from src.commitments2 import normalize_title
+
+        quote = "я сделаю " + "очень " * 30 + "длинный отчет"
+        t = normalize_title(quote, llm=self._stub("сделаю " + "очень " * 30 + "длинный отчет"))
+        assert t is None
+
+    def test_empty_quote_short_circuits(self):
+        from src.commitments2 import normalize_title
+
+        calls = []
+
+        def spy(prompt, temperature=0.25, schema=None):
+            calls.append(prompt)
+            return {"title": "что-то"}
+
+        assert normalize_title("", llm=spy) is None
+        assert calls == []

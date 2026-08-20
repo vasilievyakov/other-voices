@@ -10,6 +10,7 @@ import logging
 import re
 from datetime import datetime
 
+from .closures import build_closure_proposals
 from .config import DATA_DIR
 from .database import Database  # noqa: F401 — typing/documentation
 
@@ -30,6 +31,11 @@ def _strip_ts(item: str) -> str:
 
 def _slug(name: str) -> str:
     return re.sub(r"[^\wа-яё-]+", "-", (name or "").strip().lower()).strip("-")
+
+
+def _line_title(c: dict) -> str:
+    """Row headline: the normalized title when present, raw text otherwise."""
+    return c.get("title") or c.get("text") or ""
 
 
 def build_followup(db, session_id: str) -> tuple[str, str] | None:
@@ -62,7 +68,15 @@ def build_followup(db, session_id: str) -> tuple[str, str] | None:
         for e in db.get_entities(session_id)
         if e.get("type") == "person" and not e["name"].upper().startswith("SPEAKER")
     ]
-    recipient = persons[0] if persons else None
+    # The owner's explicit rename (speaker_names) outranks entity extraction:
+    # a hand-typed name is the strongest evidence of who was on the call.
+    speaker_names = db.get_speaker_names(session_id)
+    renamed = [
+        speaker_names[label]
+        for label in sorted(speaker_names)
+        if label != "SPEAKER_ME" and speaker_names[label]
+    ]
+    recipient = renamed[0] if renamed else (persons[0] if persons else None)
     date = (call.get("started_at") or "")[:10]
 
     lines = [f"# {recipient or 'Собеседник'} — {date}", ""]
@@ -81,7 +95,7 @@ def build_followup(db, session_id: str) -> tuple[str, str] | None:
         lines.append(title)
         for c in items:
             deadline = f" — к {c['deadline_raw']}" if c.get("deadline_raw") else ""
-            lines.append(f"- {c.get('text') or ''}{deadline}")
+            lines.append(f"- {_line_title(c)}{deadline}")
             if c.get("verbatim_quote"):
                 lines.append(f"  > {c['verbatim_quote']}")
         lines.append("")
@@ -139,7 +153,14 @@ def build_morning_digest(db, now: datetime | None = None) -> str:
             outgoing.append(c)
         elif c.get("direction") == "incoming":
             incoming.append(c)
-    burning.sort(key=lambda t: -t[0])
+    # Dated debt first (earliest deadline on top), dateless after it by age.
+    burning.sort(
+        key=lambda t: (
+            (0, t[1]["deadline_date"], 0)
+            if t[1].get("deadline_date")
+            else (1, "", -t[0])
+        )
+    )
 
     # Header counts ALL non-archive debt by direction — «0 ты должен» above
     # a list of your own promises is a crack in trust (Ive, night final).
@@ -157,7 +178,7 @@ def build_morning_digest(db, now: datetime | None = None) -> str:
         lines.append("## Горит (висит дольше недели)")
         for age, c in burning:
             who = c.get("who_name") or c.get("who_label") or ""
-            lines.append(f"- {c.get('text') or ''} — {who}, звонок {age} дней назад")
+            lines.append(f"- {_line_title(c)} — {who}, звонок {age} дней назад")
             if c.get("verbatim_quote"):
                 lines.append(f"  > {c['verbatim_quote']}")
         lines.append("")
@@ -169,11 +190,24 @@ def build_morning_digest(db, now: datetime | None = None) -> str:
         for c in items:
             who = c.get("who_name") or c.get("who_label") or ""
             deadline = f" — к {c['deadline_raw']}" if c.get("deadline_raw") else ""
-            lines.append(f"- {c.get('text') or ''}{deadline} ({who})")
+            lines.append(f"- {_line_title(c)}{deadline} ({who})")
         lines.append("")
 
     _block("## Ты должен", outgoing)
     _block("## Тебе должны", incoming)
+
+    # Closure proposals: «я отправил» on a later call matched an open promise.
+    # Both quotes shown, status untouched — closing is the owner's hand.
+    proposals = build_closure_proposals(db)
+    if proposals:
+        lines.append("## Предлагаю закрыть (реши сам)")
+        for p in proposals:
+            lines.append(f"- {p['commitment_text']}")
+            lines.append(f"  > обещание: {p['commitment_quote']}")
+            lines.append(
+                f"  > свидетельство ({p['evidence_date']}): {p['evidence_quote']}"
+            )
+        lines.append("")
 
     if archive:
         lines.append(

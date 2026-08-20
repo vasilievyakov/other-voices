@@ -59,6 +59,25 @@ else
     exit 1
 fi
 
+# calendar-peek needs its Calendar (TCC) usage string embedded as an
+# __info_plist section — a bare CLI binary has no bundle to carry it, and
+# without the string macOS silently denies the access prompt.
+echo "[3c/6] Compiling Swift calendar-peek binary..."
+swiftc swift/CalendarPeek.swift -o bin/calendar-peek \
+    -framework EventKit \
+    -O \
+    -Xlinker -sectcreate -Xlinker __TEXT -Xlinker __info_plist \
+    -Xlinker swift/CalendarPeek-Info.plist \
+    2>&1
+
+if [ -f bin/calendar-peek ]; then
+    echo "  bin/calendar-peek compiled successfully"
+    chmod +x bin/calendar-peek
+else
+    echo "  ERROR: calendar-peek compilation failed"
+    exit 1
+fi
+
 # Code-sign with a STABLE identifier so the identity does not drift on every
 # rebuild. Previously the binary was signed with an auto-derived identifier
 # (e.g. "audio-capture-new"); each rebuild changed it, macOS treated the binary

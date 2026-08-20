@@ -10,6 +10,7 @@ struct CallDetailView: View {
     @State private var audioPlayer = AudioPlayer()
     @State private var showTemplatePicker = false
     @State private var toastMessage: String?
+    @State private var speakerNames: [String: String] = [:]
     @Environment(CallStore.self) private var store
     @Environment(DaemonMonitor.self) private var daemon
 
@@ -23,6 +24,7 @@ struct CallDetailView: View {
         }
         .task(id: sessionId) {
             call = store.getCall(sessionId)
+            speakerNames = store.speakerNames(sessionId)
         }
     }
 
@@ -248,11 +250,16 @@ struct CallDetailView: View {
             TranscriptView(
                 transcript: transcript,
                 segments: call.transcriptSegments,
+                speakerNames: speakerNames,
                 onSeek: { time in
                     if let path = call.systemWavPath ?? call.micWavPath {
                         audioPlayer.play(path: path)
                         audioPlayer.seek(to: time)
                     }
+                },
+                onRename: { label, name in
+                    store.setSpeakerName(sessionId: call.sessionId, label: label, name: name)
+                    speakerNames = store.speakerNames(call.sessionId)
                 }
             )
         } else if daemon.status?.isProcessing == true {

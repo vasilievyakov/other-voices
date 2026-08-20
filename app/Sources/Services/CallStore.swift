@@ -73,6 +73,14 @@ package final class CallStore {
         db.openCommitments()
     }
 
+    func speakerNames(_ sessionId: String) -> [String: String] {
+        db.speakerNames(sessionId: sessionId)
+    }
+
+    func setSpeakerName(sessionId: String, label: String, name: String) {
+        db.setSpeakerName(sessionId: sessionId, label: label, name: name)
+    }
+
     func allActionItems(days: Int = 90) -> [ActionItem] {
         let calls = db.actionItemCalls(days: days)
         var items: [ActionItem] = []

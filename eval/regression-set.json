@@ -1,0 +1,887 @@
+{
+ "frozen_at": "2026-08-20T12:05:06+00:00",
+ "note": "Owner-curated snapshot: open rows must be reproduced, dismissed rows must not be.",
+ "count": 88,
+ "rows": [
+  {
+   "id": 99,
+   "session_id": "20260220_080046",
+   "text": "Я тогда вам напишу, если сможете присоединиться.",
+   "verbatim_quote": "Я тогда вам напишу, если сможете присоединиться.",
+   "direction": "outgoing",
+   "uncertain": 0,
+   "status": "dismissed",
+   "resolved_at": "2026-08-20T13:13:49.405340"
+  },
+  {
+   "id": 100,
+   "session_id": "20260614_110006",
+   "text": "мы на самом деле будем сегодня идти.",
+   "verbatim_quote": "мы на самом деле будем сегодня идти.",
+   "direction": "outgoing",
+   "uncertain": 0,
+   "status": "dismissed",
+   "resolved_at": "2026-08-20T13:13:49.405340"
+  },
+  {
+   "id": 101,
+   "session_id": "20260614_110006",
+   "text": "Мы будем сегодня работать в терминале.",
+   "verbatim_quote": "Мы будем сегодня работать в терминале.",
+   "direction": "outgoing",
+   "uncertain": 0,
+   "status": "dismissed",
+   "resolved_at": "2026-08-20T13:13:49.405340"
+  },
+  {
+   "id": 102,
+   "session_id": "20260614_110006",
+   "text": "Если нет, то мы обязательно поставим.",
+   "verbatim_quote": "Если нет, то мы обязательно поставим.",
+   "direction": "outgoing",
+   "uncertain": 0,
+   "status": "dismissed",
+   "resolved_at": "2026-08-20T13:13:49.405340"
+  },
+  {
+   "id": 103,
+   "session_id": "20260614_110006",
+   "text": "Я сейчас отправлю",
+   "verbatim_quote": "Я сейчас отправлю",
+   "direction": "outgoing",
+   "uncertain": 0,
+   "status": "dismissed",
+   "resolved_at": "2026-08-20T13:13:49.405340"
+  },
+  {
+   "id": 104,
+   "session_id": "20260614_110006",
+   "text": "давай бинарный чик сделаем",
+   "verbatim_quote": "давай бинарный чик сделаем",
+   "direction": "outgoing",
+   "uncertain": 0,
+   "status": "dismissed",
+   "resolved_at": "2026-08-20T13:13:49.405340"
+  },
+  {
+   "id": 105,
+   "session_id": "20260614_110006",
+   "text": "еще, сейчас я тебе скину в Telegram просто DMG-шку, ну",
+   "verbatim_quote": "еще, сейчас я тебе скину в Telegram просто DMG-шку, ну",
+   "direction": "outgoing",
+   "uncertain": 0,
+   "status": "dismissed",
+   "resolved_at": "2026-08-20T13:13:49.405340"
+  },
+  {
+   "id": 106,
+   "session_id": "20260614_110006",
+   "text": "Я сейчас скину в Zoom вот эту команду, которая заставляет установить код на твой компьютер.",
+   "verbatim_quote": "Я сейчас скину в Zoom вот эту команду, которая заставляет установить код на твой компьютер.",
+   "direction": "outgoing",
+   "uncertain": 0,
+   "status": "dismissed",
+   "resolved_at": "2026-08-20T13:13:49.405340"
+  },
+  {
+   "id": 107,
+   "session_id": "20260614_110006",
+   "text": "экспорт сейчас еще раз тебя пришлю вот в зуме последние",
+   "verbatim_quote": "экспорт сейчас еще раз тебя пришлю вот в зуме последние",
+   "direction": "outgoing",
+   "uncertain": 0,
+   "status": "dismissed",
+   "resolved_at": "2026-08-20T13:13:49.405340"
+  },
+  {
+   "id": 108,
+   "session_id": "20260614_135041",
+   "text": "Сейчас я открою курсор и посмотрю что делать.",
+   "verbatim_quote": "Сейчас я открою курсор и посмотрю что делать.",
+   "direction": "outgoing",
+   "uncertain": 0,
+   "status": "dismissed",
+   "resolved_at": "2026-08-20T13:13:49.405340"
+  },
+  {
+   "id": 109,
+   "session_id": "20260615_151049",
+   "text": "я тебе пришлю лендинг от и фарвард не тогда кислом",
+   "verbatim_quote": "я тебе пришлю лендинг от и фарвард не тогда кислом",
+   "direction": "outgoing",
+   "uncertain": 0,
+   "status": "dismissed",
+   "resolved_at": "2026-08-20T13:13:49.405340"
+  },
+  {
+   "id": 110,
+   "session_id": "20260615_151049",
+   "text": "я сейчас сегодня-завтра пришлю эту штуку ты можешь ты",
+   "verbatim_quote": "я сейчас сегодня-завтра пришлю эту штуку ты можешь ты",
+   "direction": "outgoing",
+   "uncertain": 0,
+   "status": "dismissed",
+   "resolved_at": "2026-08-20T13:13:49.405340"
+  },
+  {
+   "id": 111,
+   "session_id": "20260615_161347",
+   "text": "Хорошо, или хочешь я это сделаю",
+   "verbatim_quote": "Хорошо, или хочешь я это сделаю",
+   "direction": "outgoing",
+   "uncertain": 0,
+   "status": "dismissed",
+   "resolved_at": "2026-08-20T13:13:49.405340"
+  },
+  {
+   "id": 112,
+   "session_id": "20260615_161347",
+   "text": "давай я проверю давай сейчас прям проверим есть ли у меня",
+   "verbatim_quote": "давай я проверю давай сейчас прям проверим есть ли у меня",
+   "direction": "outgoing",
+   "uncertain": 0,
+   "status": "dismissed",
+   "resolved_at": "2026-08-20T13:13:49.405340"
+  },
+  {
+   "id": 113,
+   "session_id": "20260615_161347",
+   "text": "Я буду один уже, и я запишу.",
+   "verbatim_quote": "Я буду один уже, и я запишу.",
+   "direction": "outgoing",
+   "uncertain": 0,
+   "status": "dismissed",
+   "resolved_at": "2026-08-20T13:13:49.405340"
+  },
+  {
+   "id": 114,
+   "session_id": "20260616_140034",
+   "text": "Мы сейчас это дело пришлем",
+   "verbatim_quote": "Мы сейчас это дело пришлем",
+   "direction": "outgoing",
+   "uncertain": 0,
+   "status": "dismissed",
+   "resolved_at": "2026-08-20T13:13:49.405340"
+  },
+  {
+   "id": 115,
+   "session_id": "20260616_145727",
+   "text": "Слушай, я посмотрю, я поиграю в наш сценарий в коворке.",
+   "verbatim_quote": "Слушай, я посмотрю, я поиграю в наш сценарий в коворке.",
+   "direction": "outgoing",
+   "uncertain": 0,
+   "status": "dismissed",
+   "resolved_at": "2026-08-20T13:13:49.405340"
+  },
+  {
+   "id": 116,
+   "session_id": "20260616_145727",
+   "text": "то я думаю, что я завтра, может, и запишу.",
+   "verbatim_quote": "то я думаю, что я завтра, может, и запишу.",
+   "direction": "outgoing",
+   "uncertain": 0,
+   "status": "dismissed",
+   "resolved_at": "2026-08-20T13:13:49.405340"
+  },
+  {
+   "id": 117,
+   "session_id": "20260617_190000",
+   "text": "будем делать руками в воскресенье.",
+   "verbatim_quote": "будем делать руками в воскресенье.",
+   "direction": "outgoing",
+   "uncertain": 0,
+   "status": "dismissed",
+   "resolved_at": "2026-08-20T13:13:49.405340"
+  },
+  {
+   "id": 118,
+   "session_id": "20260617_190000",
+   "text": "Сейчас напишу slash insights.",
+   "verbatim_quote": "Сейчас напишу slash insights.",
+   "direction": "outgoing",
+   "uncertain": 0,
+   "status": "dismissed",
+   "resolved_at": "2026-08-20T13:13:49.405340"
+  },
+  {
+   "id": 119,
+   "session_id": "20260621_115119",
+   "text": "Я потом пришлю вам",
+   "verbatim_quote": "Я потом пришлю вам",
+   "direction": "outgoing",
+   "uncertain": 0,
+   "status": "dismissed",
+   "resolved_at": "2026-08-20T13:13:49.405340"
+  },
+  {
+   "id": 120,
+   "session_id": "20260621_115119",
+   "text": "давай сделаем из него бриф и он",
+   "verbatim_quote": "давай сделаем из него бриф и он",
+   "direction": "outgoing",
+   "uncertain": 0,
+   "status": "dismissed",
+   "resolved_at": "2026-08-20T13:13:49.405340"
+  },
+  {
+   "id": 121,
+   "session_id": "20260622_120042",
+   "text": "но на этой неделе думаю, что запишу все.",
+   "verbatim_quote": "но на этой неделе думаю, что запишу все.",
+   "direction": "outgoing",
+   "uncertain": 1,
+   "status": "dismissed",
+   "resolved_at": "2026-08-20T13:13:49.405340"
+  },
+  {
+   "id": 122,
+   "session_id": "20260622_120042",
+   "text": "хорошо но сначала я не напишу сейчас давай ему напишу может может он скажет",
+   "verbatim_quote": "хорошо но сначала я не напишу сейчас давай ему напишу может может он скажет",
+   "direction": "outgoing",
+   "uncertain": 0,
+   "status": "dismissed",
+   "resolved_at": "2026-08-20T13:13:49.405340"
+  },
+  {
+   "id": 123,
+   "session_id": "20260623_180023",
+   "text": "сегодня поделюсь с вами.",
+   "verbatim_quote": "сегодня поделюсь с вами.",
+   "direction": "outgoing",
+   "uncertain": 0,
+   "status": "dismissed",
+   "resolved_at": "2026-08-20T13:13:49.405340"
+  },
+  {
+   "id": 124,
+   "session_id": "20260624_185808",
+   "text": "Сейчас я скину в чатик.",
+   "verbatim_quote": "Сейчас я скину в чатик.",
+   "direction": "outgoing",
+   "uncertain": 0,
+   "status": "dismissed",
+   "resolved_at": "2026-08-20T13:13:49.405340"
+  },
+  {
+   "id": 125,
+   "session_id": "20260624_185808",
+   "text": "Да, да, мы скинем вам",
+   "verbatim_quote": "Да, да, мы скинем вам",
+   "direction": "outgoing",
+   "uncertain": 0,
+   "status": "dismissed",
+   "resolved_at": "2026-08-20T13:13:49.405340"
+  },
+  {
+   "id": 126,
+   "session_id": "20260625_180229",
+   "text": "я сделаю задачу на заказ квоты короче такой генератор реквизитов для",
+   "verbatim_quote": "я сделаю задачу на заказ квоты короче такой генератор реквизитов для",
+   "direction": "outgoing",
+   "uncertain": 0,
+   "status": "dismissed",
+   "resolved_at": "2026-08-20T13:13:49.405340"
+  },
+  {
+   "id": 127,
+   "session_id": "20260626_114212",
+   "text": "Давайте договоримся, что в начале встречи минут 10-15 мы с вами обсудим, что вы пытались с ней сделать и почему не получилось.",
+   "verbatim_quote": "Давайте договоримся, что в начале встречи минут 10-15 мы с вами обсудим, что вы пытались с ней сделать и почему не получилось.",
+   "direction": "outgoing",
+   "uncertain": 0,
+   "status": "dismissed",
+   "resolved_at": "2026-08-20T13:13:49.405340"
+  },
+  {
+   "id": 128,
+   "session_id": "20260626_150951",
+   "text": "Ну, давай попробуем сделать шесть отдельных чатов.",
+   "verbatim_quote": "Ну, давай попробуем сделать шесть отдельных чатов.",
+   "direction": "outgoing",
+   "uncertain": 0,
+   "status": "dismissed",
+   "resolved_at": "2026-08-20T13:13:49.405340"
+  },
+  {
+   "id": 129,
+   "session_id": "20260626_150951",
+   "text": "вам я говорю что я тебе напишу на днях у нас будет маркетинговая но как все что",
+   "verbatim_quote": "вам я говорю что я тебе напишу на днях у нас будет маркетинговая но как все что",
+   "direction": "outgoing",
+   "uncertain": 0,
+   "status": "dismissed",
+   "resolved_at": "2026-08-20T13:13:49.405340"
+  },
+  {
+   "id": 130,
+   "session_id": "20260626_150951",
+   "text": "А вот смотри, в понедельник будем смотреть вместе с руководителем.",
+   "verbatim_quote": "А вот смотри, в понедельник будем смотреть вместе с руководителем.",
+   "direction": "outgoing",
+   "uncertain": 0,
+   "status": "dismissed",
+   "resolved_at": "2026-08-20T13:13:49.405340"
+  },
+  {
+   "id": 131,
+   "session_id": "20260628_110000",
+   "text": "Сейчас сделаю.",
+   "verbatim_quote": "Сейчас сделаю.",
+   "direction": "outgoing",
+   "uncertain": 0,
+   "status": "dismissed",
+   "resolved_at": "2026-08-20T13:13:49.405340"
+  },
+  {
+   "id": 132,
+   "session_id": "20260628_110000",
+   "text": "И тогда встретимся через полчаса.",
+   "verbatim_quote": "И тогда встретимся через полчаса.",
+   "direction": "outgoing",
+   "uncertain": 0,
+   "status": "dismissed",
+   "resolved_at": "2026-08-20T13:13:49.405340"
+  },
+  {
+   "id": 133,
+   "session_id": "20260628_110000",
+   "text": "Так, давайте тогда сейчас мы быстренько сделаем группы.",
+   "verbatim_quote": "Так, давайте тогда сейчас мы быстренько сделаем группы.",
+   "direction": "outgoing",
+   "uncertain": 0,
+   "status": "dismissed",
+   "resolved_at": "2026-08-20T13:13:49.405340"
+  },
+  {
+   "id": 134,
+   "session_id": "20260628_110000",
+   "text": "Обязательно поставьте встречу",
+   "verbatim_quote": "Обязательно поставьте встречу",
+   "direction": "outgoing",
+   "uncertain": 0,
+   "status": "dismissed",
+   "resolved_at": "2026-08-20T13:13:49.405340"
+  },
+  {
+   "id": 135,
+   "session_id": "20260628_110000",
+   "text": "Вы когда это, если все-таки, дай бог, допилите, учитывая, что мы не распарсили какую-то большую штуку, я вам просто пришлю отдельно датсет, с которым можно будет поиграться.",
+   "verbatim_quote": "Вы когда это, если все-таки, дай бог, допилите, учитывая, что мы не распарсили какую-то большую штуку, я вам просто пришлю отдельно датсет, с которым можно будет поиграться.",
+   "direction": "outgoing",
+   "uncertain": 0,
+   "status": "dismissed",
+   "resolved_at": "2026-08-20T13:13:49.405340"
+  },
+  {
+   "id": 136,
+   "session_id": "20260628_110000",
+   "text": "собрать баз данных я сейчас давайте скину на примере цср и кого-то мы позовем показать на",
+   "verbatim_quote": "собрать баз данных я сейчас давайте скину на примере цср и кого-то мы позовем показать на",
+   "direction": "outgoing",
+   "uncertain": 0,
+   "status": "dismissed",
+   "resolved_at": "2026-08-20T13:13:49.405340"
+  },
+  {
+   "id": 137,
+   "session_id": "20260628_110000",
+   "text": "Давай тогда просто сделаем слэш клир.",
+   "verbatim_quote": "Давай тогда просто сделаем слэш клир.",
+   "direction": "outgoing",
+   "uncertain": 0,
+   "status": "dismissed",
+   "resolved_at": "2026-08-20T13:13:49.405340"
+  },
+  {
+   "id": 138,
+   "session_id": "20260628_110000",
+   "text": "Да, давайте сделаем отдельные папки.",
+   "verbatim_quote": "Да, давайте сделаем отдельные папки.",
+   "direction": "outgoing",
+   "uncertain": 0,
+   "status": "dismissed",
+   "resolved_at": "2026-08-20T13:13:49.405340"
+  },
+  {
+   "id": 139,
+   "session_id": "20260628_110000",
+   "text": "предположительного у нас их есть во вторых мы даем ему сейчас я пришлю первый первый запрос",
+   "verbatim_quote": "предположительного у нас их есть во вторых мы даем ему сейчас я пришлю первый первый запрос",
+   "direction": "outgoing",
+   "uncertain": 0,
+   "status": "dismissed",
+   "resolved_at": "2026-08-20T13:13:49.405340"
+  },
+  {
+   "id": 140,
+   "session_id": "20260628_110000",
+   "text": "я пришлю. Это и есть саммари.",
+   "verbatim_quote": "я пришлю. Это и есть саммари.",
+   "direction": "outgoing",
+   "uncertain": 0,
+   "status": "dismissed",
+   "resolved_at": "2026-08-20T13:13:49.405340"
+  },
+  {
+   "id": 141,
+   "session_id": "20260629_132841",
+   "text": "Давай я сейчас еще раз проверю, что все хорошо.",
+   "verbatim_quote": "Давай я сейчас еще раз проверю, что все хорошо.",
+   "direction": "outgoing",
+   "uncertain": 0,
+   "status": "dismissed",
+   "resolved_at": "2026-08-20T13:13:49.405340"
+  },
+  {
+   "id": 142,
+   "session_id": "20260629_132841",
+   "text": "ну короче так как только по игру прикуриться я еще там все проверю и готова",
+   "verbatim_quote": "ну короче так как только по игру прикуриться я еще там все проверю и готова",
+   "direction": "outgoing",
+   "uncertain": 0,
+   "status": "dismissed",
+   "resolved_at": "2026-08-20T13:13:49.405340"
+  },
+  {
+   "id": 143,
+   "session_id": "20260629_190045",
+   "text": "Сейчас посмотрю, что у меня в CloudJSON.",
+   "verbatim_quote": "Сейчас посмотрю, что у меня в CloudJSON.",
+   "direction": "outgoing",
+   "uncertain": 0,
+   "status": "dismissed",
+   "resolved_at": "2026-08-20T13:13:49.405340"
+  },
+  {
+   "id": 144,
+   "session_id": "20260629_190045",
+   "text": "я ему сейчас скину скриншот вот в эту папку",
+   "verbatim_quote": "я ему сейчас скину скриншот вот в эту папку",
+   "direction": "outgoing",
+   "uncertain": 0,
+   "status": "dismissed",
+   "resolved_at": "2026-08-20T13:13:49.405340"
+  },
+  {
+   "id": 145,
+   "session_id": "20260703_095954",
+   "text": "Прям давайте агенту, у меня есть идея, давай попробуем это сделать, объясни мне, что здесь происходит.",
+   "verbatim_quote": "Прям давайте агенту, у меня есть идея, давай попробуем это сделать, объясни мне, что здесь происходит.",
+   "direction": "outgoing",
+   "uncertain": 0,
+   "status": "dismissed",
+   "resolved_at": "2026-08-20T13:13:49.405340"
+  },
+  {
+   "id": 146,
+   "session_id": "20260703_132700",
+   "text": "Я тогда ему сейчас позвоню или напишу.",
+   "verbatim_quote": "Я тогда ему сейчас позвоню или напишу.",
+   "direction": "outgoing",
+   "uncertain": 0,
+   "status": "dismissed",
+   "resolved_at": "2026-08-20T13:13:49.405340"
+  },
+  {
+   "id": 147,
+   "session_id": "20260703_132700",
+   "text": "Я подберу, пришлю.",
+   "verbatim_quote": "Я подберу, пришлю.",
+   "direction": "outgoing",
+   "uncertain": 0,
+   "status": "dismissed",
+   "resolved_at": "2026-08-20T13:13:49.405340"
+  },
+  {
+   "id": 148,
+   "session_id": "20260703_132700",
+   "text": "Я посмотрю из готовых, что есть.",
+   "verbatim_quote": "Я посмотрю из готовых, что есть.",
+   "direction": "outgoing",
+   "uncertain": 0,
+   "status": "dismissed",
+   "resolved_at": "2026-08-20T13:13:49.405340"
+  },
+  {
+   "id": 149,
+   "session_id": "20260703_132700",
+   "text": "Супер, я как раз в самолете завтра сделаю.",
+   "verbatim_quote": "Супер, я как раз в самолете завтра сделаю.",
+   "direction": "outgoing",
+   "uncertain": 0,
+   "status": "dismissed",
+   "resolved_at": "2026-08-20T13:13:49.405340"
+  },
+  {
+   "id": 150,
+   "session_id": "20260703_132700",
+   "text": "Я напишу. Тогда где-нибудь",
+   "verbatim_quote": "Я напишу. Тогда где-нибудь",
+   "direction": "outgoing",
+   "uncertain": 0,
+   "status": "dismissed",
+   "resolved_at": "2026-08-20T13:13:49.405340"
+  },
+  {
+   "id": 151,
+   "session_id": "20260703_132700",
+   "text": "Максимум, если чего, созвонимся или я созвонюсь.",
+   "verbatim_quote": "Максимум, если чего, созвонимся или я созвонюсь.",
+   "direction": "outgoing",
+   "uncertain": 0,
+   "status": "dismissed",
+   "resolved_at": "2026-08-20T13:13:49.405340"
+  },
+  {
+   "id": 152,
+   "session_id": "20260708_100123",
+   "text": "да это я сегодня покажу тебе и отправлю либо не знаю ты ты же админ мне кажется",
+   "verbatim_quote": "да это я сегодня покажу тебе и отправлю либо не знаю ты ты же админ мне кажется",
+   "direction": "outgoing",
+   "uncertain": 0,
+   "status": "dismissed",
+   "resolved_at": "2026-08-20T13:13:49.405340"
+  },
+  {
+   "id": 153,
+   "session_id": "20260713_124516",
+   "text": "Давай я им напишу, я бы пока не двигал, честно говоря. Ну, смотри, по ощущениям, да, я тут",
+   "verbatim_quote": "Давай я им напишу, я бы пока не двигал, честно говоря. Ну, смотри, по ощущениям, да, я тут",
+   "direction": "outgoing",
+   "uncertain": 0,
+   "status": "dismissed",
+   "resolved_at": "2026-08-20T13:13:49.405340"
+  },
+  {
+   "id": 154,
+   "session_id": "20260713_124516",
+   "text": "Ну вот, и давай, я тогда проведу, да, borderline между этими двумя штуками и покажу, как они устроены.",
+   "verbatim_quote": "Ну вот, и давай, я тогда проведу, да, borderline между этими двумя штуками и покажу, как они устроены.",
+   "direction": "outgoing",
+   "uncertain": 0,
+   "status": "dismissed",
+   "resolved_at": "2026-08-20T13:13:49.405340"
+  },
+  {
+   "id": 155,
+   "session_id": "20260713_124516",
+   "text": "в мире как бы патриков инстаграма вот этого всего такого у них свои агентства вот я напишу тогда",
+   "verbatim_quote": "в мире как бы патриков инстаграма вот этого всего такого у них свои агентства вот я напишу тогда",
+   "direction": "outgoing",
+   "uncertain": 0,
+   "status": "dismissed",
+   "resolved_at": "2026-08-20T13:13:49.405340"
+  },
+  {
+   "id": 156,
+   "session_id": "20260713_124516",
+   "text": "в среду и покажу пару вещей каких-нибудь ну и тогда может быть это среду тоже еще встретимся",
+   "verbatim_quote": "в среду и покажу пару вещей каких-нибудь ну и тогда может быть это среду тоже еще встретимся",
+   "direction": "outgoing",
+   "uncertain": 0,
+   "status": "dismissed",
+   "resolved_at": "2026-08-20T13:13:49.405340"
+  },
+  {
+   "id": 157,
+   "session_id": "20260713_124516",
+   "text": "Я напишу, завтра обновлю это сообщение.",
+   "verbatim_quote": "Я напишу, завтра обновлю это сообщение.",
+   "direction": "outgoing",
+   "uncertain": 0,
+   "status": "dismissed",
+   "resolved_at": "2026-08-20T13:13:49.405340"
+  },
+  {
+   "id": 158,
+   "session_id": "20260714_160102",
+   "text": "Я тебе просто доску пришлю заранее, за несколько часов",
+   "verbatim_quote": "Я тебе просто доску пришлю заранее, за несколько часов",
+   "direction": "outgoing",
+   "uncertain": 0,
+   "status": "dismissed",
+   "resolved_at": "2026-08-20T13:13:49.405340"
+  },
+  {
+   "id": 159,
+   "session_id": "20260715_180037",
+   "text": "Я потом из этого сделаю апп.",
+   "verbatim_quote": "Я потом из этого сделаю апп.",
+   "direction": "outgoing",
+   "uncertain": 0,
+   "status": "dismissed",
+   "resolved_at": "2026-08-20T13:13:49.405340"
+  },
+  {
+   "id": 160,
+   "session_id": "20260716_165400",
+   "text": "Да, давай тогда я подготовлю, может на следующей или через неделю проведем. У нас сейчас будет время на это.",
+   "verbatim_quote": "Да, давай тогда я подготовлю, может на следующей или через неделю проведем. У нас сейчас будет время на это.",
+   "direction": "outgoing",
+   "uncertain": 0,
+   "status": "dismissed",
+   "resolved_at": "2026-08-20T13:13:49.405340"
+  },
+  {
+   "id": 161,
+   "session_id": "20260716_165400",
+   "text": "Так пойду, сделаю порез.",
+   "verbatim_quote": "Так пойду, сделаю порез.",
+   "direction": "outgoing",
+   "uncertain": 0,
+   "status": "dismissed",
+   "resolved_at": "2026-08-20T13:13:49.405340"
+  },
+  {
+   "id": 162,
+   "session_id": "20260717_095831",
+   "text": "сделаю. После этого",
+   "verbatim_quote": "сделаю. После этого",
+   "direction": "outgoing",
+   "uncertain": 0,
+   "status": "dismissed",
+   "resolved_at": "2026-08-20T13:13:49.405340"
+  },
+  {
+   "id": 163,
+   "session_id": "20260717_095831",
+   "text": "Да, давай новый проект сделаем, да, потому что он будет нам",
+   "verbatim_quote": "Да, давай новый проект сделаем, да, потому что он будет нам",
+   "direction": "outgoing",
+   "uncertain": 0,
+   "status": "dismissed",
+   "resolved_at": "2026-08-20T13:13:49.405340"
+  },
+  {
+   "id": 164,
+   "session_id": "20260717_095831",
+   "text": "Я приду, будем разгребать вместе, если что, мы в понедельник",
+   "verbatim_quote": "Я приду, будем разгребать вместе, если что, мы в понедельник",
+   "direction": "outgoing",
+   "uncertain": 0,
+   "status": "dismissed",
+   "resolved_at": "2026-08-20T13:13:49.405340"
+  },
+  {
+   "id": 165,
+   "session_id": "20260717_112622",
+   "text": "Сейчас я вам скину.",
+   "verbatim_quote": "Сейчас я вам скину.",
+   "direction": "outgoing",
+   "uncertain": 0,
+   "status": "dismissed",
+   "resolved_at": "2026-08-20T13:13:49.405340"
+  },
+  {
+   "id": 166,
+   "session_id": "20260717_112622",
+   "text": "Да, будем тогда ждать всех в понедельник с вопросами.",
+   "verbatim_quote": "Да, будем тогда ждать всех в понедельник с вопросами.",
+   "direction": "outgoing",
+   "uncertain": 0,
+   "status": "dismissed",
+   "resolved_at": "2026-08-20T13:13:49.405340"
+  },
+  {
+   "id": 167,
+   "session_id": "20260717_140213",
+   "text": "пока ты рассказываешь, я соберу какого-нибудь агентика",
+   "verbatim_quote": "пока ты рассказываешь, я соберу какого-нибудь агентика",
+   "direction": "outgoing",
+   "uncertain": 0,
+   "status": "dismissed",
+   "resolved_at": "2026-08-20T13:13:49.405340"
+  },
+  {
+   "id": 168,
+   "session_id": "20260720_132102",
+   "text": "Давай дам. Я тебе скину тогда все сейчас после звонка.",
+   "verbatim_quote": "Давай дам. Я тебе скину тогда все сейчас после звонка.",
+   "direction": "outgoing",
+   "uncertain": 0,
+   "status": "open",
+   "resolved_at": null
+  },
+  {
+   "id": 169,
+   "session_id": "20260720_132102",
+   "text": "и пришлю а там есть хоть раз ручку подписать меня строили каком-нибудь ее можно одной кнопкой",
+   "verbatim_quote": "и пришлю а там есть хоть раз ручку подписать меня строили каком-нибудь ее можно одной кнопкой",
+   "direction": "outgoing",
+   "uncertain": 0,
+   "status": "open",
+   "resolved_at": null
+  },
+  {
+   "id": 170,
+   "session_id": "20260720_132102",
+   "text": "Футболку какую-нибудь сделать. Давай сделаем какие-нибудь футболки.",
+   "verbatim_quote": "Футболку какую-нибудь сделать. Давай сделаем какие-нибудь футболки.",
+   "direction": "outgoing",
+   "uncertain": 0,
+   "status": "open",
+   "resolved_at": null
+  },
+  {
+   "id": 171,
+   "session_id": "20260720_145950",
+   "text": "обязательно в среду будем подчинять в итоге давайте 1810 чтобы нас получится",
+   "verbatim_quote": "обязательно в среду будем подчинять в итоге давайте 1810 чтобы нас получится",
+   "direction": "outgoing",
+   "uncertain": 0,
+   "status": "open",
+   "resolved_at": null
+  },
+  {
+   "id": 172,
+   "session_id": "20260720_171437",
+   "text": "давайте сделаю запись",
+   "verbatim_quote": "давайте сделаю запись",
+   "direction": "outgoing",
+   "uncertain": 0,
+   "status": "open",
+   "resolved_at": null
+  },
+  {
+   "id": 173,
+   "session_id": "20260720_171437",
+   "text": "если нужно вам скинем recording in progress тем чтобы на продлёнке",
+   "verbatim_quote": "если нужно вам скинем recording in progress тем чтобы на продлёнке",
+   "direction": "outgoing",
+   "uncertain": 0,
+   "status": "open",
+   "resolved_at": null
+  },
+  {
+   "id": 174,
+   "session_id": "20260720_171437",
+   "text": "сейчас я вам скину прям такой",
+   "verbatim_quote": "сейчас я вам скину прям такой",
+   "direction": "outgoing",
+   "uncertain": 0,
+   "status": "open",
+   "resolved_at": null
+  },
+  {
+   "id": 175,
+   "session_id": "20260720_171437",
+   "text": "файл открыть прям все скопировать и отправить ему какой вот документ я скину так это я вставила",
+   "verbatim_quote": "файл открыть прям все скопировать и отправить ему какой вот документ я скину так это я вставила",
+   "direction": "outgoing",
+   "uncertain": 0,
+   "status": "open",
+   "resolved_at": null
+  },
+  {
+   "id": 176,
+   "session_id": "20260720_171437",
+   "text": "сейчас ничего не будет что я окном делюсь подожди сейчас я заново поделюсь вот он",
+   "verbatim_quote": "сейчас ничего не будет что я окном делюсь подожди сейчас я заново поделюсь вот он",
+   "direction": "outgoing",
+   "uncertain": 0,
+   "status": "open",
+   "resolved_at": null
+  },
+  {
+   "id": 177,
+   "session_id": "20260720_171437",
+   "text": "давайте мы пришлем просто за завтра сделаем среди пришлем а завтра мы",
+   "verbatim_quote": "давайте мы пришлем просто за завтра сделаем среди пришлем а завтра мы",
+   "direction": "outgoing",
+   "uncertain": 0,
+   "status": "open",
+   "resolved_at": null
+  },
+  {
+   "id": 178,
+   "session_id": "20260720_171437",
+   "text": "задание на дом поэкспериментировать со всем что мы сделали мы пришлем задачник пройдите по нему",
+   "verbatim_quote": "задание на дом поэкспериментировать со всем что мы сделали мы пришлем задачник пройдите по нему",
+   "direction": "outgoing",
+   "uncertain": 0,
+   "status": "open",
+   "resolved_at": null
+  },
+  {
+   "id": 179,
+   "session_id": "20260721_130103",
+   "text": "сделаю универсальный набор который можно в принципе под любую нейронку развернуть это уже по сути универсальный",
+   "verbatim_quote": "сделаю универсальный набор который можно в принципе под любую нейронку развернуть это уже по сути универсальный",
+   "direction": "outgoing",
+   "uncertain": 0,
+   "status": "open",
+   "resolved_at": null
+  },
+  {
+   "id": 180,
+   "session_id": "20260721_130103",
+   "text": "это короче в каких-то местах я ставлю точки где мое участие важно то есть я говорю сделаю",
+   "verbatim_quote": "это короче в каких-то местах я ставлю точки где мое участие важно то есть я говорю сделаю",
+   "direction": "outgoing",
+   "uncertain": 0,
+   "status": "open",
+   "resolved_at": null
+  },
+  {
+   "id": 181,
+   "session_id": "20260721_130103",
+   "text": "я скину",
+   "verbatim_quote": "Я сейчас собираю оптимальку, я скину, могу почитать на самом деле этот отчет.",
+   "direction": "outgoing",
+   "uncertain": 0,
+   "status": "open",
+   "resolved_at": null
+  },
+  {
+   "id": 182,
+   "session_id": "20260721_130103",
+   "text": "смотрите на следующей неделе будем делать интерфейс и потом у нас будет недельку на",
+   "verbatim_quote": "смотрите на следующей неделе будем делать интерфейс и потом у нас будет недельку на",
+   "direction": "outgoing",
+   "uncertain": 0,
+   "status": "open",
+   "resolved_at": null
+  },
+  {
+   "id": 183,
+   "session_id": "20260721_160242",
+   "text": "и мы будем завтра их пробовать",
+   "verbatim_quote": "и мы будем завтра их пробовать",
+   "direction": "outgoing",
+   "uncertain": 0,
+   "status": "open",
+   "resolved_at": null
+  },
+  {
+   "id": 184,
+   "session_id": "20260721_160242",
+   "text": "И мы тоже это будем делать в пятницу, наверное.",
+   "verbatim_quote": "И мы тоже это будем делать в пятницу, наверное.",
+   "direction": "outgoing",
+   "uncertain": 0,
+   "status": "open",
+   "resolved_at": null
+  },
+  {
+   "id": 185,
+   "session_id": "20260722_100100",
+   "text": "А, давайте я лучше в Telegram скину.",
+   "verbatim_quote": "А, давайте я лучше в Telegram скину.",
+   "direction": "outgoing",
+   "uncertain": 0,
+   "status": "open",
+   "resolved_at": null
+  },
+  {
+   "id": 186,
+   "session_id": "20260722_100100",
+   "text": "Сейчас я пришлю ссылку.",
+   "verbatim_quote": "Сейчас я пришлю ссылку.",
+   "direction": "outgoing",
+   "uncertain": 0,
+   "status": "open",
+   "resolved_at": null
+  }
+ ]
+}

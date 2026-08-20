@@ -261,7 +261,9 @@ def cmd_archive(db, args):
         print("Обязательств старше 30 дней нет.")
         return
     if "--yes" not in args:
-        print(f"Будет закрыто (dismissed) {len(stale_ids)} обязательств старше 30 дней.")
+        print(
+            f"Будет закрыто (dismissed) {len(stale_ids)} обязательств старше 30 дней."
+        )
         for _, text, age in stale_ids[:10]:
             print(f"  - {text[:80]} ({age} дн.)")
         if len(stale_ids) > 10:
@@ -280,11 +282,43 @@ def cmd_digest(db, args):
     print(build_morning_digest(db))
 
 
+def cmd_followup_mail(db, args):
+    """followup-mail <session_id> — черновик follow-up в Mail.app (не отправляет)."""
+    if not args:
+        print("Usage: cli.py followup-mail <session_id>")
+        return
+    from src.digests import build_followup
+    from src.mail import create_mail_draft
+
+    result = build_followup(db, args[0])
+    if result is None:
+        print(
+            "По этому звонку нечего отправлять (нет решений и уверенных обязательств)."
+        )
+        return
+    slug, md = result
+    call = db.get_call(args[0])
+    day = (call["started_at"] or "")[:10] if call else ""
+    subject = f"Договоренности {day}".strip()
+    if create_mail_draft(subject, md):
+        print(f"Черновик открыт в Mail.app ({slug}). Отправка — твоей рукой.")
+    else:
+        print("Не получилось открыть Mail.app — файл остается в digests/.")
+
+
+def cmd_doctor(args):
+    """doctor — предполетная проверка: один вызов между «сел за Mac» и «система жива»."""
+    from src.doctor import run_doctor
+
+    return run_doctor()
+
+
 def main():
     if len(sys.argv) < 2:
         print("Call Recorder CLI")
         print()
         print("Commands:")
+        print("  doctor                      Предполетная проверка всей системы")
         print("  search <query>              Full-text search across all calls")
         print("  search --person <name>      Find calls mentioning a person")
         print("  search --company <name>     Find calls mentioning a company")
@@ -295,11 +329,20 @@ def main():
         print('  brief "<имя>"               Досье по человеку: долги + контекст')
         print("  digest                      Утренний счёт открытых обязательств")
         print("  archive [--yes]             Закрыть обязательства старше 30 дней")
+        print(
+            "  followup-mail <session_id>  Черновик follow-up в Mail.app (не отправляет)"
+        )
         sys.exit(0)
 
-    db = Database()
     cmd = sys.argv[1]
     args = sys.argv[2:]
+
+    # doctor is dispatched BEFORE Database() is constructed: opening Database
+    # auto-migrates the schema and would make the doctor's schema check vacuous.
+    if cmd == "doctor":
+        sys.exit(cmd_doctor(args))
+
+    db = Database()
 
     commands = {
         "search": cmd_search,
@@ -310,6 +353,7 @@ def main():
         "brief": cmd_brief,
         "digest": cmd_digest,
         "archive": cmd_archive,
+        "followup-mail": cmd_followup_mail,
     }
 
     if cmd not in commands:

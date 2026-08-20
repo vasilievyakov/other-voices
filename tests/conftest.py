@@ -12,17 +12,16 @@ from src.database import Database
 
 def _dt(days_ago, hour, minute=0):
     """Return datetime `days_ago` days before today at given hour."""
-    return (
-        datetime.now().replace(hour=hour, minute=minute, second=0, microsecond=0)
-        - timedelta(days=days_ago)
-    )
+    return datetime.now().replace(
+        hour=hour, minute=minute, second=0, microsecond=0
+    ) - timedelta(days=days_ago)
 
 
 # Deterministic session IDs / timestamps derived from "yesterday" and "2 days ago"
 # so that days=365 filters always include them.
 _d1 = _dt(1, 10)  # yesterday 10:00
 _d2 = _dt(1, 14)  # yesterday 14:00
-_d3 = _dt(2, 9)   # 2 days ago 09:00
+_d3 = _dt(2, 9)  # 2 days ago 09:00
 _d4 = _dt(1, 12)  # yesterday 12:00
 
 SID1 = _d1.strftime("%Y%m%d_%H%M%S")  # Zoom call with action items
@@ -157,4 +156,6 @@ def _no_live_commitments_llm(monkeypatch):
     patch src.daemon.extract_commitments."""
     import src.commitments2 as c2
 
-    monkeypatch.setattr(c2, "_call_llm", lambda prompt, temperature=0.25: None)
+    monkeypatch.setattr(
+        c2, "_call_llm", lambda prompt, temperature=0.25, schema=None: None
+    )

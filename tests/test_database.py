@@ -857,9 +857,11 @@ class TestSourceColumn:
 
     def test_new_calls_default_to_live(self, tmp_db):
         _minimal_call(tmp_db, "s1")
-        row = tmp_db._conn().execute(
-            "SELECT source FROM calls WHERE session_id='s1'"
-        ).fetchone()
+        row = (
+            tmp_db._conn()
+            .execute("SELECT source FROM calls WHERE session_id='s1'")
+            .fetchone()
+        )
         assert row[0] == "live"
 
     def test_mark_import_seeds_flags_rows_without_recordings(self, tmp_db, tmp_path):
@@ -973,3 +975,410 @@ class TestPlatformCanary:
             self._call(tmp_db, f"z{i}", "Zoom", f"2026-07-0{i + 1}T10:00:00")
             self._call(tmp_db, f"m{i}", "Google Meet", f"2026-07-0{i + 1}T11:00:00")
         assert tmp_db.platform_canary(now=self.NOW) == ["Google Meet", "Zoom"]
+
+
+# =============================================================================
+# Commitments: title + deadline_date columns
+# =============================================================================
+
+
+class TestCommitmentTitleAndDeadline:
+    def _call(self, db, sid="tc1", started="2026-08-19T10:00:00"):
+        db.insert_call(
+            session_id=sid,
+            app_name="Zoom",
+            started_at=started,
+            ended_at=started,
+            duration_seconds=600.0,
+            system_wav_path=None,
+            mic_wav_path=None,
+            transcript="т",
+            summary=None,
+        )
+
+    def test_schema_has_title_and_deadline_date(self, tmp_db):
+        with tmp_db._conn() as conn:
+            cols = {r[1] for r in conn.execute("PRAGMA table_info(commitments)")}
+        assert "title" in cols
+        assert "deadline_date" in cols
+
+    def test_migrate_existing_commitments_table(self, tmp_path):
+        """Migration adds the columns to a commitments table created without them."""
+        import sqlite3
+
+        db_path = tmp_path / "old.db"
+        conn = sqlite3.connect(str(db_path))
+        conn.executescript("""
+            CREATE TABLE calls (
+                session_id TEXT PRIMARY KEY,
+                app_name TEXT NOT NULL,
+                started_at TEXT NOT NULL,
+                ended_at TEXT NOT NULL,
+                duration_seconds REAL NOT NULL,
+                system_wav_path TEXT,
+                mic_wav_path TEXT,
+                transcript TEXT,
+                summary_json TEXT
+            );
+            CREATE TABLE commitments (
+                id             INTEGER PRIMARY KEY AUTOINCREMENT,
+                session_id     TEXT NOT NULL,
+                direction      TEXT NOT NULL,
+                who_label      TEXT NOT NULL,
+                who_name       TEXT,
+                to_label       TEXT,
+                to_name        TEXT,
+                text           TEXT NOT NULL,
+                verbatim_quote TEXT,
+                timestamp      TEXT,
+                deadline_raw   TEXT,
+                deadline_type  TEXT,
+                significance   TEXT,
+                uncertain      INTEGER DEFAULT 0,
+                status         TEXT DEFAULT 'open',
+                created_at     TEXT DEFAULT (datetime('now')),
+                resolved_at    TEXT
+            );
+        """)
+        conn.execute(
+            """INSERT INTO commitments (session_id, direction, who_label, text)
+               VALUES ('s1', 'outgoing', 'SPEAKER_ME', 'старое')"""
+        )
+        conn.commit()
+        conn.close()
+
+        db = Database(db_path=db_path)
+        with db._conn() as c:
+            cols = {r[1] for r in c.execute("PRAGMA table_info(commitments)")}
+        assert "title" in cols and "deadline_date" in cols
+        rows = db.get_commitments("s1")
+        assert rows[0]["title"] is None
+        assert rows[0]["deadline_date"] is None
+
+    def test_normalize_karpathy_passes_title_and_deadline_date(self, tmp_db):
+        n = tmp_db._normalize_commitment(
+            {
+                "type": "outgoing",
+                "who": "SPEAKER_ME",
+                "what": "прислать смету",
+                "quote": "пришлю смету в пятницу",
+                "deadline": "пятница",
+                "title": "прислать смету — пятница",
+                "deadline_date": "2026-08-21",
+            }
+        )
+        assert n["title"] == "прислать смету — пятница"
+        assert n["deadline_date"] == "2026-08-21"
+
+    def test_normalize_karpathy_absent_fields_are_none(self, tmp_db):
+        n = tmp_db._normalize_commitment(
+            {"type": "outgoing", "who": "SPEAKER_ME", "what": "прислать смету"}
+        )
+        assert n["title"] is None
+        assert n["deadline_date"] is None
+
+    def test_insert_and_get_roundtrip(self, tmp_db):
+        self._call(tmp_db)
+        tmp_db.insert_commitments(
+            "tc1",
+            [
+                {
+                    "type": "outgoing",
+                    "who": "SPEAKER_ME",
+                    "what": "прислать смету",
+                    "quote": "пришлю смету в пятницу",
+                    "deadline": "пятница",
+                    "title": "прислать смету — пятница",
+                    "deadline_date": "2026-08-21",
+                }
+            ],
+        )
+        rows = tmp_db.get_commitments("tc1")
+        assert rows[0]["title"] == "прислать смету — пятница"
+        assert rows[0]["deadline_date"] == "2026-08-21"
+
+    def test_open_commitments_carry_new_fields(self, tmp_db):
+        self._call(tmp_db)
+        tmp_db.insert_commitments(
+            "tc1",
+            [
+                {
+                    "type": "outgoing",
+                    "who": "SPEAKER_ME",
+                    "what": "прислать смету",
+                    "title": "прислать смету",
+                    "deadline_date": "2026-08-21",
+                }
+            ],
+        )
+        rows = tmp_db.get_open_commitments()
+        assert rows[0]["title"] == "прислать смету"
+        assert rows[0]["deadline_date"] == "2026-08-21"
+
+    def test_murati_format_inserts_without_new_fields(self, tmp_db):
+        """Prompt 1 dicts have no title/deadline_date — insert must not crash."""
+        self._call(tmp_db)
+        tmp_db.insert_commitments(
+            "tc1",
+            [
+                {
+                    "direction": "outgoing",
+                    "commitment_text": "прислать смету",
+                    "committer_label": "SPEAKER_ME",
+                }
+            ],
+        )
+        rows = tmp_db.get_commitments("tc1")
+        assert rows[0]["title"] is None
+        assert rows[0]["deadline_date"] is None
+
+
+# =============================================================================
+# Commitments: verified column (verify_quote result must survive insertion)
+# =============================================================================
+
+
+class TestCommitmentVerified:
+    def _call(self, db, sid="vc1", started="2026-08-19T10:00:00"):
+        db.insert_call(
+            session_id=sid,
+            app_name="Zoom",
+            started_at=started,
+            ended_at=started,
+            duration_seconds=600.0,
+            system_wav_path=None,
+            mic_wav_path=None,
+            transcript="т",
+            summary=None,
+        )
+
+    def test_schema_has_verified(self, tmp_db):
+        with tmp_db._conn() as conn:
+            cols = {r[1] for r in conn.execute("PRAGMA table_info(commitments)")}
+        assert "verified" in cols
+
+    def test_migrate_existing_commitments_table_adds_verified(self, tmp_path):
+        """Old DB without the column: migration adds it, legacy rows get NULL."""
+        db_path = tmp_path / "old.db"
+        conn = sqlite3.connect(str(db_path))
+        conn.executescript("""
+            CREATE TABLE calls (
+                session_id TEXT PRIMARY KEY,
+                app_name TEXT NOT NULL,
+                started_at TEXT NOT NULL,
+                ended_at TEXT NOT NULL,
+                duration_seconds REAL NOT NULL,
+                system_wav_path TEXT,
+                mic_wav_path TEXT,
+                transcript TEXT,
+                summary_json TEXT
+            );
+            CREATE TABLE commitments (
+                id             INTEGER PRIMARY KEY AUTOINCREMENT,
+                session_id     TEXT NOT NULL,
+                direction      TEXT NOT NULL,
+                who_label      TEXT NOT NULL,
+                who_name       TEXT,
+                to_label       TEXT,
+                to_name        TEXT,
+                text           TEXT NOT NULL,
+                verbatim_quote TEXT,
+                timestamp      TEXT,
+                deadline_raw   TEXT,
+                deadline_type  TEXT,
+                significance   TEXT,
+                uncertain      INTEGER DEFAULT 0,
+                status         TEXT DEFAULT 'open',
+                created_at     TEXT DEFAULT (datetime('now')),
+                resolved_at    TEXT
+            );
+        """)
+        conn.execute(
+            """INSERT INTO commitments (session_id, direction, who_label, text)
+               VALUES ('s1', 'outgoing', 'SPEAKER_ME', 'легаси')"""
+        )
+        conn.commit()
+        conn.close()
+
+        db = Database(db_path=db_path)
+        rows = db.get_commitments("s1")
+        assert "verified" in rows[0]
+        assert rows[0]["verified"] is None
+
+    def test_normalize_karpathy_passes_verified(self, tmp_db):
+        n = tmp_db._normalize_commitment(
+            {
+                "type": "outgoing",
+                "who": "SPEAKER_ME",
+                "what": "прислать смету",
+                "quote": "пришлю смету в пятницу",
+                "verified": "exact",
+            }
+        )
+        assert n["verified"] == "exact"
+
+    def test_normalize_karpathy_absent_verified_is_none(self, tmp_db):
+        n = tmp_db._normalize_commitment(
+            {"type": "outgoing", "who": "SPEAKER_ME", "what": "прислать смету"}
+        )
+        assert n["verified"] is None
+
+    def test_insert_and_get_roundtrip_verified(self, tmp_db):
+        self._call(tmp_db)
+        tmp_db.insert_commitments(
+            "vc1",
+            [
+                {
+                    "type": "outgoing",
+                    "who": "SPEAKER_ME",
+                    "what": "прислать смету",
+                    "quote": "пришлю смету в пятницу",
+                    "verified": "fuzzy",
+                }
+            ],
+        )
+        rows = tmp_db.get_commitments("vc1")
+        assert rows[0]["verified"] == "fuzzy"
+
+    def test_open_commitments_carry_verified(self, tmp_db):
+        self._call(tmp_db)
+        tmp_db.insert_commitments(
+            "vc1",
+            [
+                {
+                    "type": "outgoing",
+                    "who": "SPEAKER_ME",
+                    "what": "прислать смету",
+                    "quote": "пришлю смету",
+                    "verified": "exact",
+                }
+            ],
+        )
+        rows = tmp_db.get_open_commitments()
+        assert rows[0]["verified"] == "exact"
+
+    def test_murati_format_inserts_without_verified(self, tmp_db):
+        """Prompt 1 dicts carry no verified — insert must not crash, NULL stored."""
+        self._call(tmp_db)
+        tmp_db.insert_commitments(
+            "vc1",
+            [
+                {
+                    "direction": "outgoing",
+                    "commitment_text": "прислать смету",
+                    "committer_label": "SPEAKER_ME",
+                }
+            ],
+        )
+        rows = tmp_db.get_commitments("vc1")
+        assert rows[0]["verified"] is None
+
+
+# =============================================================================
+# Speaker names (owner-set renames; never guessed automatically)
+# =============================================================================
+
+
+class TestSpeakerNames:
+    def _call(self, db, sid="sn1"):
+        db.insert_call(
+            session_id=sid,
+            app_name="Zoom",
+            started_at="2026-08-19T10:00:00",
+            ended_at="2026-08-19T10:30:00",
+            duration_seconds=1800.0,
+            system_wav_path=None,
+            mic_wav_path=None,
+            transcript="[0:05] SPEAKER_1: скину бриф",
+            summary=None,
+        )
+        db.insert_commitments(
+            sid,
+            [
+                {
+                    "type": "incoming",
+                    "who": "SPEAKER_1",
+                    "to_whom": "SPEAKER_ME",
+                    "what": "прислать бриф",
+                    "quote": "скину бриф",
+                },
+                {
+                    "type": "outgoing",
+                    "who": "SPEAKER_ME",
+                    "to_whom": "SPEAKER_1",
+                    "what": "прислать смету",
+                    "quote": "пришлю смету",
+                },
+            ],
+        )
+
+    def test_get_empty_when_no_mappings(self, tmp_db):
+        self._call(tmp_db)
+        assert tmp_db.get_speaker_names("sn1") == {}
+
+    def test_set_and_get_roundtrip(self, tmp_db):
+        self._call(tmp_db)
+        tmp_db.set_speaker_name("sn1", "SPEAKER_1", "Игорь")
+        assert tmp_db.get_speaker_names("sn1") == {"SPEAKER_1": "Игорь"}
+
+    def test_set_updates_commitments_who_name(self, tmp_db):
+        self._call(tmp_db)
+        tmp_db.set_speaker_name("sn1", "SPEAKER_1", "Игорь")
+        rows = tmp_db.get_commitments("sn1")
+        incoming = next(r for r in rows if r["direction"] == "incoming")
+        assert incoming["who_name"] == "Игорь"
+        # outgoing untouched by who_label (its who_label is SPEAKER_ME)
+        outgoing = next(r for r in rows if r["direction"] == "outgoing")
+        assert outgoing["who_name"] is None
+
+    def test_set_updates_to_name_when_to_label_matches(self, tmp_db):
+        self._call(tmp_db)
+        tmp_db.set_speaker_name("sn1", "SPEAKER_1", "Игорь")
+        outgoing = next(
+            r for r in tmp_db.get_commitments("sn1") if r["direction"] == "outgoing"
+        )
+        assert outgoing["to_name"] == "Игорь"
+
+    def test_rename_twice_overwrites(self, tmp_db):
+        self._call(tmp_db)
+        tmp_db.set_speaker_name("sn1", "SPEAKER_1", "Игорь")
+        tmp_db.set_speaker_name("sn1", "SPEAKER_1", "Иван")
+        assert tmp_db.get_speaker_names("sn1") == {"SPEAKER_1": "Иван"}
+        incoming = next(
+            r for r in tmp_db.get_commitments("sn1") if r["direction"] == "incoming"
+        )
+        assert incoming["who_name"] == "Иван"
+
+    def test_empty_name_clears_mapping_and_names(self, tmp_db):
+        self._call(tmp_db)
+        tmp_db.set_speaker_name("sn1", "SPEAKER_1", "Игорь")
+        tmp_db.set_speaker_name("sn1", "SPEAKER_1", "")
+        assert tmp_db.get_speaker_names("sn1") == {}
+        rows = tmp_db.get_commitments("sn1")
+        incoming = next(r for r in rows if r["direction"] == "incoming")
+        outgoing = next(r for r in rows if r["direction"] == "outgoing")
+        assert incoming["who_name"] is None
+        assert outgoing["to_name"] is None
+
+    def test_whitespace_name_treated_as_empty(self, tmp_db):
+        self._call(tmp_db)
+        tmp_db.set_speaker_name("sn1", "SPEAKER_1", "   ")
+        assert tmp_db.get_speaker_names("sn1") == {}
+
+    def test_other_sessions_untouched(self, tmp_db):
+        self._call(tmp_db, "sn1")
+        self._call(tmp_db, "sn2")
+        tmp_db.set_speaker_name("sn1", "SPEAKER_1", "Игорь")
+        assert tmp_db.get_speaker_names("sn2") == {}
+        incoming = next(
+            r for r in tmp_db.get_commitments("sn2") if r["direction"] == "incoming"
+        )
+        assert incoming["who_name"] is None
+
+    def test_migration_survives_reopen(self, tmp_path):
+        """Table exists after reopening an existing DB — migration idempotent."""
+        db = Database(db_path=tmp_path / "reopen.db")
+        self._call(db)
+        db.set_speaker_name("sn1", "SPEAKER_1", "Игорь")
+        db2 = Database(db_path=tmp_path / "reopen.db")
+        assert db2.get_speaker_names("sn1") == {"SPEAKER_1": "Игорь"}

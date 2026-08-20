@@ -13,6 +13,9 @@ package struct DaemonStatus: Codable, Equatable {
     package let systemAudioOk: Bool?
     /// Consecutive calls recorded without the interlocutors' channel.
     package let micOnlyStreak: Int?
+    /// Session id of a long call whose transcript yielded zero stage-1
+    /// candidates — the extractor may be blind (wrong language, drifted markers).
+    package let extractionCanary: String?
 
     enum CodingKeys: String, CodingKey {
         case daemonPid = "daemon_pid"
@@ -25,6 +28,7 @@ package struct DaemonStatus: Codable, Equatable {
         case ollamaAvailable = "ollama_available"
         case systemAudioOk = "system_audio_ok"
         case micOnlyStreak = "mic_only_streak"
+        case extractionCanary = "extraction_canary"
     }
 
     package var isActive: Bool {
@@ -105,6 +109,11 @@ package struct DaemonStatus: Codable, Equatable {
     }
 
     private func parseDate(_ string: String) -> Date? {
-        Call.iso8601.date(from: string) ?? Call.iso8601Basic.date(from: string)
+        // Same chain as Call.parseDate but nil-returning: status timestamps are
+        // tz-aware UTC, while recorder's started_at is naive local isoformat.
+        Call.iso8601.date(from: string)
+            ?? Call.iso8601Basic.date(from: string)
+            ?? Call.naiveLocal.date(from: string)
+            ?? Call.naiveLocalBasic.date(from: string)
     }
 }

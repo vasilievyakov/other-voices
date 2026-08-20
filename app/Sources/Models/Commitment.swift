@@ -14,6 +14,8 @@ package struct Commitment: Identifiable, Hashable {
     package let uncertain: Bool
     package let appName: String
     package let callDate: String
+    package let title: String?  // normalized «verb — object — deadline» headline
+    package let deadlineDate: String?  // ISO date parsed from the deadline phrase
 
     package init(
         id: Int,
@@ -25,7 +27,9 @@ package struct Commitment: Identifiable, Hashable {
         deadline: String?,
         uncertain: Bool,
         appName: String,
-        callDate: String
+        callDate: String,
+        title: String? = nil,
+        deadlineDate: String? = nil
     ) {
         self.id = id
         self.sessionId = sessionId
@@ -37,7 +41,15 @@ package struct Commitment: Identifiable, Hashable {
         self.uncertain = uncertain
         self.appName = appName
         self.callDate = callDate
+        self.title = title
+        self.deadlineDate = deadlineDate
     }
 
     package var isOutgoing: Bool { direction == "outgoing" }
+
+    /// Row headline: the grounded title when present, raw extracted text otherwise.
+    package var displayTitle: String {
+        if let title, !title.isEmpty { return title }
+        return text
+    }
 }

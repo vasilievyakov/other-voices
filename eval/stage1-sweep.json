@@ -1,0 +1,2409 @@
+{
+  "generated_at": "2026-08-20",
+  "db_path": "/Users/vasiliev/call-recorder/data/calls.db",
+  "sessions": [
+    {
+      "session_id": "20251226_211325",
+      "app_name": "Zoom",
+      "duration_seconds": 2841.2,
+      "transcript_lines": 3532,
+      "candidates": 1,
+      "candidates_per_minute": 0.0211,
+      "degenerate": true
+    },
+    {
+      "session_id": "20251226_214028",
+      "app_name": "Zoom",
+      "duration_seconds": 2621.6,
+      "transcript_lines": 564,
+      "candidates": 7,
+      "candidates_per_minute": 0.1602,
+      "degenerate": false
+    },
+    {
+      "session_id": "20251227_023635",
+      "app_name": "Zoom",
+      "duration_seconds": 433.6,
+      "transcript_lines": 100,
+      "candidates": 0,
+      "candidates_per_minute": 0.0,
+      "degenerate": false
+    },
+    {
+      "session_id": "20251227_024237",
+      "app_name": "Telegram",
+      "duration_seconds": 3144.0,
+      "transcript_lines": 741,
+      "candidates": 1,
+      "candidates_per_minute": 0.0191,
+      "degenerate": false
+    },
+    {
+      "session_id": "20251227_120238",
+      "app_name": "Zoom",
+      "duration_seconds": 3617.2000000000003,
+      "transcript_lines": 843,
+      "candidates": 7,
+      "candidates_per_minute": 0.1161,
+      "degenerate": false
+    },
+    {
+      "session_id": "20251228_173201",
+      "app_name": "Telegram",
+      "duration_seconds": 300.0,
+      "transcript_lines": 4,
+      "candidates": 0,
+      "candidates_per_minute": 0.0,
+      "degenerate": false
+    },
+    {
+      "session_id": "20251229_091715",
+      "app_name": "Google Meet",
+      "duration_seconds": 3804.4,
+      "transcript_lines": 1031,
+      "candidates": 5,
+      "candidates_per_minute": 0.0789,
+      "degenerate": false
+    },
+    {
+      "session_id": "20260107_170414",
+      "app_name": "FaceTime",
+      "duration_seconds": 857.2,
+      "transcript_lines": 409,
+      "candidates": 4,
+      "candidates_per_minute": 0.28,
+      "degenerate": false
+    },
+    {
+      "session_id": "20260109_145428",
+      "app_name": "Google Meet",
+      "duration_seconds": 300.0,
+      "transcript_lines": 141,
+      "candidates": 0,
+      "candidates_per_minute": 0.0,
+      "degenerate": false
+    },
+    {
+      "session_id": "20260111_161100",
+      "app_name": "Google Meet",
+      "duration_seconds": 3217.2,
+      "transcript_lines": 1473,
+      "candidates": 1,
+      "candidates_per_minute": 0.0186,
+      "degenerate": false
+    },
+    {
+      "session_id": "20260111_203454",
+      "app_name": "Zoom",
+      "duration_seconds": 3105.6,
+      "transcript_lines": 1572,
+      "candidates": 1,
+      "candidates_per_minute": 0.0193,
+      "degenerate": false
+    },
+    {
+      "session_id": "20260114_122104",
+      "app_name": "Telegram",
+      "duration_seconds": 2329.6,
+      "transcript_lines": 712,
+      "candidates": 9,
+      "candidates_per_minute": 0.2318,
+      "degenerate": false
+    },
+    {
+      "session_id": "20260114_134426",
+      "app_name": "Zoom",
+      "duration_seconds": 3500.4,
+      "transcript_lines": 1304,
+      "candidates": 7,
+      "candidates_per_minute": 0.12,
+      "degenerate": false
+    },
+    {
+      "session_id": "20260115_151821",
+      "app_name": "Zoom",
+      "duration_seconds": 3830.0,
+      "transcript_lines": 1131,
+      "candidates": 10,
+      "candidates_per_minute": 0.1567,
+      "degenerate": false
+    },
+    {
+      "session_id": "20260116_130933",
+      "app_name": "Google Meet",
+      "duration_seconds": 2603.2,
+      "transcript_lines": 927,
+      "candidates": 4,
+      "candidates_per_minute": 0.0922,
+      "degenerate": false
+    },
+    {
+      "session_id": "20260120_105326",
+      "app_name": "Zoom",
+      "duration_seconds": 1334.0,
+      "transcript_lines": 386,
+      "candidates": 3,
+      "candidates_per_minute": 0.1349,
+      "degenerate": false
+    },
+    {
+      "session_id": "20260122_141359",
+      "app_name": "Google Meet",
+      "duration_seconds": 644.8,
+      "transcript_lines": 98,
+      "candidates": 0,
+      "candidates_per_minute": 0.0,
+      "degenerate": false
+    },
+    {
+      "session_id": "20260122_143308",
+      "app_name": "Google Meet",
+      "duration_seconds": 1458.4,
+      "transcript_lines": 465,
+      "candidates": 4,
+      "candidates_per_minute": 0.1646,
+      "degenerate": false
+    },
+    {
+      "session_id": "20260122_143710",
+      "app_name": "Google Meet",
+      "duration_seconds": 1847.6,
+      "transcript_lines": 593,
+      "candidates": 5,
+      "candidates_per_minute": 0.1624,
+      "degenerate": false
+    },
+    {
+      "session_id": "20260122_144031",
+      "app_name": "Zoom",
+      "duration_seconds": 1458.4,
+      "transcript_lines": 465,
+      "candidates": 4,
+      "candidates_per_minute": 0.1646,
+      "degenerate": false
+    },
+    {
+      "session_id": "20260122_180058",
+      "app_name": "Zoom",
+      "duration_seconds": 1211.6,
+      "transcript_lines": 500,
+      "candidates": 6,
+      "candidates_per_minute": 0.2971,
+      "degenerate": false
+    },
+    {
+      "session_id": "20260123_130300",
+      "app_name": "Google Meet",
+      "duration_seconds": 2771.6,
+      "transcript_lines": 1106,
+      "candidates": 8,
+      "candidates_per_minute": 0.1732,
+      "degenerate": false
+    },
+    {
+      "session_id": "20260123_153648",
+      "app_name": "Telegram",
+      "duration_seconds": 3630.0,
+      "transcript_lines": 924,
+      "candidates": 1,
+      "candidates_per_minute": 0.0165,
+      "degenerate": false
+    },
+    {
+      "session_id": "20260126_130309",
+      "app_name": "Zoom",
+      "duration_seconds": 2680.8,
+      "transcript_lines": 1067,
+      "candidates": 2,
+      "candidates_per_minute": 0.0448,
+      "degenerate": false
+    },
+    {
+      "session_id": "20260126_140954",
+      "app_name": "FaceTime",
+      "duration_seconds": 2512.0,
+      "transcript_lines": 554,
+      "candidates": 0,
+      "candidates_per_minute": 0.0,
+      "degenerate": false
+    },
+    {
+      "session_id": "20260127_121727",
+      "app_name": "Telegram",
+      "duration_seconds": 1139.6,
+      "transcript_lines": 439,
+      "candidates": 1,
+      "candidates_per_minute": 0.0527,
+      "degenerate": false
+    },
+    {
+      "session_id": "20260127_135218",
+      "app_name": "Telegram",
+      "duration_seconds": 1181.6,
+      "transcript_lines": 562,
+      "candidates": 0,
+      "candidates_per_minute": 0.0,
+      "degenerate": false
+    },
+    {
+      "session_id": "20260127_141239",
+      "app_name": "FaceTime",
+      "duration_seconds": 300.0,
+      "transcript_lines": 7,
+      "candidates": 0,
+      "candidates_per_minute": 0.0,
+      "degenerate": false
+    },
+    {
+      "session_id": "20260127_152443",
+      "app_name": "Google Meet",
+      "duration_seconds": 1787.6,
+      "transcript_lines": 410,
+      "candidates": 2,
+      "candidates_per_minute": 0.0671,
+      "degenerate": false
+    },
+    {
+      "session_id": "20260127_182905",
+      "app_name": "Zoom",
+      "duration_seconds": 300.0,
+      "transcript_lines": 29,
+      "candidates": 0,
+      "candidates_per_minute": 0.0,
+      "degenerate": false
+    },
+    {
+      "session_id": "20260128_101151",
+      "app_name": "Telegram",
+      "duration_seconds": 3276.8,
+      "transcript_lines": 1130,
+      "candidates": 2,
+      "candidates_per_minute": 0.0366,
+      "degenerate": false
+    },
+    {
+      "session_id": "20260128_140951",
+      "app_name": "Telegram",
+      "duration_seconds": 1572.8000000000002,
+      "transcript_lines": 583,
+      "candidates": 4,
+      "candidates_per_minute": 0.1526,
+      "degenerate": false
+    },
+    {
+      "session_id": "20260202_114307",
+      "app_name": "Google Meet",
+      "duration_seconds": 1842.0,
+      "transcript_lines": 777,
+      "candidates": 4,
+      "candidates_per_minute": 0.1303,
+      "degenerate": false
+    },
+    {
+      "session_id": "20260202_193725",
+      "app_name": "FaceTime",
+      "duration_seconds": 934.8,
+      "transcript_lines": 375,
+      "candidates": 2,
+      "candidates_per_minute": 0.1284,
+      "degenerate": false
+    },
+    {
+      "session_id": "20260210_110624",
+      "app_name": "FaceTime",
+      "duration_seconds": 1508.0,
+      "transcript_lines": 678,
+      "candidates": 4,
+      "candidates_per_minute": 0.1592,
+      "degenerate": false
+    },
+    {
+      "session_id": "20260215_132438",
+      "app_name": "Google Meet",
+      "duration_seconds": 6174.0,
+      "transcript_lines": 2359,
+      "candidates": 10,
+      "candidates_per_minute": 0.0972,
+      "degenerate": false
+    },
+    {
+      "session_id": "20260219_171539",
+      "app_name": "Zoom",
+      "duration_seconds": 5407.200000000001,
+      "transcript_lines": 1644,
+      "candidates": 7,
+      "candidates_per_minute": 0.0777,
+      "degenerate": false
+    },
+    {
+      "session_id": "20260220_080046",
+      "app_name": "Zoom",
+      "duration_seconds": 2974.566967,
+      "transcript_lines": 887,
+      "candidates": 2,
+      "candidates_per_minute": 0.0403,
+      "degenerate": false
+    },
+    {
+      "session_id": "20260220_091053",
+      "app_name": "Zoom",
+      "duration_seconds": 1511.581636,
+      "transcript_lines": 55,
+      "candidates": 0,
+      "candidates_per_minute": 0.0,
+      "degenerate": true
+    },
+    {
+      "session_id": "20260614_110006",
+      "app_name": "Zoom",
+      "duration_seconds": 8703.673709,
+      "transcript_lines": 963,
+      "candidates": 17,
+      "candidates_per_minute": 0.1172,
+      "degenerate": false
+    },
+    {
+      "session_id": "20260614_134148",
+      "app_name": "Zoom",
+      "duration_seconds": 489.633401,
+      "transcript_lines": 20,
+      "candidates": 0,
+      "candidates_per_minute": 0.0,
+      "degenerate": false
+    },
+    {
+      "session_id": "20260614_135041",
+      "app_name": "Zoom",
+      "duration_seconds": 2949.17819,
+      "transcript_lines": 375,
+      "candidates": 4,
+      "candidates_per_minute": 0.0814,
+      "degenerate": false
+    },
+    {
+      "session_id": "20260615_151049",
+      "app_name": "Zoom",
+      "duration_seconds": 1444.171194,
+      "transcript_lines": 234,
+      "candidates": 3,
+      "candidates_per_minute": 0.1246,
+      "degenerate": false
+    },
+    {
+      "session_id": "20260615_161347",
+      "app_name": "Zoom",
+      "duration_seconds": 4411.100618,
+      "transcript_lines": 708,
+      "candidates": 4,
+      "candidates_per_minute": 0.0544,
+      "degenerate": false
+    },
+    {
+      "session_id": "20260615_211029",
+      "app_name": "Google Meet",
+      "duration_seconds": 30.23134,
+      "transcript_lines": 1,
+      "candidates": 0,
+      "candidates_per_minute": 0.0,
+      "degenerate": false
+    },
+    {
+      "session_id": "20260616_134017",
+      "app_name": "Google Meet",
+      "duration_seconds": 58.699104,
+      "transcript_lines": 4,
+      "candidates": 0,
+      "candidates_per_minute": 0.0,
+      "degenerate": false
+    },
+    {
+      "session_id": "20260616_140034",
+      "app_name": "Zoom",
+      "duration_seconds": 3310.749825,
+      "transcript_lines": 218,
+      "candidates": 1,
+      "candidates_per_minute": 0.0181,
+      "degenerate": false
+    },
+    {
+      "session_id": "20260616_145727",
+      "app_name": "Zoom",
+      "duration_seconds": 578.181344,
+      "transcript_lines": 81,
+      "candidates": 2,
+      "candidates_per_minute": 0.2075,
+      "degenerate": false
+    },
+    {
+      "session_id": "20260616_171018",
+      "app_name": "Google Meet",
+      "duration_seconds": 30.213143,
+      "transcript_lines": 1,
+      "candidates": 0,
+      "candidates_per_minute": 0.0,
+      "degenerate": false
+    },
+    {
+      "session_id": "20260616_174319",
+      "app_name": "Google Meet",
+      "duration_seconds": 30.213329,
+      "transcript_lines": 15,
+      "candidates": 0,
+      "candidates_per_minute": 0.0,
+      "degenerate": false
+    },
+    {
+      "session_id": "20260616_184219",
+      "app_name": "Google Meet",
+      "duration_seconds": 30.365733,
+      "transcript_lines": 1,
+      "candidates": 0,
+      "candidates_per_minute": 0.0,
+      "degenerate": false
+    },
+    {
+      "session_id": "20260616_184617",
+      "app_name": "Google Meet",
+      "duration_seconds": 30.23321,
+      "transcript_lines": 1,
+      "candidates": 0,
+      "candidates_per_minute": 0.0,
+      "degenerate": false
+    },
+    {
+      "session_id": "20260616_191119",
+      "app_name": "Google Meet",
+      "duration_seconds": 30.209038,
+      "transcript_lines": 1,
+      "candidates": 0,
+      "candidates_per_minute": 0.0,
+      "degenerate": false
+    },
+    {
+      "session_id": "20260617_100815",
+      "app_name": "Google Meet",
+      "duration_seconds": 32.672889,
+      "transcript_lines": 2,
+      "candidates": 0,
+      "candidates_per_minute": 0.0,
+      "degenerate": false
+    },
+    {
+      "session_id": "20260617_140400",
+      "app_name": "Google Meet",
+      "duration_seconds": 67.591505,
+      "transcript_lines": 3,
+      "candidates": 0,
+      "candidates_per_minute": 0.0,
+      "degenerate": false
+    },
+    {
+      "session_id": "20260617_161329",
+      "app_name": "Google Meet",
+      "duration_seconds": 1668.681671,
+      "transcript_lines": 1,
+      "candidates": 0,
+      "candidates_per_minute": 0.0,
+      "degenerate": false
+    },
+    {
+      "session_id": "20260617_190000",
+      "app_name": "Zoom",
+      "duration_seconds": 6088.176829,
+      "transcript_lines": 1195,
+      "candidates": 10,
+      "candidates_per_minute": 0.0986,
+      "degenerate": false
+    },
+    {
+      "session_id": "20260621_115119",
+      "app_name": "Zoom",
+      "duration_seconds": 3676.203763,
+      "transcript_lines": 659,
+      "candidates": 9,
+      "candidates_per_minute": 0.1469,
+      "degenerate": false
+    },
+    {
+      "session_id": "20260621_125955",
+      "app_name": "Zoom",
+      "duration_seconds": 1605.584088,
+      "transcript_lines": 110,
+      "candidates": 0,
+      "candidates_per_minute": 0.0,
+      "degenerate": false
+    },
+    {
+      "session_id": "20260621_132759",
+      "app_name": "Zoom",
+      "duration_seconds": 2267.184717,
+      "transcript_lines": 7,
+      "candidates": 0,
+      "candidates_per_minute": 0.0,
+      "degenerate": false
+    },
+    {
+      "session_id": "20260622_120042",
+      "app_name": "Zoom",
+      "duration_seconds": 2491.647707,
+      "transcript_lines": 438,
+      "candidates": 7,
+      "candidates_per_minute": 0.1686,
+      "degenerate": false
+    },
+    {
+      "session_id": "20260622_124434",
+      "app_name": "Zoom",
+      "duration_seconds": 1153.196505,
+      "transcript_lines": 150,
+      "candidates": 2,
+      "candidates_per_minute": 0.1041,
+      "degenerate": false
+    },
+    {
+      "session_id": "20260622_190035",
+      "app_name": "Zoom",
+      "duration_seconds": 6578.585138,
+      "transcript_lines": 4,
+      "candidates": 0,
+      "candidates_per_minute": 0.0,
+      "degenerate": false
+    },
+    {
+      "session_id": "20260623_180023",
+      "app_name": "Zoom",
+      "duration_seconds": 6157.782077,
+      "transcript_lines": 1107,
+      "candidates": 7,
+      "candidates_per_minute": 0.0682,
+      "degenerate": false
+    },
+    {
+      "session_id": "20260624_185808",
+      "app_name": "Zoom",
+      "duration_seconds": 6445.634265,
+      "transcript_lines": 1240,
+      "candidates": 5,
+      "candidates_per_minute": 0.0465,
+      "degenerate": false
+    },
+    {
+      "session_id": "20260625_180229",
+      "app_name": "Zoom",
+      "duration_seconds": 5417.199516,
+      "transcript_lines": 934,
+      "candidates": 3,
+      "candidates_per_minute": 0.0332,
+      "degenerate": false
+    },
+    {
+      "session_id": "20260626_100036",
+      "app_name": "Zoom",
+      "duration_seconds": 3297.127875,
+      "transcript_lines": 141,
+      "candidates": 0,
+      "candidates_per_minute": 0.0,
+      "degenerate": false
+    },
+    {
+      "session_id": "20260626_105734",
+      "app_name": "Zoom",
+      "duration_seconds": 616.72108,
+      "transcript_lines": 82,
+      "candidates": 0,
+      "candidates_per_minute": 0.0,
+      "degenerate": false
+    },
+    {
+      "session_id": "20260626_110847",
+      "app_name": "Zoom",
+      "duration_seconds": 227.702237,
+      "transcript_lines": 14,
+      "candidates": 0,
+      "candidates_per_minute": 0.0,
+      "degenerate": false
+    },
+    {
+      "session_id": "20260626_111310",
+      "app_name": "Zoom",
+      "duration_seconds": 81.208728,
+      "transcript_lines": 3,
+      "candidates": 0,
+      "candidates_per_minute": 0.0,
+      "degenerate": false
+    },
+    {
+      "session_id": "20260626_111455",
+      "app_name": "Zoom",
+      "duration_seconds": 655.754793,
+      "transcript_lines": 75,
+      "candidates": 4,
+      "candidates_per_minute": 0.366,
+      "degenerate": false
+    },
+    {
+      "session_id": "20260626_112645",
+      "app_name": "Zoom",
+      "duration_seconds": 827.674518,
+      "transcript_lines": 75,
+      "candidates": 2,
+      "candidates_per_minute": 0.145,
+      "degenerate": false
+    },
+    {
+      "session_id": "20260626_114212",
+      "app_name": "Zoom",
+      "duration_seconds": 3844.703144,
+      "transcript_lines": 363,
+      "candidates": 1,
+      "candidates_per_minute": 0.0156,
+      "degenerate": false
+    },
+    {
+      "session_id": "20260626_124919",
+      "app_name": "Zoom",
+      "duration_seconds": 615.127543,
+      "transcript_lines": 49,
+      "candidates": 0,
+      "candidates_per_minute": 0.0,
+      "degenerate": false
+    },
+    {
+      "session_id": "20260626_150951",
+      "app_name": "Zoom",
+      "duration_seconds": 2071.198918,
+      "transcript_lines": 264,
+      "candidates": 4,
+      "candidates_per_minute": 0.1159,
+      "degenerate": false
+    },
+    {
+      "session_id": "20260626_164940",
+      "app_name": "Google Meet",
+      "duration_seconds": 89.644512,
+      "transcript_lines": 3,
+      "candidates": 0,
+      "candidates_per_minute": 0.0,
+      "degenerate": false
+    },
+    {
+      "session_id": "20260626_182024",
+      "app_name": "Google Meet",
+      "duration_seconds": 31.672174,
+      "transcript_lines": 2,
+      "candidates": 0,
+      "candidates_per_minute": 0.0,
+      "degenerate": false
+    },
+    {
+      "session_id": "20260626_190117",
+      "app_name": "Google Meet",
+      "duration_seconds": 94.193187,
+      "transcript_lines": 4,
+      "candidates": 0,
+      "candidates_per_minute": 0.0,
+      "degenerate": false
+    },
+    {
+      "session_id": "20260628_110000",
+      "app_name": "Zoom",
+      "duration_seconds": 12236.213094,
+      "transcript_lines": 1750,
+      "candidates": 26,
+      "candidates_per_minute": 0.1275,
+      "degenerate": false
+    },
+    {
+      "session_id": "20260629_130049",
+      "app_name": "Zoom",
+      "duration_seconds": 1606.72208,
+      "transcript_lines": 81,
+      "candidates": 0,
+      "candidates_per_minute": 0.0,
+      "degenerate": false
+    },
+    {
+      "session_id": "20260629_132841",
+      "app_name": "Zoom",
+      "duration_seconds": 1535.244666,
+      "transcript_lines": 186,
+      "candidates": 5,
+      "candidates_per_minute": 0.1954,
+      "degenerate": false
+    },
+    {
+      "session_id": "20260629_190045",
+      "app_name": "Zoom",
+      "duration_seconds": 4724.179443,
+      "transcript_lines": 725,
+      "candidates": 3,
+      "candidates_per_minute": 0.0381,
+      "degenerate": false
+    },
+    {
+      "session_id": "20260701_145946",
+      "app_name": "Zoom",
+      "duration_seconds": 3635.755737,
+      "transcript_lines": 306,
+      "candidates": 2,
+      "candidates_per_minute": 0.033,
+      "degenerate": false
+    },
+    {
+      "session_id": "20260701_160223",
+      "app_name": "Zoom",
+      "duration_seconds": 65.225403,
+      "transcript_lines": 3,
+      "candidates": 1,
+      "candidates_per_minute": 0.9199,
+      "degenerate": false
+    },
+    {
+      "session_id": "20260701_161300",
+      "app_name": "Zoom",
+      "duration_seconds": 99.70232,
+      "transcript_lines": 14,
+      "candidates": 0,
+      "candidates_per_minute": 0.0,
+      "degenerate": false
+    },
+    {
+      "session_id": "20260701_161510",
+      "app_name": "Zoom",
+      "duration_seconds": 2995.686604,
+      "transcript_lines": 189,
+      "candidates": 0,
+      "candidates_per_minute": 0.0,
+      "degenerate": false
+    },
+    {
+      "session_id": "20260701_190032",
+      "app_name": "Zoom",
+      "duration_seconds": 3641.18201,
+      "transcript_lines": 334,
+      "candidates": 1,
+      "candidates_per_minute": 0.0165,
+      "degenerate": false
+    },
+    {
+      "session_id": "20260701_200332",
+      "app_name": "Zoom",
+      "duration_seconds": 1368.706002,
+      "transcript_lines": 78,
+      "candidates": 0,
+      "candidates_per_minute": 0.0,
+      "degenerate": false
+    },
+    {
+      "session_id": "20260703_095954",
+      "app_name": "Zoom",
+      "duration_seconds": 5363.133967,
+      "transcript_lines": 476,
+      "candidates": 2,
+      "candidates_per_minute": 0.0224,
+      "degenerate": false
+    },
+    {
+      "session_id": "20260703_113232",
+      "app_name": "Zoom",
+      "duration_seconds": 550.73683,
+      "transcript_lines": 75,
+      "candidates": 0,
+      "candidates_per_minute": 0.0,
+      "degenerate": false
+    },
+    {
+      "session_id": "20260703_114257",
+      "app_name": "Zoom",
+      "duration_seconds": 2683.275617,
+      "transcript_lines": 220,
+      "candidates": 0,
+      "candidates_per_minute": 0.0,
+      "degenerate": false
+    },
+    {
+      "session_id": "20260703_122958",
+      "app_name": "Zoom",
+      "duration_seconds": 659.126349,
+      "transcript_lines": 22,
+      "candidates": 0,
+      "candidates_per_minute": 0.0,
+      "degenerate": true
+    },
+    {
+      "session_id": "20260703_132700",
+      "app_name": "Zoom",
+      "duration_seconds": 2777.675394,
+      "transcript_lines": 482,
+      "candidates": 7,
+      "candidates_per_minute": 0.1512,
+      "degenerate": false
+    },
+    {
+      "session_id": "20260705_110014",
+      "app_name": "Zoom",
+      "duration_seconds": 4977.430569,
+      "transcript_lines": 113,
+      "candidates": 1,
+      "candidates_per_minute": 0.0121,
+      "degenerate": false
+    },
+    {
+      "session_id": "20260705_123518",
+      "app_name": "Zoom",
+      "duration_seconds": 650.639188,
+      "transcript_lines": 22,
+      "candidates": 0,
+      "candidates_per_minute": 0.0,
+      "degenerate": true
+    },
+    {
+      "session_id": "20260705_124652",
+      "app_name": "Zoom",
+      "duration_seconds": 1710.188619,
+      "transcript_lines": 98,
+      "candidates": 0,
+      "candidates_per_minute": 0.0,
+      "degenerate": false
+    },
+    {
+      "session_id": "20260705_131633",
+      "app_name": "Zoom",
+      "duration_seconds": 5813.770219,
+      "transcript_lines": 396,
+      "candidates": 0,
+      "candidates_per_minute": 0.0,
+      "degenerate": false
+    },
+    {
+      "session_id": "20260708_100123",
+      "app_name": "Zoom",
+      "duration_seconds": 1373.673289,
+      "transcript_lines": 135,
+      "candidates": 1,
+      "candidates_per_minute": 0.0437,
+      "degenerate": false
+    },
+    {
+      "session_id": "20260713_124516",
+      "app_name": "Zoom",
+      "duration_seconds": 1999.630687,
+      "transcript_lines": 390,
+      "candidates": 9,
+      "candidates_per_minute": 0.27,
+      "degenerate": false
+    },
+    {
+      "session_id": "20260713_140714",
+      "app_name": "Zoom",
+      "duration_seconds": 2267.136565,
+      "transcript_lines": 342,
+      "candidates": 0,
+      "candidates_per_minute": 0.0,
+      "degenerate": false
+    },
+    {
+      "session_id": "20260713_145930",
+      "app_name": "Zoom",
+      "duration_seconds": 6426.170995,
+      "transcript_lines": 661,
+      "candidates": 0,
+      "candidates_per_minute": 0.0,
+      "degenerate": false
+    },
+    {
+      "session_id": "20260714_160102",
+      "app_name": "Zoom",
+      "duration_seconds": 2615.609891,
+      "transcript_lines": 327,
+      "candidates": 2,
+      "candidates_per_minute": 0.0459,
+      "degenerate": false
+    },
+    {
+      "session_id": "20260714_164650",
+      "app_name": "Zoom",
+      "duration_seconds": 1926.151263,
+      "transcript_lines": 308,
+      "candidates": 1,
+      "candidates_per_minute": 0.0312,
+      "degenerate": false
+    },
+    {
+      "session_id": "20260715_133734",
+      "app_name": "Zoom",
+      "duration_seconds": 843.13272,
+      "transcript_lines": 160,
+      "candidates": 0,
+      "candidates_per_minute": 0.0,
+      "degenerate": false
+    },
+    {
+      "session_id": "20260715_145842",
+      "app_name": "Zoom",
+      "duration_seconds": 59.608152,
+      "transcript_lines": 2,
+      "candidates": 0,
+      "candidates_per_minute": 0.0,
+      "degenerate": false
+    },
+    {
+      "session_id": "20260715_150121",
+      "app_name": "Zoom",
+      "duration_seconds": 6806.625202,
+      "transcript_lines": 1323,
+      "candidates": 5,
+      "candidates_per_minute": 0.0441,
+      "degenerate": false
+    },
+    {
+      "session_id": "20260715_170559",
+      "app_name": "Zoom",
+      "duration_seconds": 447.125157,
+      "transcript_lines": 19,
+      "candidates": 0,
+      "candidates_per_minute": 0.0,
+      "degenerate": false
+    },
+    {
+      "session_id": "20260715_180037",
+      "app_name": "Zoom",
+      "duration_seconds": 9351.717005,
+      "transcript_lines": 687,
+      "candidates": 1,
+      "candidates_per_minute": 0.0064,
+      "degenerate": false
+    },
+    {
+      "session_id": "20260716_160051",
+      "app_name": "Zoom",
+      "duration_seconds": 2917.887014,
+      "transcript_lines": 177,
+      "candidates": 0,
+      "candidates_per_minute": 0.0,
+      "degenerate": false
+    },
+    {
+      "session_id": "20260716_165400",
+      "app_name": "Zoom",
+      "duration_seconds": 1256.09502,
+      "transcript_lines": 220,
+      "candidates": 4,
+      "candidates_per_minute": 0.1911,
+      "degenerate": false
+    },
+    {
+      "session_id": "20260717_095831",
+      "app_name": "Zoom",
+      "duration_seconds": 4576.050412,
+      "transcript_lines": 472,
+      "candidates": 8,
+      "candidates_per_minute": 0.1049,
+      "degenerate": false
+    },
+    {
+      "session_id": "20260717_111956",
+      "app_name": "Zoom",
+      "duration_seconds": 84.666381,
+      "transcript_lines": 5,
+      "candidates": 0,
+      "candidates_per_minute": 0.0,
+      "degenerate": false
+    },
+    {
+      "session_id": "20260717_112151",
+      "app_name": "Zoom",
+      "duration_seconds": 231.107947,
+      "transcript_lines": 63,
+      "candidates": 0,
+      "candidates_per_minute": 0.0,
+      "degenerate": false
+    },
+    {
+      "session_id": "20260717_112622",
+      "app_name": "Zoom",
+      "duration_seconds": 5875.634144,
+      "transcript_lines": 791,
+      "candidates": 5,
+      "candidates_per_minute": 0.0511,
+      "degenerate": false
+    },
+    {
+      "session_id": "20260717_140056",
+      "app_name": "Zoom",
+      "duration_seconds": 41.148288,
+      "transcript_lines": 2,
+      "candidates": 0,
+      "candidates_per_minute": 0.0,
+      "degenerate": false
+    },
+    {
+      "session_id": "20260717_140213",
+      "app_name": "Zoom",
+      "duration_seconds": 2111.199131,
+      "transcript_lines": 404,
+      "candidates": 1,
+      "candidates_per_minute": 0.0284,
+      "degenerate": false
+    },
+    {
+      "session_id": "20260720_132102",
+      "app_name": "Zoom",
+      "duration_seconds": 3997.704846,
+      "transcript_lines": 758,
+      "candidates": 8,
+      "candidates_per_minute": 0.1201,
+      "degenerate": false
+    },
+    {
+      "session_id": "20260720_145950",
+      "app_name": "Zoom",
+      "duration_seconds": 6157.133242,
+      "transcript_lines": 1168,
+      "candidates": 4,
+      "candidates_per_minute": 0.039,
+      "degenerate": false
+    },
+    {
+      "session_id": "20260720_171437",
+      "app_name": "Zoom",
+      "duration_seconds": 6113.109501,
+      "transcript_lines": 1143,
+      "candidates": 18,
+      "candidates_per_minute": 0.1767,
+      "degenerate": false
+    },
+    {
+      "session_id": "20260721_125931",
+      "app_name": "Zoom",
+      "duration_seconds": 53.094513,
+      "transcript_lines": 2,
+      "candidates": 0,
+      "candidates_per_minute": 0.0,
+      "degenerate": false
+    },
+    {
+      "session_id": "20260721_130103",
+      "app_name": "Zoom",
+      "duration_seconds": 3671.095396,
+      "transcript_lines": 502,
+      "candidates": 4,
+      "candidates_per_minute": 0.0654,
+      "degenerate": false
+    },
+    {
+      "session_id": "20260721_160128",
+      "app_name": "Zoom",
+      "duration_seconds": 37.593655,
+      "transcript_lines": 5,
+      "candidates": 0,
+      "candidates_per_minute": 0.0,
+      "degenerate": false
+    },
+    {
+      "session_id": "20260721_160242",
+      "app_name": "Zoom",
+      "duration_seconds": 3770.60054,
+      "transcript_lines": 592,
+      "candidates": 4,
+      "candidates_per_minute": 0.0637,
+      "degenerate": false
+    },
+    {
+      "session_id": "20260721_192001",
+      "app_name": "Google Meet",
+      "duration_seconds": 58.092899,
+      "transcript_lines": 2,
+      "candidates": 0,
+      "candidates_per_minute": 0.0,
+      "degenerate": false
+    },
+    {
+      "session_id": "20260721_192129",
+      "app_name": "Google Meet",
+      "duration_seconds": 32.613719,
+      "transcript_lines": 2,
+      "candidates": 0,
+      "candidates_per_minute": 0.0,
+      "degenerate": false
+    },
+    {
+      "session_id": "20260722_100100",
+      "app_name": "Zoom",
+      "duration_seconds": 3390.15429,
+      "transcript_lines": 332,
+      "candidates": 3,
+      "candidates_per_minute": 0.0531,
+      "degenerate": false
+    },
+    {
+      "session_id": "20260722_110231",
+      "app_name": "Zoom",
+      "duration_seconds": 610.660973,
+      "transcript_lines": 68,
+      "candidates": 0,
+      "candidates_per_minute": 0.0,
+      "degenerate": false
+    },
+    {
+      "session_id": "20260722_150007",
+      "app_name": "Zoom",
+      "duration_seconds": 7137.648439,
+      "transcript_lines": 238,
+      "candidates": 0,
+      "candidates_per_minute": 0.0,
+      "degenerate": true
+    },
+    {
+      "session_id": "20260722_171454",
+      "app_name": "Zoom",
+      "duration_seconds": 738.65741,
+      "transcript_lines": 25,
+      "candidates": 0,
+      "candidates_per_minute": 0.0,
+      "degenerate": true
+    },
+    {
+      "session_id": "20260723_110003",
+      "app_name": "Zoom",
+      "duration_seconds": 2968.6675,
+      "transcript_lines": 99,
+      "candidates": 0,
+      "candidates_per_minute": 0.0,
+      "degenerate": true
+    },
+    {
+      "session_id": "20260723_120033",
+      "app_name": "Zoom",
+      "duration_seconds": 3615.538662,
+      "transcript_lines": 121,
+      "candidates": 0,
+      "candidates_per_minute": 0.0,
+      "degenerate": true
+    },
+    {
+      "session_id": "20260723_131133",
+      "app_name": "Zoom",
+      "duration_seconds": 3759.271432,
+      "transcript_lines": 126,
+      "candidates": 0,
+      "candidates_per_minute": 0.0,
+      "degenerate": true
+    },
+    {
+      "session_id": "20260724_095814",
+      "app_name": "Zoom",
+      "duration_seconds": 6253.209566,
+      "transcript_lines": 209,
+      "candidates": 0,
+      "candidates_per_minute": 0.0,
+      "degenerate": true
+    },
+    {
+      "session_id": "20260724_114455",
+      "app_name": "Zoom",
+      "duration_seconds": 723.615778,
+      "transcript_lines": 25,
+      "candidates": 0,
+      "candidates_per_minute": 0.0,
+      "degenerate": true
+    },
+    {
+      "session_id": "20260724_115802",
+      "app_name": "Zoom",
+      "duration_seconds": 1918.142077,
+      "transcript_lines": 64,
+      "candidates": 0,
+      "candidates_per_minute": 0.0,
+      "degenerate": true
+    },
+    {
+      "session_id": "20260724_123255",
+      "app_name": "Zoom",
+      "duration_seconds": 782.640411,
+      "transcript_lines": 27,
+      "candidates": 0,
+      "candidates_per_minute": 0.0,
+      "degenerate": true
+    },
+    {
+      "session_id": "20260724_124635",
+      "app_name": "Zoom",
+      "duration_seconds": 674.133388,
+      "transcript_lines": 23,
+      "candidates": 0,
+      "candidates_per_minute": 0.0,
+      "degenerate": true
+    },
+    {
+      "session_id": "20260724_184953",
+      "app_name": "Google Meet",
+      "duration_seconds": 57.608323,
+      "transcript_lines": 2,
+      "candidates": 0,
+      "candidates_per_minute": 0.0,
+      "degenerate": false
+    },
+    {
+      "session_id": "20260724_185141",
+      "app_name": "Google Meet",
+      "duration_seconds": 38.603295,
+      "transcript_lines": 2,
+      "candidates": 0,
+      "candidates_per_minute": 0.0,
+      "degenerate": false
+    },
+    {
+      "session_id": "20260727_125956",
+      "app_name": "Zoom",
+      "duration_seconds": 2234.195153,
+      "transcript_lines": 75,
+      "candidates": 0,
+      "candidates_per_minute": 0.0,
+      "degenerate": true
+    },
+    {
+      "session_id": "20260727_150033",
+      "app_name": "Zoom",
+      "duration_seconds": 2838.560268,
+      "transcript_lines": 95,
+      "candidates": 0,
+      "candidates_per_minute": 0.0,
+      "degenerate": true
+    },
+    {
+      "session_id": "20260727_154904",
+      "app_name": "Zoom",
+      "duration_seconds": 630.195998,
+      "transcript_lines": 21,
+      "candidates": 0,
+      "candidates_per_minute": 0.0,
+      "degenerate": true
+    },
+    {
+      "session_id": "20260727_160021",
+      "app_name": "Zoom",
+      "duration_seconds": 2977.72793,
+      "transcript_lines": 100,
+      "candidates": 0,
+      "candidates_per_minute": 0.0,
+      "degenerate": true
+    },
+    {
+      "session_id": "20260729_130014",
+      "app_name": "Google Meet",
+      "duration_seconds": 92.363853,
+      "transcript_lines": 4,
+      "candidates": 0,
+      "candidates_per_minute": 0.0,
+      "degenerate": false
+    },
+    {
+      "session_id": "20260729_130330",
+      "app_name": "Google Meet",
+      "duration_seconds": 114.069959,
+      "transcript_lines": 4,
+      "candidates": 0,
+      "candidates_per_minute": 0.0,
+      "degenerate": false
+    },
+    {
+      "session_id": "20260729_130544",
+      "app_name": "Google Meet",
+      "duration_seconds": 44.594244,
+      "transcript_lines": 2,
+      "candidates": 0,
+      "candidates_per_minute": 0.0,
+      "degenerate": false
+    },
+    {
+      "session_id": "20260729_132730",
+      "app_name": "Google Meet",
+      "duration_seconds": 38.598134,
+      "transcript_lines": 2,
+      "candidates": 0,
+      "candidates_per_minute": 0.0,
+      "degenerate": false
+    },
+    {
+      "session_id": "20260729_150055",
+      "app_name": "Zoom",
+      "duration_seconds": 2969.154897,
+      "transcript_lines": 99,
+      "candidates": 0,
+      "candidates_per_minute": 0.0,
+      "degenerate": true
+    },
+    {
+      "session_id": "20260729_155151",
+      "app_name": "Zoom",
+      "duration_seconds": 383.193295,
+      "transcript_lines": 13,
+      "candidates": 0,
+      "candidates_per_minute": 0.0,
+      "degenerate": true
+    },
+    {
+      "session_id": "20260729_155843",
+      "app_name": "Zoom",
+      "duration_seconds": 333.683339,
+      "transcript_lines": 12,
+      "candidates": 0,
+      "candidates_per_minute": 0.0,
+      "degenerate": true
+    },
+    {
+      "session_id": "20260729_160455",
+      "app_name": "Zoom",
+      "duration_seconds": 3361.131362,
+      "transcript_lines": 113,
+      "candidates": 0,
+      "candidates_per_minute": 0.0,
+      "degenerate": true
+    },
+    {
+      "session_id": "20260729_170220",
+      "app_name": "Zoom",
+      "duration_seconds": 1046.640312,
+      "transcript_lines": 35,
+      "candidates": 0,
+      "candidates_per_minute": 0.0,
+      "degenerate": true
+    },
+    {
+      "session_id": "20260730_130017",
+      "app_name": "Google Meet",
+      "duration_seconds": 39.845143,
+      "transcript_lines": 2,
+      "candidates": 0,
+      "candidates_per_minute": 0.0,
+      "degenerate": false
+    },
+    {
+      "session_id": "20260730_140101",
+      "app_name": "Zoom",
+      "duration_seconds": 2612.664833,
+      "transcript_lines": 88,
+      "candidates": 0,
+      "candidates_per_minute": 0.0,
+      "degenerate": true
+    },
+    {
+      "session_id": "20260731_085813",
+      "app_name": "Zoom",
+      "duration_seconds": 6500.616163,
+      "transcript_lines": 217,
+      "candidates": 0,
+      "candidates_per_minute": 0.0,
+      "degenerate": true
+    },
+    {
+      "session_id": "20260731_104833",
+      "app_name": "Zoom",
+      "duration_seconds": 187.625688,
+      "transcript_lines": 7,
+      "candidates": 0,
+      "candidates_per_minute": 0.0,
+      "degenerate": false
+    },
+    {
+      "session_id": "20260731_105210",
+      "app_name": "Zoom",
+      "duration_seconds": 789.128791,
+      "transcript_lines": 27,
+      "candidates": 0,
+      "candidates_per_minute": 0.0,
+      "degenerate": true
+    },
+    {
+      "session_id": "20260731_110615",
+      "app_name": "Zoom",
+      "duration_seconds": 321.619484,
+      "transcript_lines": 11,
+      "candidates": 0,
+      "candidates_per_minute": 0.0,
+      "degenerate": true
+    },
+    {
+      "session_id": "20260731_111216",
+      "app_name": "Zoom",
+      "duration_seconds": 59.623839,
+      "transcript_lines": 2,
+      "candidates": 0,
+      "candidates_per_minute": 0.0,
+      "degenerate": false
+    },
+    {
+      "session_id": "20260731_111333",
+      "app_name": "Zoom",
+      "duration_seconds": 568.132091,
+      "transcript_lines": 19,
+      "candidates": 0,
+      "candidates_per_minute": 0.0,
+      "degenerate": true
+    },
+    {
+      "session_id": "20260731_112335",
+      "app_name": "Zoom",
+      "duration_seconds": 3389.626637,
+      "transcript_lines": 113,
+      "candidates": 0,
+      "candidates_per_minute": 0.0,
+      "degenerate": true
+    },
+    {
+      "session_id": "20260731_140815",
+      "app_name": "Zoom",
+      "duration_seconds": 2144.643251,
+      "transcript_lines": 72,
+      "candidates": 0,
+      "candidates_per_minute": 0.0,
+      "degenerate": true
+    },
+    {
+      "session_id": "20260803_105925",
+      "app_name": "Google Meet",
+      "duration_seconds": 350.21535,
+      "transcript_lines": 1,
+      "candidates": 0,
+      "candidates_per_minute": 0.0,
+      "degenerate": false
+    },
+    {
+      "session_id": "20260804_165917",
+      "app_name": "Zoom",
+      "duration_seconds": 5998.8805,
+      "transcript_lines": 200,
+      "candidates": 0,
+      "candidates_per_minute": 0.0,
+      "degenerate": true
+    },
+    {
+      "session_id": "20260805_103108",
+      "app_name": "Zoom",
+      "duration_seconds": 75.092419,
+      "transcript_lines": 3,
+      "candidates": 0,
+      "candidates_per_minute": 0.0,
+      "degenerate": false
+    },
+    {
+      "session_id": "20260805_103257",
+      "app_name": "Zoom",
+      "duration_seconds": 5158.73628,
+      "transcript_lines": 110,
+      "candidates": 0,
+      "candidates_per_minute": 0.0,
+      "degenerate": true
+    },
+    {
+      "session_id": "20260806_144650",
+      "app_name": "Zoom",
+      "duration_seconds": 3705.052886,
+      "transcript_lines": 124,
+      "candidates": 0,
+      "candidates_per_minute": 0.0,
+      "degenerate": true
+    },
+    {
+      "session_id": "20260807_100106",
+      "app_name": "Zoom",
+      "duration_seconds": 1765.126993,
+      "transcript_lines": 59,
+      "candidates": 0,
+      "candidates_per_minute": 0.0,
+      "degenerate": true
+    },
+    {
+      "session_id": "20260807_103130",
+      "app_name": "Zoom",
+      "duration_seconds": 2599.170518,
+      "transcript_lines": 87,
+      "candidates": 0,
+      "candidates_per_minute": 0.0,
+      "degenerate": true
+    },
+    {
+      "session_id": "20260807_120212",
+      "app_name": "Zoom",
+      "duration_seconds": 3706.75306,
+      "transcript_lines": 124,
+      "candidates": 0,
+      "candidates_per_minute": 0.0,
+      "degenerate": true
+    },
+    {
+      "session_id": "20260807_141527",
+      "app_name": "Zoom",
+      "duration_seconds": 2418.619295,
+      "transcript_lines": 81,
+      "candidates": 0,
+      "candidates_per_minute": 0.0,
+      "degenerate": true
+    },
+    {
+      "session_id": "20260807_145656",
+      "app_name": "Zoom",
+      "duration_seconds": 677.146706,
+      "transcript_lines": 23,
+      "candidates": 0,
+      "candidates_per_minute": 0.0,
+      "degenerate": true
+    },
+    {
+      "session_id": "20260812_113216",
+      "app_name": "Google Meet",
+      "duration_seconds": 42.149583,
+      "transcript_lines": 2,
+      "candidates": 0,
+      "candidates_per_minute": 0.0,
+      "degenerate": false
+    },
+    {
+      "session_id": "20260812_133239",
+      "app_name": "Zoom",
+      "duration_seconds": 1082.137154,
+      "transcript_lines": 37,
+      "candidates": 0,
+      "candidates_per_minute": 0.0,
+      "degenerate": true
+    },
+    {
+      "session_id": "20260812_140014",
+      "app_name": "Zoom",
+      "duration_seconds": 10969.177094,
+      "transcript_lines": 366,
+      "candidates": 0,
+      "candidates_per_minute": 0.0,
+      "degenerate": true
+    },
+    {
+      "session_id": "20260812_171835",
+      "app_name": "Zoom",
+      "duration_seconds": 6842.663827,
+      "transcript_lines": 229,
+      "candidates": 0,
+      "candidates_per_minute": 0.0,
+      "degenerate": true
+    },
+    {
+      "session_id": "20260813_120036",
+      "app_name": "Zoom",
+      "duration_seconds": 3558.656441,
+      "transcript_lines": 119,
+      "candidates": 0,
+      "candidates_per_minute": 0.0,
+      "degenerate": true
+    },
+    {
+      "session_id": "20260813_130156",
+      "app_name": "Zoom",
+      "duration_seconds": 2411.711666,
+      "transcript_lines": 81,
+      "candidates": 0,
+      "candidates_per_minute": 0.0,
+      "degenerate": true
+    },
+    {
+      "session_id": "20260813_134328",
+      "app_name": "Zoom",
+      "duration_seconds": 605.137237,
+      "transcript_lines": 21,
+      "candidates": 0,
+      "candidates_per_minute": 0.0,
+      "degenerate": true
+    },
+    {
+      "session_id": "20260817_130256",
+      "app_name": "Zoom",
+      "duration_seconds": 4798.192828,
+      "transcript_lines": 160,
+      "candidates": 0,
+      "candidates_per_minute": 0.0,
+      "degenerate": true
+    },
+    {
+      "session_id": "20260818_165750",
+      "app_name": "Zoom",
+      "duration_seconds": 8234.598794,
+      "transcript_lines": 275,
+      "candidates": 0,
+      "candidates_per_minute": 0.0,
+      "degenerate": true
+    },
+    {
+      "session_id": "20260819_222443",
+      "app_name": "Zoom",
+      "duration_seconds": 74.609988,
+      "transcript_lines": 3,
+      "candidates": 0,
+      "candidates_per_minute": 0.0,
+      "degenerate": false
+    },
+    {
+      "session_id": "20260819_224404",
+      "app_name": "Zoom",
+      "duration_seconds": 50.135374,
+      "transcript_lines": 2,
+      "candidates": 0,
+      "candidates_per_minute": 0.0,
+      "degenerate": false
+    },
+    {
+      "session_id": "20260819_224714",
+      "app_name": "Zoom",
+      "duration_seconds": 34.606074,
+      "transcript_lines": 2,
+      "candidates": 0,
+      "candidates_per_minute": 0.0,
+      "degenerate": false
+    },
+    {
+      "session_id": "20260819_225238",
+      "app_name": "Zoom",
+      "duration_seconds": 53.136038,
+      "transcript_lines": 4,
+      "candidates": 0,
+      "candidates_per_minute": 0.0,
+      "degenerate": false
+    },
+    {
+      "session_id": "20260820_000823",
+      "app_name": "Zoom",
+      "duration_seconds": 40.628046,
+      "transcript_lines": 4,
+      "candidates": 0,
+      "candidates_per_minute": 0.0,
+      "degenerate": false
+    },
+    {
+      "session_id": "20260820_001805",
+      "app_name": "Zoom",
+      "duration_seconds": 43.610999,
+      "transcript_lines": 4,
+      "candidates": 0,
+      "candidates_per_minute": 0.0,
+      "degenerate": false
+    },
+    {
+      "session_id": "20260820_002042",
+      "app_name": "Zoom",
+      "duration_seconds": 37.641842,
+      "transcript_lines": 10,
+      "candidates": 0,
+      "candidates_per_minute": 0.0,
+      "degenerate": false
+    }
+  ],
+  "summary": {
+    "total_sessions": 188,
+    "degenerate_sessions": 46,
+    "candidates_per_minute": {
+      "min": 0.0,
+      "p10": 0.0,
+      "p25": 0.0,
+      "median": 0.0,
+      "p75": 0.0515,
+      "p90": 0.1516,
+      "max": 0.9199
+    },
+    "zero_candidate_sessions": [
+      {
+        "session_id": "20251227_023635",
+        "app_name": "Zoom",
+        "duration_seconds": 433.6,
+        "degenerate": false
+      },
+      {
+        "session_id": "20251228_173201",
+        "app_name": "Telegram",
+        "duration_seconds": 300.0,
+        "degenerate": false
+      },
+      {
+        "session_id": "20260109_145428",
+        "app_name": "Google Meet",
+        "duration_seconds": 300.0,
+        "degenerate": false
+      },
+      {
+        "session_id": "20260122_141359",
+        "app_name": "Google Meet",
+        "duration_seconds": 644.8,
+        "degenerate": false
+      },
+      {
+        "session_id": "20260126_140954",
+        "app_name": "FaceTime",
+        "duration_seconds": 2512.0,
+        "degenerate": false
+      },
+      {
+        "session_id": "20260127_135218",
+        "app_name": "Telegram",
+        "duration_seconds": 1181.6,
+        "degenerate": false
+      },
+      {
+        "session_id": "20260127_141239",
+        "app_name": "FaceTime",
+        "duration_seconds": 300.0,
+        "degenerate": false
+      },
+      {
+        "session_id": "20260127_182905",
+        "app_name": "Zoom",
+        "duration_seconds": 300.0,
+        "degenerate": false
+      },
+      {
+        "session_id": "20260220_091053",
+        "app_name": "Zoom",
+        "duration_seconds": 1511.581636,
+        "degenerate": true
+      },
+      {
+        "session_id": "20260614_134148",
+        "app_name": "Zoom",
+        "duration_seconds": 489.633401,
+        "degenerate": false
+      },
+      {
+        "session_id": "20260615_211029",
+        "app_name": "Google Meet",
+        "duration_seconds": 30.23134,
+        "degenerate": false
+      },
+      {
+        "session_id": "20260616_134017",
+        "app_name": "Google Meet",
+        "duration_seconds": 58.699104,
+        "degenerate": false
+      },
+      {
+        "session_id": "20260616_171018",
+        "app_name": "Google Meet",
+        "duration_seconds": 30.213143,
+        "degenerate": false
+      },
+      {
+        "session_id": "20260616_174319",
+        "app_name": "Google Meet",
+        "duration_seconds": 30.213329,
+        "degenerate": false
+      },
+      {
+        "session_id": "20260616_184219",
+        "app_name": "Google Meet",
+        "duration_seconds": 30.365733,
+        "degenerate": false
+      },
+      {
+        "session_id": "20260616_184617",
+        "app_name": "Google Meet",
+        "duration_seconds": 30.23321,
+        "degenerate": false
+      },
+      {
+        "session_id": "20260616_191119",
+        "app_name": "Google Meet",
+        "duration_seconds": 30.209038,
+        "degenerate": false
+      },
+      {
+        "session_id": "20260617_100815",
+        "app_name": "Google Meet",
+        "duration_seconds": 32.672889,
+        "degenerate": false
+      },
+      {
+        "session_id": "20260617_140400",
+        "app_name": "Google Meet",
+        "duration_seconds": 67.591505,
+        "degenerate": false
+      },
+      {
+        "session_id": "20260617_161329",
+        "app_name": "Google Meet",
+        "duration_seconds": 1668.681671,
+        "degenerate": false
+      },
+      {
+        "session_id": "20260621_125955",
+        "app_name": "Zoom",
+        "duration_seconds": 1605.584088,
+        "degenerate": false
+      },
+      {
+        "session_id": "20260621_132759",
+        "app_name": "Zoom",
+        "duration_seconds": 2267.184717,
+        "degenerate": false
+      },
+      {
+        "session_id": "20260622_190035",
+        "app_name": "Zoom",
+        "duration_seconds": 6578.585138,
+        "degenerate": false
+      },
+      {
+        "session_id": "20260626_100036",
+        "app_name": "Zoom",
+        "duration_seconds": 3297.127875,
+        "degenerate": false
+      },
+      {
+        "session_id": "20260626_105734",
+        "app_name": "Zoom",
+        "duration_seconds": 616.72108,
+        "degenerate": false
+      },
+      {
+        "session_id": "20260626_110847",
+        "app_name": "Zoom",
+        "duration_seconds": 227.702237,
+        "degenerate": false
+      },
+      {
+        "session_id": "20260626_111310",
+        "app_name": "Zoom",
+        "duration_seconds": 81.208728,
+        "degenerate": false
+      },
+      {
+        "session_id": "20260626_124919",
+        "app_name": "Zoom",
+        "duration_seconds": 615.127543,
+        "degenerate": false
+      },
+      {
+        "session_id": "20260626_164940",
+        "app_name": "Google Meet",
+        "duration_seconds": 89.644512,
+        "degenerate": false
+      },
+      {
+        "session_id": "20260626_182024",
+        "app_name": "Google Meet",
+        "duration_seconds": 31.672174,
+        "degenerate": false
+      },
+      {
+        "session_id": "20260626_190117",
+        "app_name": "Google Meet",
+        "duration_seconds": 94.193187,
+        "degenerate": false
+      },
+      {
+        "session_id": "20260629_130049",
+        "app_name": "Zoom",
+        "duration_seconds": 1606.72208,
+        "degenerate": false
+      },
+      {
+        "session_id": "20260701_161300",
+        "app_name": "Zoom",
+        "duration_seconds": 99.70232,
+        "degenerate": false
+      },
+      {
+        "session_id": "20260701_161510",
+        "app_name": "Zoom",
+        "duration_seconds": 2995.686604,
+        "degenerate": false
+      },
+      {
+        "session_id": "20260701_200332",
+        "app_name": "Zoom",
+        "duration_seconds": 1368.706002,
+        "degenerate": false
+      },
+      {
+        "session_id": "20260703_113232",
+        "app_name": "Zoom",
+        "duration_seconds": 550.73683,
+        "degenerate": false
+      },
+      {
+        "session_id": "20260703_114257",
+        "app_name": "Zoom",
+        "duration_seconds": 2683.275617,
+        "degenerate": false
+      },
+      {
+        "session_id": "20260703_122958",
+        "app_name": "Zoom",
+        "duration_seconds": 659.126349,
+        "degenerate": true
+      },
+      {
+        "session_id": "20260705_123518",
+        "app_name": "Zoom",
+        "duration_seconds": 650.639188,
+        "degenerate": true
+      },
+      {
+        "session_id": "20260705_124652",
+        "app_name": "Zoom",
+        "duration_seconds": 1710.188619,
+        "degenerate": false
+      },
+      {
+        "session_id": "20260705_131633",
+        "app_name": "Zoom",
+        "duration_seconds": 5813.770219,
+        "degenerate": false
+      },
+      {
+        "session_id": "20260713_140714",
+        "app_name": "Zoom",
+        "duration_seconds": 2267.136565,
+        "degenerate": false
+      },
+      {
+        "session_id": "20260713_145930",
+        "app_name": "Zoom",
+        "duration_seconds": 6426.170995,
+        "degenerate": false
+      },
+      {
+        "session_id": "20260715_133734",
+        "app_name": "Zoom",
+        "duration_seconds": 843.13272,
+        "degenerate": false
+      },
+      {
+        "session_id": "20260715_145842",
+        "app_name": "Zoom",
+        "duration_seconds": 59.608152,
+        "degenerate": false
+      },
+      {
+        "session_id": "20260715_170559",
+        "app_name": "Zoom",
+        "duration_seconds": 447.125157,
+        "degenerate": false
+      },
+      {
+        "session_id": "20260716_160051",
+        "app_name": "Zoom",
+        "duration_seconds": 2917.887014,
+        "degenerate": false
+      },
+      {
+        "session_id": "20260717_111956",
+        "app_name": "Zoom",
+        "duration_seconds": 84.666381,
+        "degenerate": false
+      },
+      {
+        "session_id": "20260717_112151",
+        "app_name": "Zoom",
+        "duration_seconds": 231.107947,
+        "degenerate": false
+      },
+      {
+        "session_id": "20260717_140056",
+        "app_name": "Zoom",
+        "duration_seconds": 41.148288,
+        "degenerate": false
+      },
+      {
+        "session_id": "20260721_125931",
+        "app_name": "Zoom",
+        "duration_seconds": 53.094513,
+        "degenerate": false
+      },
+      {
+        "session_id": "20260721_160128",
+        "app_name": "Zoom",
+        "duration_seconds": 37.593655,
+        "degenerate": false
+      },
+      {
+        "session_id": "20260721_192001",
+        "app_name": "Google Meet",
+        "duration_seconds": 58.092899,
+        "degenerate": false
+      },
+      {
+        "session_id": "20260721_192129",
+        "app_name": "Google Meet",
+        "duration_seconds": 32.613719,
+        "degenerate": false
+      },
+      {
+        "session_id": "20260722_110231",
+        "app_name": "Zoom",
+        "duration_seconds": 610.660973,
+        "degenerate": false
+      },
+      {
+        "session_id": "20260722_150007",
+        "app_name": "Zoom",
+        "duration_seconds": 7137.648439,
+        "degenerate": true
+      },
+      {
+        "session_id": "20260722_171454",
+        "app_name": "Zoom",
+        "duration_seconds": 738.65741,
+        "degenerate": true
+      },
+      {
+        "session_id": "20260723_110003",
+        "app_name": "Zoom",
+        "duration_seconds": 2968.6675,
+        "degenerate": true
+      },
+      {
+        "session_id": "20260723_120033",
+        "app_name": "Zoom",
+        "duration_seconds": 3615.538662,
+        "degenerate": true
+      },
+      {
+        "session_id": "20260723_131133",
+        "app_name": "Zoom",
+        "duration_seconds": 3759.271432,
+        "degenerate": true
+      },
+      {
+        "session_id": "20260724_095814",
+        "app_name": "Zoom",
+        "duration_seconds": 6253.209566,
+        "degenerate": true
+      },
+      {
+        "session_id": "20260724_114455",
+        "app_name": "Zoom",
+        "duration_seconds": 723.615778,
+        "degenerate": true
+      },
+      {
+        "session_id": "20260724_115802",
+        "app_name": "Zoom",
+        "duration_seconds": 1918.142077,
+        "degenerate": true
+      },
+      {
+        "session_id": "20260724_123255",
+        "app_name": "Zoom",
+        "duration_seconds": 782.640411,
+        "degenerate": true
+      },
+      {
+        "session_id": "20260724_124635",
+        "app_name": "Zoom",
+        "duration_seconds": 674.133388,
+        "degenerate": true
+      },
+      {
+        "session_id": "20260724_184953",
+        "app_name": "Google Meet",
+        "duration_seconds": 57.608323,
+        "degenerate": false
+      },
+      {
+        "session_id": "20260724_185141",
+        "app_name": "Google Meet",
+        "duration_seconds": 38.603295,
+        "degenerate": false
+      },
+      {
+        "session_id": "20260727_125956",
+        "app_name": "Zoom",
+        "duration_seconds": 2234.195153,
+        "degenerate": true
+      },
+      {
+        "session_id": "20260727_150033",
+        "app_name": "Zoom",
+        "duration_seconds": 2838.560268,
+        "degenerate": true
+      },
+      {
+        "session_id": "20260727_154904",
+        "app_name": "Zoom",
+        "duration_seconds": 630.195998,
+        "degenerate": true
+      },
+      {
+        "session_id": "20260727_160021",
+        "app_name": "Zoom",
+        "duration_seconds": 2977.72793,
+        "degenerate": true
+      },
+      {
+        "session_id": "20260729_130014",
+        "app_name": "Google Meet",
+        "duration_seconds": 92.363853,
+        "degenerate": false
+      },
+      {
+        "session_id": "20260729_130330",
+        "app_name": "Google Meet",
+        "duration_seconds": 114.069959,
+        "degenerate": false
+      },
+      {
+        "session_id": "20260729_130544",
+        "app_name": "Google Meet",
+        "duration_seconds": 44.594244,
+        "degenerate": false
+      },
+      {
+        "session_id": "20260729_132730",
+        "app_name": "Google Meet",
+        "duration_seconds": 38.598134,
+        "degenerate": false
+      },
+      {
+        "session_id": "20260729_150055",
+        "app_name": "Zoom",
+        "duration_seconds": 2969.154897,
+        "degenerate": true
+      },
+      {
+        "session_id": "20260729_155151",
+        "app_name": "Zoom",
+        "duration_seconds": 383.193295,
+        "degenerate": true
+      },
+      {
+        "session_id": "20260729_155843",
+        "app_name": "Zoom",
+        "duration_seconds": 333.683339,
+        "degenerate": true
+      },
+      {
+        "session_id": "20260729_160455",
+        "app_name": "Zoom",
+        "duration_seconds": 3361.131362,
+        "degenerate": true
+      },
+      {
+        "session_id": "20260729_170220",
+        "app_name": "Zoom",
+        "duration_seconds": 1046.640312,
+        "degenerate": true
+      },
+      {
+        "session_id": "20260730_130017",
+        "app_name": "Google Meet",
+        "duration_seconds": 39.845143,
+        "degenerate": false
+      },
+      {
+        "session_id": "20260730_140101",
+        "app_name": "Zoom",
+        "duration_seconds": 2612.664833,
+        "degenerate": true
+      },
+      {
+        "session_id": "20260731_085813",
+        "app_name": "Zoom",
+        "duration_seconds": 6500.616163,
+        "degenerate": true
+      },
+      {
+        "session_id": "20260731_104833",
+        "app_name": "Zoom",
+        "duration_seconds": 187.625688,
+        "degenerate": false
+      },
+      {
+        "session_id": "20260731_105210",
+        "app_name": "Zoom",
+        "duration_seconds": 789.128791,
+        "degenerate": true
+      },
+      {
+        "session_id": "20260731_110615",
+        "app_name": "Zoom",
+        "duration_seconds": 321.619484,
+        "degenerate": true
+      },
+      {
+        "session_id": "20260731_111216",
+        "app_name": "Zoom",
+        "duration_seconds": 59.623839,
+        "degenerate": false
+      },
+      {
+        "session_id": "20260731_111333",
+        "app_name": "Zoom",
+        "duration_seconds": 568.132091,
+        "degenerate": true
+      },
+      {
+        "session_id": "20260731_112335",
+        "app_name": "Zoom",
+        "duration_seconds": 3389.626637,
+        "degenerate": true
+      },
+      {
+        "session_id": "20260731_140815",
+        "app_name": "Zoom",
+        "duration_seconds": 2144.643251,
+        "degenerate": true
+      },
+      {
+        "session_id": "20260803_105925",
+        "app_name": "Google Meet",
+        "duration_seconds": 350.21535,
+        "degenerate": false
+      },
+      {
+        "session_id": "20260804_165917",
+        "app_name": "Zoom",
+        "duration_seconds": 5998.8805,
+        "degenerate": true
+      },
+      {
+        "session_id": "20260805_103108",
+        "app_name": "Zoom",
+        "duration_seconds": 75.092419,
+        "degenerate": false
+      },
+      {
+        "session_id": "20260805_103257",
+        "app_name": "Zoom",
+        "duration_seconds": 5158.73628,
+        "degenerate": true
+      },
+      {
+        "session_id": "20260806_144650",
+        "app_name": "Zoom",
+        "duration_seconds": 3705.052886,
+        "degenerate": true
+      },
+      {
+        "session_id": "20260807_100106",
+        "app_name": "Zoom",
+        "duration_seconds": 1765.126993,
+        "degenerate": true
+      },
+      {
+        "session_id": "20260807_103130",
+        "app_name": "Zoom",
+        "duration_seconds": 2599.170518,
+        "degenerate": true
+      },
+      {
+        "session_id": "20260807_120212",
+        "app_name": "Zoom",
+        "duration_seconds": 3706.75306,
+        "degenerate": true
+      },
+      {
+        "session_id": "20260807_141527",
+        "app_name": "Zoom",
+        "duration_seconds": 2418.619295,
+        "degenerate": true
+      },
+      {
+        "session_id": "20260807_145656",
+        "app_name": "Zoom",
+        "duration_seconds": 677.146706,
+        "degenerate": true
+      },
+      {
+        "session_id": "20260812_113216",
+        "app_name": "Google Meet",
+        "duration_seconds": 42.149583,
+        "degenerate": false
+      },
+      {
+        "session_id": "20260812_133239",
+        "app_name": "Zoom",
+        "duration_seconds": 1082.137154,
+        "degenerate": true
+      },
+      {
+        "session_id": "20260812_140014",
+        "app_name": "Zoom",
+        "duration_seconds": 10969.177094,
+        "degenerate": true
+      },
+      {
+        "session_id": "20260812_171835",
+        "app_name": "Zoom",
+        "duration_seconds": 6842.663827,
+        "degenerate": true
+      },
+      {
+        "session_id": "20260813_120036",
+        "app_name": "Zoom",
+        "duration_seconds": 3558.656441,
+        "degenerate": true
+      },
+      {
+        "session_id": "20260813_130156",
+        "app_name": "Zoom",
+        "duration_seconds": 2411.711666,
+        "degenerate": true
+      },
+      {
+        "session_id": "20260813_134328",
+        "app_name": "Zoom",
+        "duration_seconds": 605.137237,
+        "degenerate": true
+      },
+      {
+        "session_id": "20260817_130256",
+        "app_name": "Zoom",
+        "duration_seconds": 4798.192828,
+        "degenerate": true
+      },
+      {
+        "session_id": "20260818_165750",
+        "app_name": "Zoom",
+        "duration_seconds": 8234.598794,
+        "degenerate": true
+      },
+      {
+        "session_id": "20260819_222443",
+        "app_name": "Zoom",
+        "duration_seconds": 74.609988,
+        "degenerate": false
+      },
+      {
+        "session_id": "20260819_224404",
+        "app_name": "Zoom",
+        "duration_seconds": 50.135374,
+        "degenerate": false
+      },
+      {
+        "session_id": "20260819_224714",
+        "app_name": "Zoom",
+        "duration_seconds": 34.606074,
+        "degenerate": false
+      },
+      {
+        "session_id": "20260819_225238",
+        "app_name": "Zoom",
+        "duration_seconds": 53.136038,
+        "degenerate": false
+      },
+      {
+        "session_id": "20260820_000823",
+        "app_name": "Zoom",
+        "duration_seconds": 40.628046,
+        "degenerate": false
+      },
+      {
+        "session_id": "20260820_001805",
+        "app_name": "Zoom",
+        "duration_seconds": 43.610999,
+        "degenerate": false
+      },
+      {
+        "session_id": "20260820_002042",
+        "app_name": "Zoom",
+        "duration_seconds": 37.641842,
+        "degenerate": false
+      }
+    ]
+  }
+}

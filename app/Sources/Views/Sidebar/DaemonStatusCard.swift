@@ -26,6 +26,12 @@ struct DaemonStatusCard: View {
                 if let streak = status.micOnlyStreak, streak > 0 {
                     micOnlyWarningView(streak)
                 }
+
+                // Extraction canary — a long call with zero stage-1 candidates
+                // means the extractor may be blind, not that nothing was said
+                if status.extractionCanary != nil {
+                    extractionCanaryView
+                }
             } else {
                 offlineView
             }
@@ -197,6 +203,22 @@ struct DaemonStatusCard: View {
         }
         .padding(.top, 6)
         .help("Other participants are missing from recordings. Grant Screen & System Audio Recording to AudioCapture.app, then restart the daemon.")
+    }
+
+    // MARK: - Extraction canary
+
+    private var extractionCanaryView: some View {
+        HStack(spacing: 6) {
+            Image(systemName: "text.magnifyingglass")
+                .foregroundStyle(.orange)
+                .font(.system(size: 10))
+
+            Text("Long call, no commitments found \u{2014} extraction may be blind")
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+        }
+        .padding(.top, 6)
+        .help("The last long call produced zero commitment candidates. If commitments were made, the markers may not match this call's language.")
     }
 
     // MARK: - Card background

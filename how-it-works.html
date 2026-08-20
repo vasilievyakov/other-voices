@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Other Voices — как это устроено</title>
+<style>
+  :root {
+    --bg: #fcfcfb;
+    --surface: #ffffff;
+    --surface2: #f4f4f2;
+    --text: #1a1a19;
+    --muted: #6b6b66;
+    --border: #e4e4e0;
+    --accent: #2a78d6;
+    --good: #0ca30c;
+    --warn: #fab219;
+    --crit: #d03b3b;
+    --code-bg: #f4f4f2;
+  }
+  [data-theme="dark"] {
+    --bg: #1a1a19;
+    --surface: #232322;
+    --surface2: #2c2c2a;
+    --text: #f0f0ee;
+    --muted: #9d9d97;
+    --border: #3a3a37;
+    --accent: #5c9de6;
+    --good: #3dbb3d;
+    --warn: #f7bf45;
+    --crit: #e06060;
+    --code-bg: #2c2c2a;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: "IBM Plex Sans", -apple-system, "Segoe UI", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.65;
+    font-size: 16px;
+  }
+  code, pre, .mono {
+    font-family: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: 0.88em;
+  }
+  code { background: var(--code-bg); padding: 1px 6px; border-radius: 4px; }
+  pre { background: var(--code-bg); padding: 14px 16px; border-radius: 8px; overflow-x: auto; line-height: 1.5; }
+  pre code { background: none; padding: 0; }
+  .wrap { max-width: 940px; margin: 0 auto; padding: 40px 24px 80px; }
+  header { margin-bottom: 36px; }
+  h1 { font-size: 30px; font-weight: 650; letter-spacing: -0.5px; }
+  .subtitle { color: var(--muted); margin-top: 6px; font-size: 16px; }
+  h2 { font-size: 21px; font-weight: 640; margin: 52px 0 14px; letter-spacing: -0.3px; }
+  h3 { font-size: 16.5px; font-weight: 620; margin: 22px 0 8px; }
+  p { margin: 10px 0; }
+  ul, ol { margin: 10px 0 10px 24px; }
+  li { margin: 5px 0; }
+  a { color: var(--accent); }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+  .chip {
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 5px 12px; border-radius: 999px; font-size: 13.5px; font-weight: 550;
+    border: 1px solid var(--border); background: var(--surface);
+  }
+  .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .dot.good { background: var(--good); } .dot.warn { background: var(--warn); } .dot.crit { background: var(--crit); }
+  .theme-btn {
+    position: fixed; top: 18px; right: 18px; z-index: 10;
+    padding: 6px 14px; border-radius: 999px; border: 1px solid var(--border);
+    background: var(--surface); color: var(--text); cursor: pointer; font-size: 13px;
+    font-family: inherit;
+  }
+  .lead {
+    background: var(--surface); border: 1px solid var(--border); border-left: 4px solid var(--accent);
+    border-radius: 10px; padding: 18px 22px; margin: 24px 0;
+  }
+
+  /* Pipeline */
+  .pipeline { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 18px 0 0; }
+  .stage {
+    padding: 9px 15px; border-radius: 9px; border: 1.5px solid var(--border);
+    background: var(--surface); cursor: pointer; font-size: 14.5px; font-weight: 560;
+    color: var(--text); font-family: inherit; transition: border-color .15s, background .15s;
+  }
+  .stage:hover { border-color: var(--accent); }
+  .stage.active { border-color: var(--accent); background: var(--accent); color: #fff; }
+  .arrow { color: var(--muted); font-size: 15px; user-select: none; }
+  .stage-detail {
+    margin-top: 14px; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; padding: 20px 24px; min-height: 120px;
+  }
+  .stage-detail .file { color: var(--muted); font-size: 13.5px; margin-bottom: 8px; }
+  .new-badge {
+    display: inline-block; font-size: 11.5px; font-weight: 650; letter-spacing: .4px;
+    color: var(--accent); border: 1px solid var(--accent); border-radius: 5px;
+    padding: 1px 7px; margin-left: 8px; vertical-align: 2px;
+  }
+
+  /* Cards, tables */
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 18px 22px; margin: 14px 0; }
+  table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: 14.5px; }
+  th, td { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { font-weight: 620; color: var(--muted); font-size: 13px; text-transform: uppercase; letter-spacing: .5px; }
+  .table-scroll { overflow-x: auto; }
+
+  /* Timeline */
+  .timeline { margin: 20px 0; padding-left: 26px; border-left: 2px solid var(--border); }
+  .tl-item { position: relative; margin-bottom: 22px; }
+  .tl-item::before {
+    content: ""; position: absolute; left: -33px; top: 6px;
+    width: 12px; height: 12px; border-radius: 50%; background: var(--muted); border: 2.5px solid var(--bg);
+  }
+  .tl-item.crit::before { background: var(--crit); }
+  .tl-item.warn::before { background: var(--warn); }
+  .tl-item.good::before { background: var(--good); }
+  .tl-date { font-weight: 650; font-size: 14px; }
+  .tl-tag { font-size: 12px; font-weight: 650; letter-spacing: .5px; margin-left: 8px; }
+  .tl-tag.crit { color: var(--crit); } .tl-tag.warn { color: var(--warn); } .tl-tag.good { color: var(--good); }
+
+  /* Before/after */
+  .ba { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: 14px 0; }
+  @media (max-width: 720px) { .ba { grid-template-columns: 1fr; } }
+  .ba .card { margin: 0; }
+  .ba .card.bad { border-left: 4px solid var(--crit); }
+  .ba .card.ok { border-left: 4px solid var(--good); }
+  .ba h3 { margin-top: 0; }
+  .label { font-size: 12px; font-weight: 700; letter-spacing: .6px; text-transform: uppercase; }
+  .label.bad { color: var(--crit); } .label.ok { color: var(--good); }
+
+  details { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; margin: 10px 0; }
+  details summary {
+    cursor: pointer; padding: 14px 20px; font-weight: 600; font-size: 15.5px; list-style: none;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  details summary::after { content: "+"; color: var(--muted); font-size: 20px; font-weight: 400; }
+  details[open] summary::after { content: "–"; }
+  details .inner { padding: 0 20px 18px; border-top: 1px solid var(--border); padding-top: 14px; }
+
+  .steps { counter-reset: step; margin: 14px 0; }
+  .step { display: flex; gap: 14px; margin: 12px 0; }
+  .step .n {
+    counter-increment: step; flex-shrink: 0;
+    width: 28px; height: 28px; border-radius: 50%; background: var(--accent); color: #fff;
+    display: flex; align-items: center; justify-content: center; font-weight: 650; font-size: 14px;
+  }
+  .step .n::before { content: counter(step); }
+  footer { margin-top: 60px; color: var(--muted); font-size: 13.5px; border-top: 1px solid var(--border); padding-top: 18px; }
+  .muted { color: var(--muted); }
+  .small { font-size: 13.5px; }
+</style>
+</head>
+<body>
+<button class="theme-btn" id="themeBtn">Тема: авто</button>
+<div class="wrap">
+
+<header>
+  <h1>Other Voices — как это устроено</h1>
+  <div class="subtitle">Запись, диаризация и разбор звонков. Состояние на 3 июля 2026, после починки.</div>
+  <div class="chips">
+    <span class="chip"><span class="dot good"></span>326 тестов пройдено</span>
+    <span class="chip"><span class="dot good"></span>Диаризация работает</span>
+    <span class="chip"><span class="dot warn"></span>Ждёт ручного шага: право Screen Recording</span>
+    <span class="chip"><span class="dot warn"></span>3 коммита не запушены</span>
+  </div>
+</header>
+
+<div class="lead">
+  <p><strong>Суть системы.</strong> Python-демон постоянно следит за процессами на Маке. Как только начинается звонок в Zoom, Meet, Teams, Discord, Telegram или FaceTime, он запускает Swift-бинарь, который пишет два отдельных аудиофайла: твой микрофон и весь системный звук (голоса собеседников). После звонка оба файла транскрибируются, реплики собеседников распределяются по конкретным говорящим, локальная LLM пишет саммари с решениями и задачами, и всё это сохраняется в SQLite. SwiftUI-приложение показывает результат. Ни один байт не покидает машину.</p>
+</div>
+
+<h2>Конвейер обработки звонка</h2>
+<p class="muted small">Нажми на стадию, чтобы раскрыть подробности. Метка «новое» — то, что появилось или изменилось 3 июля.</p>
+<div class="pipeline" id="pipeline"></div>
+<div class="stage-detail" id="stageDetail"></div>
+
+<h2>Два канала звука — фундамент всей системы</h2>
+<div class="card">
+  <p>Каждая запись состоит из двух независимых файлов:</p>
+  <ul>
+    <li><code>mic.wav</code> — твой голос, пишется через AVAudioEngine прямо с микрофона.</li>
+    <li><code>system.wav</code> — всё, что звучит из динамиков, то есть голоса собеседников. Пишется через ScreenCaptureKit, и для этого macOS требует право «Screen &amp; System Audio Recording».</li>
+  </ul>
+  <p>Разделение каналов даёт бесплатную базовую диаризацию: всё из <code>mic.wav</code> — это ты (<code>SPEAKER_ME</code>), всё из <code>system.wav</code> — остальные. Дальше внутри системного канала работает настоящая диаризация по голосам.</p>
+  <p>Из этого же следует уязвимость: если право Screen Recording отозвано, <code>system.wav</code> просто не создаётся. Запись формально идёт, транскрипт формально есть, саммари формально пишется — только всё это построено на половине разговора. Именно это и происходило три недели.</p>
+</div>
+
+<h2>История поломки: почему саммари были «хренью»</h2>
+<div class="timeline">
+  <div class="tl-item">
+    <div class="tl-date">10 июня, 10:12</div>
+    <p>Последняя запись с живым <code>system.wav</code>. Дальше две недели звонков через это окно просто не было.</p>
+  </div>
+  <div class="tl-item warn">
+    <div class="tl-date">25 июня, ~20:00 <span class="tl-tag warn">ТРИГГЕР</span></div>
+    <p>Бинарь <code>audio-capture</code> пересобрали (чинили пустой <code>mic.wav</code> после перехвата микрофона диктовкой Wispr Flow). Пересборка сменила ad-hoc подпись с дрейфующим идентификатором — и macOS молча отозвала право Screen Recording. Фиксы при этом остались незакоммиченными, а демон никто не перезапустил.</p>
+  </div>
+  <div class="tl-item crit">
+    <div class="tl-date">26 июня — 3 июля <span class="tl-tag crit">ТИХАЯ ДЕГРАДАЦИЯ</span></div>
+    <p>25 звонков записаны только с микрофона. В логе у каждого — <code>N mic + 0 system segments</code>, но WARNING никто не поднимал: Swift-бинарь честно писал ошибку в stderr, а Python его выбрасывал. Демон к тому же работал со старым кодом с 21 июня. Саммаризатор получал половину разговора и дорисовывал вторую: выдуманные «Говорящий 1/2», фейковые владельцы задач.</p>
+  </div>
+  <div class="tl-item good">
+    <div class="tl-date">3 июля <span class="tl-tag good">ДИАГНОЗ И ПОЧИНКА</span></div>
+    <p>Ручной запуск бинаря воспроизвёл ошибку прямым текстом: <code>SCStreamErrorDomain -3801: The user declined TCCs</code>. Дальше три параллельных потока работ: надёжность захвата, диаризация, анти-галлюцинация саммари. Итог — три коммита, 326 тестов.</p>
+  </div>
+</div>
+<div class="card">
+  <p><strong>Что не восстановить.</strong> У звонков с 26 июня по 3 июля вторая сторона разговора физически не записана. Их саммари останутся односторонними; новые такие случаи система теперь помечает флагом <code>coverage: mic_only</code> и поднимает тревогу.</p>
+</div>
+
+<h2>Диаризация под капотом</h2>
+<div class="card">
+  <p>Задача: внутри <code>system.wav</code> отличить одного собеседника от другого. Whisper даёт сегменты с таймкодами, но не знает, кто говорит. Поверх него работает <code>src/diarizer.py</code>:</p>
+  <div class="steps">
+    <div class="step"><span class="n"></span><div>Из <code>system.wav</code> вырезается аудио каждого whisper-сегмента по его таймкодам.</div></div>
+    <div class="step"><span class="n"></span><div>Каждый кусок прогоняется через модель CAM++ (sherpa-onnx, 27 МБ, лежит в <code>~/.cache/other-voices/models/</code>) — получается 192-мерный вектор, «отпечаток голоса». Сегменты короче полусекунды слишком ненадёжны, они потом наследуют говорящего у ближайшего по времени соседа.</div></div>
+    <div class="step"><span class="n"></span><div>Векторы кластеризуются агломеративно по косинусной близости. Похожие голоса склеиваются в один кластер; порог склейки — 0.55. Число говорящих определяется автоматически, кэп — 8.</div></div>
+    <div class="step"><span class="n"></span><div>Кластеры получают метки <code>SPEAKER_1..N</code> в порядке первого появления в разговоре.</div></div>
+  </div>
+  <p>Скорость: модель грузится за 0.12 с (лениво, при первом звонке, старт демона не страдает), диаризация 63 сегментов — 1.4 с. На реальном командном стендапе система развела 7 говорящих:</p>
+  <pre><code>[0:00] SPEAKER_1: Я из-за погодных условий немножко позже детей отвезла.
+[0:15] SPEAKER_2: Но вы никак не повлияет это ни на что.
+[0:26] SPEAKER_3: Яков, доброе утро.
+[0:34] SPEAKER_3: Что-то у нас все сегодня опоздуны.
+[0:49] SPEAKER_4: Коллеги, привет.
+[0:51] SPEAKER_3: Привет, Лен.
+[1:23] SPEAKER_5: А что я их не вижу?</code></pre>
+  <p>Если модель недоступна или что-то падает, весь системный канал получает прежнюю метку <code>SPEAKER_OTHER</code> — конвейер из-за диаризации не останавливается никогда.</p>
+</div>
+
+<details>
+  <summary>Почему sherpa-onnx, а также ручки настройки</summary>
+  <div class="inner">
+    <p>Стандартный вариант — pyannote — отпал: его модели закрыты лицензионным соглашением на HuggingFace и требуют токена. Вторая засада: проектный venv живёт на Python 3.14, куда torch ставится плохо. sherpa-onnx несёт собственный onnxruntime, имеет готовые колёса под cp314 arm64, а модель скачивается с GitHub Releases без всякой авторизации.</p>
+    <div class="table-scroll">
+    <table>
+      <tr><th>Ключ в config.py</th><th>Значение</th><th>Смысл</th></tr>
+      <tr><td><code>DIARIZATION_ENABLED</code></td><td>True</td><td>Выключатель всей диаризации</td></tr>
+      <tr><td><code>DIARIZATION_DISTANCE_THRESHOLD</code></td><td>0.55</td><td>Порог склейки кластеров. Ниже — больше «разных» говорящих, выше — голоса чаще сливаются</td></tr>
+      <tr><td><code>DIARIZATION_NUM_SPEAKERS</code></td><td>0</td><td>0 — автоопределение; если знаешь, что на звонке ровно трое, поставь 3 и точность вырастет</td></tr>
+      <tr><td><code>DIARIZATION_MAX_SPEAKERS</code></td><td>8</td><td>Потолок для автоопределения</td></tr>
+      <tr><td><code>DIARIZATION_MIN_EMBED_DURATION</code></td><td>0.5 с</td><td>Сегменты короче наследуют соседа</td></tr>
+      <tr><td><code>DIARIZATION_MODEL_PATH</code></td><td>~/.cache/other-voices/models/…</td><td>Путь к ONNX-модели CAM++</td></tr>
+    </table>
+    </div>
+    <p class="small muted">Известные ограничения: порог 0.55 эвристический, на стендапе дал лёгкую пере-сегментацию (спикер с единственной репликой); быстрые перебивки короче полусекунды могут уйти соседу; смена говорящего внутри одного whisper-сегмента не ловится.</p>
+  </div>
+</details>
+
+<h2>Саммари и action points: борьба с выдумками</h2>
+<div class="card">
+  <p>Проблема была двухслойной. Первый слой — односторонние транскрипты. Второй — сами промпты: правила вида «participants: … Never []» и «If no names: [&#39;Speaker 1&#39;, &#39;Speaker 2&#39;]» прямо запрещали модели честный пустой ответ, и она услужливо изобретала людей и задачи.</p>
+  <p>Теперь во все 6 шаблонов (default, sales_call, one_on_one, standup, interview, brainstorm, на обоих языках) вшит блок evidence-правил:</p>
+  <ul>
+    <li>Использовать только то, что есть в транскрипте. Людей, решения и задачи не выдумывать.</li>
+    <li>Участники — имена, прозвучавшие в разговоре, либо спикер-метки (<code>SPEAKER_1</code>). Никаких людей-заглушек.</li>
+    <li>Пустой список решений или задач разрешён и предпочтительнее выдумки.</li>
+    <li>Каждое решение и каждая задача — с таймкодом <code>[MM:SS]</code>, по которому можно ткнуть в запись и проверить.</li>
+    <li>Если в транскрипте только одна сторона разговора — не угадывать, что говорила вторая.</li>
+  </ul>
+  <p>Поверх промптов — два механических предохранителя в <code>summarizer.py</code>:</p>
+  <ul>
+    <li><strong>Детектор односторонности.</strong> Если в транскрипте нет ничьих реплик, кроме <code>SPEAKER_ME</code>, в промпт добавляется предупреждение, а в итоговый JSON — поле <code>coverage: mic_only</code>. Полные записи получают <code>coverage: full</code>.</li>
+    <li><strong>Валидатор владельцев.</strong> После генерации каждый action item с <code>@владельцем</code> проверяется: если такого имени нет в транскрипте, пункт выкидывается и это логируется.</li>
+  </ul>
+</div>
+
+<h3>Тот самый звонок 3 июля (44 минуты, записан только микрофон)</h3>
+<div class="ba">
+  <div class="card bad">
+    <div class="label bad">Было в базе</div>
+    <pre><code>"participants": ["Говорящий 1",
+                 "Говорящий 2"],
+"decisions": [2 выдуманных],
+"action_items": [
+ "@DimaTorzok: подготовить
+  субтитры к следующему звонку",
+ "@Алексей Дубровский:
+  поделиться лекцией по PRD"]</code></pre>
+    <p class="small">Оба «владельца» — фикция. «DimaTorzok» — артефакт Whisper на тишине, Дубровского в разговоре нет вовсе.</p>
+  </div>
+  <div class="card ok">
+    <div class="label ok">Стало с новыми промптами</div>
+    <pre><code>"participants": ["SPEAKER_ME"],
+"decisions": [],
+"action_items": [],
+"coverage": "mic_only",
+"summary": "…Нет явных решений
+ или задач."</code></pre>
+    <p class="small">Честный ответ: одна сторона разговора, явных договорённостей в ней нет. Ключевые пункты — только реально прозвучавшее, с таймкодами.</p>
+  </div>
+</div>
+<div class="card">
+  <p><strong>Про модель.</strong> Сейчас работает qwen3:14b через Ollama (thinking-режим, контекст 32768, ответ до 16384 токенов; транскрипты длиннее 25 тысяч символов режутся на чанки с перехлёстом 2000 и сводятся map-reduce). Сравнение на живом звонке показало: qwen3:32b заметно богаче — 8 обоснованных пунктов против 2, распознал «миро» как инструмент Miro, отфильтровал мусорный артефакт. Цена — в 2.4 раза медленнее. Дефолт оставлен на 14b; 32b — кандидат на пересуммаризацию важных звонков по запросу.</p>
+</div>
+
+<h2>Наблюдаемость: почему такое больше не пройдёт тихо</h2>
+<div class="card">
+  <ul>
+    <li><strong>stderr Swift-бинаря</strong> теперь дренируется и попадает в лог демона с префиксом <code>[audio-capture]</code>. Раньше он выбрасывался — именно поэтому отзыв права три недели оставался невидимым.</li>
+    <li><strong>Маркер-файл.</strong> При отказе системного захвата бинарь кладёт в папку сессии <code>capture-error.txt</code> с текстом ошибки — Python определяет сбой детерминированно, без гаданий по пустому файлу.</li>
+    <li><strong>Сторожок в демоне.</strong> После каждого звонка: если есть маркер или ноль system-сегментов — WARNING в лог с точным путём до настроек, macOS-уведомление (не чаще раза в час) и <code>system_audio_ok: false</code> в <code>status.json</code>, откуда его видит карточка статуса в приложении.</li>
+    <li><strong>Лог</strong>: <code>logs/call-recorder.log</code>, ротация 5 МБ, 3 бэкапа. <strong>Статус</strong>: <code>data/status.json</code>, heartbeat каждые 60 секунд.</li>
+    <li><strong>Подпись бинаря</strong> — стабильный идентификатор <code>com.vasiliev.audio-capture</code> (раньше идентификатор дрейфовал от сборки к сборке, что и убивало право).</li>
+  </ul>
+</div>
+
+<h2>Что сделать руками сейчас</h2>
+<div class="card" style="border-left: 4px solid var(--warn);">
+  <div class="steps">
+    <div class="step"><span class="n"></span><div>System Settings → Privacy &amp; Security → <strong>Screen &amp; System Audio Recording</strong>: удали старую запись <code>audio-capture</code>, добавь заново <code>~/call-recorder/bin/audio-capture</code>. Бинарь пересобран, старое разрешение уже не совпадает с ним. Заодно проверь для него право Microphone.</div></div>
+    <div class="step"><span class="n"></span><div>Перезапусти демона: <code>bash ~/call-recorder/restart-daemon.sh</code>. Он работает с 21 июня и не видел ни одного из новых фиксов.</div></div>
+    <div class="step"><span class="n"></span><div>Сделай тестовый звонок длиннее 30 секунд и проверь лог: должно появиться <code>N mic + M system segments</code> с M &gt; 0, а в <code>status.json</code> — <code>"system_audio_ok": true</code>.</div></div>
+  </div>
+  <p class="small muted">Важно на будущее: подпись ad-hoc, потому что на машине нет сертификата Apple Development. Каждая пересборка бинаря будет снова отзывать право — шаги 1 и 2 придётся повторять. Сертификат разработчика закрыл бы вопрос насовсем.</p>
+</div>
+
+<details>
+  <summary>Runbook: саммари снова стали странными — что проверять</summary>
+  <div class="inner">
+    <ol>
+      <li>Пришло ли macOS-уведомление про системный звук? Оно теперь приходит само.</li>
+      <li><code>grep "system segments" ~/call-recorder/logs/call-recorder.log | tail</code> — если <code>0 system</code>, звук собеседников не пишется.</li>
+      <li><code>cat ~/call-recorder/data/status.json</code> — смотри <code>system_audio_ok</code>.</li>
+      <li>Загляни в папку последней сессии <code>data/recordings/&lt;session&gt;/</code>: есть ли <code>capture-error.txt</code> и <code>system.wav</code>.</li>
+      <li>Чаще всего лечится повторной выдачей права Screen Recording и <code>restart-daemon.sh</code>.</li>
+      <li>Если в саммари подозрительные имена — проверь <code>coverage</code> в JSON звонка: <code>mic_only</code> означает односторонний транскрипт.</li>
+    </ol>
+  </div>
+</details>
+
+<details>
+  <summary>Карта файлов проекта</summary>
+  <div class="inner">
+    <div class="table-scroll">
+    <table>
+      <tr><th>Путь</th><th>Роль</th></tr>
+      <tr><td><code>src/daemon.py</code></td><td>Главный цикл: опрос детектора каждые 3 с, оркестрация конвейера, status.json, сторожок системного звука, уведомления</td></tr>
+      <tr><td><code>src/detector.py</code></td><td>Определение активного звонка по процессам (psutil): для Zoom — процесс CptHost, для остальных — UDP-соединения</td></tr>
+      <tr><td><code>src/recorder.py</code></td><td>Запуск и остановка Swift-бинаря, дренаж его stderr в лог</td></tr>
+      <tr><td><code>swift/AudioCapture.swift</code> → <code>bin/audio-capture</code></td><td>Захват: ScreenCaptureKit → system.wav, AVAudioEngine → mic.wav; перезапуск движка при смене аудиоустройства; capture-error.txt при сбое</td></tr>
+      <tr><td><code>src/transcriber.py</code></td><td>mlx_whisper (large-v3) по каждому каналу отдельно, слияние сегментов по таймкодам, transcript.txt</td></tr>
+      <tr><td><code>src/diarizer.py</code></td><td>Эмбеддинги CAM++ + кластеризация → SPEAKER_1..N в системном канале</td></tr>
+      <tr><td><code>src/summarizer.py</code></td><td>Вызов Ollama, чанкинг map-reduce, детектор mic_only, валидатор action items, coverage</td></tr>
+      <tr><td><code>src/templates.py</code></td><td>6 шаблонов промптов (RU+EN) с evidence-правилами</td></tr>
+      <tr><td><code>src/chunking.py</code></td><td>Резка длинных транскриптов: 25 000 символов, перехлёст 2 000</td></tr>
+      <tr><td><code>src/database.py</code></td><td>SQLite + FTS5: таблицы calls и entities, полнотекстовый поиск</td></tr>
+      <tr><td><code>src/config.py</code></td><td>Все настройки: приложения, модели, интервалы, диаризация</td></tr>
+      <tr><td><code>app/</code></td><td>SwiftUI-приложение: список звонков, транскрипт, саммари, плеер, статус демона</td></tr>
+      <tr><td><code>data/calls.db</code>, <code>data/recordings/</code>, <code>data/status.json</code></td><td>База, аудио по сессиям, живой статус демона</td></tr>
+      <tr><td><code>restart-daemon.sh</code>, <code>setup.sh</code>, <code>launchd/</code></td><td>Перезапуск демона, установка с пересборкой и подписью, launchd-агент</td></tr>
+      <tr><td><code>resummarize.py</code>, <code>cli.py</code></td><td>Пересуммаризация звонка, консольные операции</td></tr>
+    </table>
+    </div>
+  </div>
+</details>
+
+<footer>
+  <p>Коммиты 3 июля (не запушены): <span class="mono">545ae79</span> захват и алерты · <span class="mono">f697012</span> диаризация · <span class="mono">77a53c8</span> анти-галлюцинация саммари. Тесты: 326 passed.</p>
+  <p>Модели: mlx-community/whisper-large-v3-mlx (транскрипция) · CAM++ via sherpa-onnx (диаризация) · qwen3:14b via Ollama (саммари). Всё локально.</p>
+</footer>
+
+</div>
+<script>
+const STAGES = [
+  {
+    name: "Детект",
+    file: "src/detector.py",
+    isNew: false,
+    html: `<p>Демон каждые <strong>3 секунды</strong> опрашивает процессы через psutil. Для Zoom самый надёжный признак — процесс <code>CptHost</code>, который существует только во время активного звонка; для Teams, Discord, Telegram, FaceTime и Google Meet — комбинация процесса и активных UDP-соединений. Звонки короче 30 секунд игнорируются. Перед стартом записи демон проверяет здоровье Ollama: если LLM лежит, запись всё равно идёт, просто без саммари (graceful degradation).</p>`
+  },
+  {
+    name: "Запись",
+    file: "src/recorder.py + bin/audio-capture (Swift)",
+    isNew: true,
+    html: `<p>Python запускает Swift-бинарь, тот параллельно пишет <code>system.wav</code> (ScreenCaptureKit, голоса собеседников) и <code>mic.wav</code> (AVAudioEngine, твой голос) в папку сессии. По окончании звонка — SIGTERM и аккуратная финализация WAV-заголовков.</p>
+      <p><strong>Новое:</strong> stderr бинаря дренируется в лог демона (раньше выбрасывался — из-за этого отзыв права был невидим три недели); при отказе системного захвата пишется маркер <code>capture-error.txt</code>; при смене аудиоустройства посреди звонка (например, диктовка перехватила микрофон) движок перезапускается вместо тихой смерти; подпись бинаря со стабильным идентификатором <code>com.vasiliev.audio-capture</code>.</p>`
+  },
+  {
+    name: "Транскрипция",
+    file: "src/transcriber.py",
+    isNew: false,
+    html: `<p>mlx_whisper (модель large-v3, MLX-сборка под Apple Silicon) прогоняется <strong>по каждому каналу отдельно</strong>. Выход — сегменты с таймкодами начала и конца. Всё из микрофонного канала сразу помечается <code>SPEAKER_ME</code>. Часовой звонок транскрибируется примерно за полторы минуты.</p>`
+  },
+  {
+    name: "Диаризация",
+    file: "src/diarizer.py",
+    isNew: true,
+    html: `<p><strong>Новая стадия.</strong> Сегменты системного канала распределяются по конкретным говорящим: каждый сегмент превращается в 192-мерный «отпечаток голоса» (модель CAM++, sherpa-onnx, полностью локально), отпечатки кластеризуются, кластеры получают метки <code>SPEAKER_1..N</code> в порядке появления. На реальном стендапе система развела 7 участников за 1.4 секунды. При любом сбое — тихий откат к общей метке <code>SPEAKER_OTHER</code>, конвейер не падает. Подробности — в разделе ниже.</p>`
+  },
+  {
+    name: "Слияние",
+    file: "src/transcriber.py",
+    isNew: false,
+    html: `<p>Сегменты обоих каналов сортируются по таймкодам в единую ленту разговора и форматируются строками вида <code>[MM:SS] SPEAKER_X: текст</code>. Результат сохраняется в <code>transcript.txt</code> рядом с аудио и уходит дальше в саммаризатор.</p>`
+  },
+  {
+    name: "Саммари",
+    file: "src/summarizer.py + src/templates.py",
+    isNew: true,
+    html: `<p>Ollama qwen3:14b в thinking-режиме, шаблон подбирается по типу звонка (default, sales_call, one_on_one, standup, interview, brainstorm). Транскрипты длиннее 25 000 символов режутся на чанки с перехлёстом 2 000 и сводятся map-reduce. Выход — JSON: участники, ключевые пункты, решения, задачи, саммари, заголовок, сущности.</p>
+      <p><strong>Новое:</strong> evidence-правила во всех шаблонах (только факты из транскрипта, пустые списки разрешены, таймкоды у решений и задач); если запись односторонняя — модель прямо предупреждается об этом.</p>`
+  },
+  {
+    name: "Валидация",
+    file: "src/summarizer.py",
+    isNew: true,
+    html: `<p><strong>Новая стадия.</strong> Два предохранителя после генерации: каждый action item с <code>@владельцем</code> проверяется на присутствие этого имени в транскрипте — выдуманные владельцы выкидываются с записью в лог; в JSON добавляется поле <code>coverage</code> (<code>full</code> или <code>mic_only</code>), чтобы одностороннюю запись было видно сразу.</p>`
+  },
+  {
+    name: "Сохранение",
+    file: "src/database.py",
+    isNew: false,
+    html: `<p>Звонок целиком — метаданные, транскрипт, сегменты, JSON саммари, сущности — уходит в SQLite (<code>data/calls.db</code>). Триггеры автоматически обновляют FTS5-индекс, так что полнотекстовый поиск по всем разговорам работает сразу. Демон пишет итог в <code>status.json</code>, включая новый флаг <code>system_audio_ok</code>.</p>`
+  },
+  {
+    name: "Приложение",
+    file: "app/ (SwiftUI)",
+    isNew: false,
+    html: `<p>Трёхколоночное SwiftUI-приложение читает ту же базу напрямую через SQLite C API: список звонков с группировкой по датам, транскрипт с плеером (скорость 0.75x–2x, пробел — пауза), карточка саммари, поиск, экспорт. Карточка статуса демона показывает пять состояний и берёт данные из <code>status.json</code> — туда теперь попадает и здоровье системного звука.</p>`
+  }
+];
+
+const pipeline = document.getElementById("pipeline");
+const detail = document.getElementById("stageDetail");
+STAGES.forEach((s, i) => {
+  const btn = document.createElement("button");
+  btn.className = "stage";
+  btn.textContent = s.name;
+  btn.addEventListener("click", () => select(i));
+  pipeline.appendChild(btn);
+  if (i < STAGES.length - 1) {
+    const a = document.createElement("span");
+    a.className = "arrow";
+    a.textContent = "→";
+    pipeline.appendChild(a);
+  }
+});
+function select(i) {
+  document.querySelectorAll(".stage").forEach((b, j) => b.classList.toggle("active", j === i));
+  const s = STAGES[i];
+  detail.innerHTML =
+    '<div class="file">' + s.file + (s.isNew ? '<span class="new-badge">новое</span>' : "") + "</div>" + s.html;
+}
+select(0);
+
+const btn = document.getElementById("themeBtn");
+const modes = ["auto", "light", "dark"];
+let mode = localStorage.getItem("ov-theme") || "auto";
+function applyTheme() {
+  const root = document.documentElement;
+  if (mode === "auto") {
+    const dark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+    root.setAttribute("data-theme", dark ? "dark" : "light");
+  } else {
+    root.setAttribute("data-theme", mode);
+  }
+  btn.textContent = "Тема: " + (mode === "auto" ? "авто" : mode === "light" ? "светлая" : "тёмная");
+}
+btn.addEventListener("click", () => {
+  mode = modes[(modes.indexOf(mode) + 1) % modes.length];
+  localStorage.setItem("ov-theme", mode);
+  applyTheme();
+});
+window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", applyTheme);
+applyTheme();
+</script>
+</body>
+</html>

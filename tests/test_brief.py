@@ -136,3 +136,69 @@ class TestBriefHonesty:
         _call(tmp_db, "s1", "2026-08-16T10:00:00")
         md = render_brief(build_brief(tmp_db, "Максим", now=NOW))
         assert "не значит" in md  # «не найдено — не значит, что не было»
+
+
+class TestBriefTitleLines:
+    def test_entry_uses_title_when_present(self, tmp_db):
+        _call(tmp_db, "s1", "2026-08-16T10:00:00")
+        tmp_db.insert_commitments(
+            "s1",
+            [
+                {
+                    "type": "outgoing",
+                    "who": "SPEAKER_ME",
+                    "to_whom": "Максим",
+                    "what": "ну там смету, я пришлю",
+                    "quote": "ну там смету, я пришлю",
+                    "title": "прислать смету",
+                }
+            ],
+        )
+        brief = build_brief(tmp_db, "Максим", now=NOW)
+        assert brief["outgoing"][0]["what"] == "прислать смету"
+        md = render_brief(brief)
+        assert "- прислать смету" in md
+        assert "> ну там смету, я пришлю" in md
+
+    def test_entry_falls_back_to_text(self, tmp_db):
+        _call(tmp_db, "s1", "2026-08-16T10:00:00")
+        tmp_db.insert_commitments(
+            "s1",
+            [
+                {
+                    "type": "outgoing",
+                    "who": "SPEAKER_ME",
+                    "to_whom": "Максим",
+                    "what": "прислать смету",
+                    "quote": "пришлю смету",
+                }
+            ],
+        )
+        brief = build_brief(tmp_db, "Максим", now=NOW)
+        assert brief["outgoing"][0]["what"] == "прислать смету"
+
+
+class TestSpeakerRenameInBrief:
+    def test_renamed_speaker_incoming_lands_in_brief(self, tmp_db):
+        """Before rename the committer label can't match the person; after
+        set_speaker_name the brief picks the commitment up via who_name."""
+        _call(tmp_db, "s1", "2026-08-16T10:00:00")
+        tmp_db.insert_commitments(
+            "s1",
+            [
+                {
+                    "type": "incoming",
+                    "who": "SPEAKER_1",
+                    "to_whom": None,
+                    "what": "прислать бриф",
+                    "quote": "скину бриф",
+                }
+            ],
+        )
+        before = build_brief(tmp_db, "Максим", now=NOW)
+        assert len(before["incoming"]) == 0
+
+        tmp_db.set_speaker_name("s1", "SPEAKER_1", "Максим")
+        after = build_brief(tmp_db, "Максим", now=NOW)
+        assert len(after["incoming"]) == 1
+        assert after["incoming"][0]["what"] == "прислать бриф"

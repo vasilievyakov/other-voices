@@ -18,11 +18,19 @@ private let listColumns = """
     template_name, notes, NULL
     """
 
-final class SQLiteDatabase {
+package final class SQLiteDatabase {
     private let path: String
     private var db: OpaquePointer?
 
-    init(path: String) {
+    /// Cutoff string comparable to stored started_at values, which are naive
+    /// local isoformat — SQLite's datetime('now') is UTC with a space
+    /// separator and never compares correctly against them.
+    package static func actionItemCutoff(days: Int, from reference: Date = Date()) -> String {
+        Call.naiveLocalBasic.string(
+            from: reference.addingTimeInterval(-Double(days) * 86400))
+    }
+
+    package init(path: String) {
         self.path = path
         let exists = FileManager.default.fileExists(atPath: path)
         logger.warning("DB path: \(path), exists: \(exists)")
@@ -131,14 +139,15 @@ final class SQLiteDatabase {
         return readCalls(stmt: stmt!)
     }
 
-    func openCommitments() -> [Commitment] {
+    package func openCommitments() -> [Commitment] {
         guard let db = ensureOpen() else { return [] }
 
         let sql = """
         SELECT c.id, c.session_id, c.direction,
                COALESCE(NULLIF(c.who_name, ''), c.who_label) AS who,
                c.text, c.verbatim_quote, c.deadline_raw, c.uncertain,
-               ca.app_name, COALESCE(ca.started_at, '')
+               ca.app_name, COALESCE(ca.started_at, ''),
+               c.title, c.deadline_date
         FROM commitments c
         JOIN calls ca ON ca.session_id = c.session_id
         WHERE c.status = 'open'
@@ -166,7 +175,9 @@ final class SQLiteDatabase {
                     deadline: text(6),
                     uncertain: sqlite3_column_int(stmt, 7) != 0,
                     appName: text(8) ?? "",
-                    callDate: String((text(9) ?? "").prefix(10))
+                    callDate: String((text(9) ?? "").prefix(10)),
+                    title: text(10),
+                    deadlineDate: text(11)
                 )
             )
         }
@@ -262,20 +273,98 @@ final class SQLiteDatabase {
             SELECT \(listColumns)
             FROM calls
             WHERE summary_json IS NOT NULL
-              AND started_at >= datetime('now', ?)
+              AND started_at >= ?
             ORDER BY started_at DESC
             """
         var stmt: OpaquePointer?
         guard sqlite3_prepare_v2(db, sql, -1, &stmt, nil) == SQLITE_OK else { return [] }
         defer { sqlite3_finalize(stmt) }
 
-        let param = "-\(days) days"
+        let param = Self.actionItemCutoff(days: days)
         sqlite3_bind_text(stmt, 1, (param as NSString).utf8String, -1, nil)
 
         return readCalls(stmt: stmt!).filter { call in
             guard let summary = call.summary else { return false }
             return summary.actionItems != nil && !(summary.actionItems!.isEmpty)
         }
+    }
+
+    // MARK: - Speaker Names
+
+    /// The app can meet a database the Python migration hasn't touched yet —
+    /// same definition as src/database.py so whoever runs first wins cleanly.
+    private func ensureSpeakerNamesTable(_ db: OpaquePointer) {
+        let sql = """
+            CREATE TABLE IF NOT EXISTS speaker_names (
+                session_id TEXT NOT NULL REFERENCES calls(session_id) ON DELETE CASCADE,
+                label      TEXT NOT NULL,
+                name       TEXT NOT NULL,
+                PRIMARY KEY (session_id, label)
+            )
+            """
+        sqlite3_exec(db, sql, nil, nil, nil)
+    }
+
+    /// Owner-set label -> name mapping for one session.
+    package func speakerNames(sessionId: String) -> [String: String] {
+        guard let db = ensureOpen() else { return [:] }
+
+        let sql = "SELECT label, name FROM speaker_names WHERE session_id = ?"
+        var stmt: OpaquePointer?
+        guard sqlite3_prepare_v2(db, sql, -1, &stmt, nil) == SQLITE_OK else { return [:] }
+        defer { sqlite3_finalize(stmt) }
+
+        sqlite3_bind_text(stmt, 1, (sessionId as NSString).utf8String, -1, nil)
+        var results: [String: String] = [:]
+        while sqlite3_step(stmt) == SQLITE_ROW {
+            if let label = columnText(stmt!, 0), let name = columnText(stmt!, 1) {
+                results[label] = name
+            }
+        }
+        return results
+    }
+
+    /// Owner-set display name for a diarization label. Mirrors the Python
+    /// side: writes the mapping and pushes the name into commitments.who_name
+    /// (and to_name where to_label matches) for this session. An empty name
+    /// removes the mapping and returns those columns to NULL.
+    package func setSpeakerName(sessionId: String, label: String, name: String) {
+        guard let db = ensureOpen() else { return }
+        ensureSpeakerNamesTable(db)
+
+        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        let value: String? = trimmed.isEmpty ? nil : trimmed
+
+        if let value {
+            run(db,
+                "INSERT OR REPLACE INTO speaker_names (session_id, label, name) VALUES (?, ?, ?)",
+                [sessionId, label, value])
+        } else {
+            run(db,
+                "DELETE FROM speaker_names WHERE session_id = ? AND label = ?",
+                [sessionId, label])
+        }
+        run(db,
+            "UPDATE commitments SET who_name = ? WHERE session_id = ? AND who_label = ?",
+            [value, sessionId, label])
+        run(db,
+            "UPDATE commitments SET to_name = ? WHERE session_id = ? AND to_label = ?",
+            [value, sessionId, label])
+    }
+
+    @discardableResult
+    private func run(_ db: OpaquePointer, _ sql: String, _ params: [String?]) -> Bool {
+        var stmt: OpaquePointer?
+        guard sqlite3_prepare_v2(db, sql, -1, &stmt, nil) == SQLITE_OK else { return false }
+        defer { sqlite3_finalize(stmt) }
+        for (i, param) in params.enumerated() {
+            if let param {
+                sqlite3_bind_text(stmt, Int32(i + 1), (param as NSString).utf8String, -1, nil)
+            } else {
+                sqlite3_bind_null(stmt, Int32(i + 1))
+            }
+        }
+        return sqlite3_step(stmt) == SQLITE_DONE
     }
 
     // MARK: - Private

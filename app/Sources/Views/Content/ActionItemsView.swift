@@ -78,7 +78,7 @@ struct ActionItemsView: View {
         } label: {
             VStack(alignment: .leading, spacing: 3) {
                 HStack(alignment: .top) {
-                    Text(c.text)
+                    Text(c.displayTitle)
                         .font(.body)
                     Spacer()
                     Text(c.callDate)
@@ -86,8 +86,16 @@ struct ActionItemsView: View {
                         .foregroundStyle(.secondary)
                         .monospacedDigit()
                 }
-                if let deadline = c.deadline, !deadline.isEmpty {
-                    Text("к сроку: \(deadline)")
+                // who is COALESCE(who_name, who_label): after the owner renames
+                // a speaker this shows the name instead of SPEAKER_N. The
+                // owner's own rows (SPEAKER_ME) are already titled by section.
+                if !c.who.isEmpty && c.who != "SPEAKER_ME" {
+                    Text(c.who)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                if let due = deadlineLabel(c) {
+                    Text("к сроку: \(due)")
                         .font(.caption)
                         .foregroundStyle(.orange)
                 }
@@ -103,5 +111,11 @@ struct ActionItemsView: View {
         }
         .buttonStyle(.plain)
         .accessibilityHint("Opens the call for this commitment")
+    }
+
+    private func deadlineLabel(_ c: Commitment) -> String? {
+        if let date = c.deadlineDate, !date.isEmpty { return date }
+        if let deadline = c.deadline, !deadline.isEmpty { return deadline }
+        return nil
     }
 }

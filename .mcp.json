@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "other-voices": {
+      "command": "/Users/vasiliev/call-recorder/.venv/bin/python",
+      "args": ["/Users/vasiliev/call-recorder/scripts/mcp_server.py"]
+    }
+  }
+}

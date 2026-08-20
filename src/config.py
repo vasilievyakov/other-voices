@@ -24,6 +24,7 @@ LOG_BACKUP_COUNT = 3  # keep 3 rotated backups
 # in System Settings after ANY rebuild. Bundle stays in bin/ as a future path.
 AUDIO_CAPTURE_BIN = BASE_DIR / "bin" / "audio-capture"
 CALL_SIGNAL_BIN = BASE_DIR / "bin" / "call-signal"
+CALENDAR_PEEK_BIN = BASE_DIR / "bin" / "calendar-peek"
 
 # Detector
 POLL_INTERVAL = 3  # seconds between checks
@@ -39,6 +40,9 @@ MIC_INPUT_DEVICE = os.environ.get("MIC_INPUT_DEVICE", "Shure MV7+")
 
 # Consent — recording never starts without an explicit user "yes"
 CONSENT_TIMEOUT = 60  # seconds the dialog waits; no answer = do not record
+
+# Pre-meeting briefs — how often the daemon polls bin/calendar-peek
+MEETING_CHECK_INTERVAL = 120  # seconds
 
 # Apps to detect — process names and detection strategy
 CALL_APPS = {

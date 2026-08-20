@@ -121,6 +121,73 @@ quote — ДОСЛОВНАЯ подстрока контекста, символ
 обещания нет — is_commitment=false и пустые строки."""
 
 
+TITLE_SCHEMA = {
+    "type": "object",
+    "properties": {"title": {"type": "string"}},
+    "required": ["title"],
+    "additionalProperties": False,
+}
+
+TITLE_PROMPT = """Сожми обещание в короткий заголовок вида «глагол — предмет — \
+срок».
+
+Правила:
+- используй ТОЛЬКО слова из ЦИТАТЫ и СРОКА, в той же форме
+- новые слова, имена и факты запрещены
+- выбрось слова-паразиты, вводные и повторы; глагол поставь первым
+- 2-7 слов
+
+Примеры:
+ЦИТАТА: "А, давайте я лучше в Telegram скину." → {{"title": "скину в Telegram"}}
+ЦИТАТА: "я пришлю договор, наверное, уже в пятницу" СРОК: "в пятницу" → \
+{{"title": "пришлю договор в пятницу"}}
+ЦИТАТА: "Давай дам. Я тебе скину тогда все сейчас после звонка." → \
+{{"title": "скину все после звонка"}}
+
+Пустую строку title верни ТОЛЬКО если в цитате совсем нет глагола будущего \
+действия.
+
+ЦИТАТА: "{quote}"
+СРОК: "{deadline}"
+
+Выведи ТОЛЬКО JSON."""
+
+
+def _title_grounded(title: str, source: str) -> bool:
+    """Every content word of the title must occur in the source (5-char stems,
+    same convention as evaluation): compression may drop words, never add."""
+    src = {w[:5] for w in re.findall(r"\w+", source.lower()) if len(w) > 2}
+    for w in re.findall(r"\w+", title.lower()):
+        if len(w) <= 2 or w.isdigit():
+            continue
+        if w[:5] not in src:
+            return False
+    return True
+
+
+def normalize_title(quote: str, deadline: str = "", llm=None) -> str | None:
+    """Compress a commitment into a scannable title without touching the quote.
+
+    The quote stays verbatim evidence; a title that fails grounding is
+    discarded — raw ASR text is better than a pretty invention."""
+    if not (quote or "").strip():
+        return None
+    llm = llm or _call_llm
+    out = llm(
+        TITLE_PROMPT.format(quote=quote, deadline=deadline or "не указан"),
+        temperature=0.0,
+        schema=TITLE_SCHEMA,
+    )
+    if not isinstance(out, dict):
+        return None
+    title = (out.get("title") or "").strip()
+    if not title or len(title) > 90:
+        return None
+    if not _title_grounded(title, f"{quote} {deadline or ''}"):
+        return None
+    return title
+
+
 def _normalize(text: str) -> str:
     text = (text or "").lower()
     text = re.sub(r"[«»\"'`]", "", text)
@@ -156,7 +223,9 @@ def verify_quote(quote: str, context: str) -> str:
     return "failed"
 
 
-def _call_llm(prompt: str, temperature: float = 0.25) -> dict | None:
+def _call_llm(
+    prompt: str, temperature: float = 0.25, schema: dict | None = None
+) -> dict | None:
     """Default LLM adapter (Ollama chat, closed schema). Tests inject stubs."""
     payload = json.dumps(
         {
@@ -164,7 +233,7 @@ def _call_llm(prompt: str, temperature: float = 0.25) -> dict | None:
             "messages": [{"role": "user", "content": prompt}],
             "stream": False,
             "think": False,  # narrow classification needs no reasoning budget
-            "format": CLASSIFY_SCHEMA,
+            "format": schema or CLASSIFY_SCHEMA,
             "options": {"temperature": temperature, "num_predict": 512},
         }
     ).encode("utf-8")

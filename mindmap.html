@@ -1,0 +1,1996 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Other Voices — Mind Map</title>
+<style>
+:root {
+  --bg: #0a0a0f;
+  --surface: #12121a;
+  --surface2: #1a1a26;
+  --border: #2a2a3a;
+  --text: #e0e0e8;
+  --text-dim: #8888a0;
+  --accent: #6366f1;
+  --accent-glow: rgba(99, 102, 241, 0.3);
+  --green: #22c55e;
+  --green-dim: rgba(34, 197, 94, 0.15);
+  --amber: #f59e0b;
+  --amber-dim: rgba(245, 158, 11, 0.15);
+  --red: #ef4444;
+  --red-dim: rgba(239, 68, 68, 0.15);
+  --blue: #3b82f6;
+  --blue-dim: rgba(59, 130, 246, 0.15);
+  --purple: #a855f7;
+  --purple-dim: rgba(168, 85, 247, 0.15);
+  --cyan: #06b6d4;
+  --cyan-dim: rgba(6, 182, 212, 0.15);
+  --pink: #ec4899;
+  --pink-dim: rgba(236, 72, 153, 0.15);
+  --orange: #f97316;
+  --orange-dim: rgba(249, 115, 22, 0.15);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: 'SF Pro Text', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  overflow: hidden;
+  height: 100vh;
+}
+
+/* Header */
+.header {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 24px;
+  background: rgba(10, 10, 15, 0.85);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+}
+
+.header h1 {
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.3px;
+}
+
+.header h1 span { color: var(--accent); }
+
+.header-stats {
+  display: flex;
+  gap: 16px;
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+.header-stats .stat {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.header-stats .dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+/* Navigation tabs */
+.nav {
+  position: fixed;
+  top: 49px; left: 0; right: 0;
+  z-index: 99;
+  display: flex;
+  gap: 2px;
+  padding: 8px 24px;
+  background: rgba(10, 10, 15, 0.85);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+  overflow-x: auto;
+}
+
+.nav-tab {
+  padding: 6px 14px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  color: var(--text-dim);
+  border: 1px solid transparent;
+  transition: all 0.2s;
+  white-space: nowrap;
+  background: transparent;
+}
+
+.nav-tab:hover {
+  color: var(--text);
+  background: var(--surface2);
+}
+
+.nav-tab.active {
+  color: var(--accent);
+  background: rgba(99, 102, 241, 0.1);
+  border-color: rgba(99, 102, 241, 0.3);
+}
+
+/* Main content area */
+.content {
+  margin-top: 90px;
+  height: calc(100vh - 90px);
+  overflow-y: auto;
+  padding: 24px;
+}
+
+/* View panels */
+.view { display: none; }
+.view.active { display: block; }
+
+/* Pipeline view */
+.pipeline {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.pipeline-stage {
+  position: relative;
+  display: flex;
+  gap: 16px;
+  padding: 20px 0;
+}
+
+.pipeline-stage:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  left: 20px;
+  top: 60px;
+  bottom: -1px;
+  width: 2px;
+  background: linear-gradient(to bottom, var(--border), transparent);
+}
+
+.stage-icon {
+  width: 42px; height: 42px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 1;
+}
+
+.stage-body { flex: 1; min-width: 0; }
+
+.stage-header {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.stage-name {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.stage-file {
+  font-size: 11px;
+  color: var(--text-dim);
+  font-family: 'SF Mono', monospace;
+}
+
+.stage-desc {
+  font-size: 12px;
+  color: var(--text-dim);
+  line-height: 1.5;
+  margin-bottom: 8px;
+}
+
+.stage-io {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.io-tag {
+  font-size: 10px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-family: 'SF Mono', monospace;
+  letter-spacing: -0.3px;
+}
+
+.io-in {
+  background: var(--blue-dim);
+  color: var(--blue);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+}
+
+.io-out {
+  background: var(--green-dim);
+  color: var(--green);
+  border: 1px solid rgba(34, 197, 94, 0.2);
+}
+
+.io-fallback {
+  background: var(--amber-dim);
+  color: var(--amber);
+  border: 1px solid rgba(245, 158, 11, 0.2);
+}
+
+.io-error {
+  background: var(--red-dim);
+  color: var(--red);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.stage-details {
+  margin-top: 10px;
+  padding: 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 12px;
+  display: none;
+}
+
+.stage-details.open { display: block; }
+
+.stage-toggle {
+  font-size: 11px;
+  color: var(--accent);
+  cursor: pointer;
+  margin-top: 6px;
+  display: inline-block;
+}
+
+.stage-toggle:hover { text-decoration: underline; }
+
+/* Detail tables */
+.detail-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 8px 0;
+}
+
+.detail-table th {
+  text-align: left;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-dim);
+  padding: 4px 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+.detail-table td {
+  font-size: 11px;
+  padding: 4px 8px;
+  border-bottom: 1px solid rgba(42, 42, 58, 0.5);
+  vertical-align: top;
+}
+
+.detail-table td:first-child {
+  font-family: 'SF Mono', monospace;
+  color: var(--accent);
+  white-space: nowrap;
+}
+
+/* Data architecture view */
+.schema-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  gap: 16px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.schema-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.schema-card-header {
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border);
+}
+
+.schema-card-title {
+  font-size: 13px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.schema-card-badge {
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 500;
+}
+
+.schema-card-body { padding: 12px 16px; }
+
+.column-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 3px 0;
+  font-size: 11px;
+  border-bottom: 1px solid rgba(42, 42, 58, 0.3);
+}
+
+.column-row:last-child { border: none; }
+
+.col-name {
+  font-family: 'SF Mono', monospace;
+  color: var(--cyan);
+  min-width: 140px;
+}
+
+.col-type {
+  font-family: 'SF Mono', monospace;
+  color: var(--text-dim);
+  font-size: 10px;
+  min-width: 60px;
+}
+
+.col-desc {
+  color: var(--text-dim);
+  font-size: 10px;
+}
+
+.col-pk { color: var(--amber); font-weight: 600; }
+.col-fk { color: var(--purple); }
+
+/* App architecture view */
+.app-tree {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.tree-node {
+  padding: 8px 0 8px 24px;
+  position: relative;
+}
+
+.tree-node::before {
+  content: '';
+  position: absolute;
+  left: 8px;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--border);
+}
+
+.tree-node:last-child::before { bottom: 50%; }
+
+.tree-node::after {
+  content: '';
+  position: absolute;
+  left: 8px;
+  top: 20px;
+  width: 12px;
+  height: 1px;
+  background: var(--border);
+}
+
+.tree-root { padding-left: 0; }
+.tree-root::before, .tree-root::after { display: none; }
+
+.tree-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.tree-label:hover {
+  border-color: var(--accent);
+  background: var(--surface2);
+}
+
+.tree-label .icon { font-size: 14px; }
+
+.tree-label .name { font-weight: 500; }
+
+.tree-label .meta {
+  font-size: 10px;
+  color: var(--text-dim);
+  font-family: 'SF Mono', monospace;
+}
+
+.tree-children {
+  padding-left: 4px;
+  overflow: hidden;
+  max-height: 2000px;
+  transition: max-height 0.3s;
+}
+
+.tree-children.collapsed { max-height: 0; }
+
+/* Config view */
+.config-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  gap: 16px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.config-section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.config-section-header {
+  padding: 12px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.config-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 6px 16px;
+  font-size: 11px;
+  border-bottom: 1px solid rgba(42, 42, 58, 0.3);
+}
+
+.config-key {
+  font-family: 'SF Mono', monospace;
+  color: var(--cyan);
+}
+
+.config-val {
+  font-family: 'SF Mono', monospace;
+  color: var(--text-dim);
+  text-align: right;
+}
+
+/* Error handling view */
+.error-flow {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.error-scenario {
+  margin-bottom: 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.error-trigger {
+  padding: 10px 16px;
+  font-size: 12px;
+  font-weight: 600;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.error-path {
+  padding: 8px 16px;
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-bottom: 1px solid rgba(42, 42, 58, 0.3);
+}
+
+.error-path:last-child { border: none; }
+
+.error-path .arrow { color: var(--text-dim); font-size: 10px; }
+
+.error-path .action { color: var(--amber); }
+.error-path .result { color: var(--green); }
+.error-path .fail { color: var(--red); }
+
+/* Files view */
+.files-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 12px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.file-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.file-card-name {
+  font-size: 12px;
+  font-weight: 600;
+  font-family: 'SF Mono', monospace;
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.file-card-desc {
+  font-size: 11px;
+  color: var(--text-dim);
+  line-height: 1.4;
+  margin-bottom: 6px;
+}
+
+.file-card-stats {
+  display: flex;
+  gap: 8px;
+  font-size: 10px;
+  color: var(--text-dim);
+}
+
+.file-stat {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+/* AI view */
+.ai-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+  gap: 16px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.ai-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.ai-card-header {
+  padding: 12px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ai-card-body { padding: 12px 16px; }
+
+.ai-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 4px 0;
+  font-size: 11px;
+  border-bottom: 1px solid rgba(42, 42, 58, 0.3);
+}
+
+.ai-row:last-child { border: none; }
+
+.prompt-block {
+  margin-top: 8px;
+  padding: 10px;
+  background: var(--bg);
+  border-radius: 6px;
+  font-size: 10px;
+  font-family: 'SF Mono', monospace;
+  line-height: 1.5;
+  color: var(--text-dim);
+  white-space: pre-wrap;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+/* Overview/Mind Map view */
+.mindmap {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding-bottom: 40px;
+}
+
+.mindmap-center {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.mindmap-logo {
+  width: 80px; height: 80px;
+  border-radius: 20px;
+  background: linear-gradient(135deg, var(--accent), var(--purple));
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 36px;
+  margin-bottom: 12px;
+  box-shadow: 0 0 40px var(--accent-glow);
+}
+
+.mindmap-title {
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  margin-bottom: 4px;
+}
+
+.mindmap-sub {
+  font-size: 13px;
+  color: var(--text-dim);
+}
+
+.mindmap-branches {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.branch {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+  overflow: hidden;
+}
+
+.branch::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0;
+  width: 3px;
+  height: 100%;
+}
+
+.branch:hover {
+  border-color: rgba(99, 102, 241, 0.4);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+}
+
+.branch-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.branch-icon {
+  font-size: 20px;
+  width: 36px; height: 36px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.branch-title {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.branch-items {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.branch-item {
+  font-size: 11px;
+  color: var(--text-dim);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 0;
+}
+
+.branch-item .bullet {
+  width: 4px; height: 4px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* Color themes for branches */
+.branch-pipeline::before { background: var(--green); }
+.branch-pipeline .branch-icon { background: var(--green-dim); }
+.branch-pipeline .bullet { background: var(--green); }
+
+.branch-data::before { background: var(--blue); }
+.branch-data .branch-icon { background: var(--blue-dim); }
+.branch-data .bullet { background: var(--blue); }
+
+.branch-app::before { background: var(--purple); }
+.branch-app .branch-icon { background: var(--purple-dim); }
+.branch-app .bullet { background: var(--purple); }
+
+.branch-ai::before { background: var(--cyan); }
+.branch-ai .branch-icon { background: var(--cyan-dim); }
+.branch-ai .bullet { background: var(--cyan); }
+
+.branch-config::before { background: var(--amber); }
+.branch-config .branch-icon { background: var(--amber-dim); }
+.branch-config .bullet { background: var(--amber); }
+
+.branch-errors::before { background: var(--red); }
+.branch-errors .branch-icon { background: var(--red-dim); }
+.branch-errors .bullet { background: var(--red); }
+
+.branch-files::before { background: var(--orange); }
+.branch-files .branch-icon { background: var(--orange-dim); }
+.branch-files .bullet { background: var(--orange); }
+
+.branch-tests::before { background: var(--pink); }
+.branch-tests .branch-icon { background: var(--pink-dim); }
+.branch-tests .bullet { background: var(--pink); }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-dim); }
+
+/* Responsive */
+@media (max-width: 768px) {
+  .mindmap-branches { grid-template-columns: 1fr; }
+  .schema-grid { grid-template-columns: 1fr; }
+  .config-grid { grid-template-columns: 1fr; }
+  .ai-grid { grid-template-columns: 1fr; }
+}
+
+/* Section headers in views */
+.view-header {
+  margin-bottom: 20px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.view-title {
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.3px;
+  margin-bottom: 4px;
+}
+
+.view-desc {
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+/* Connection line animation */
+@keyframes flowDown {
+  0% { background-position: 0 0; }
+  100% { background-position: 0 20px; }
+}
+
+.pipeline-stage:not(:last-child)::after {
+  background: repeating-linear-gradient(
+    to bottom,
+    var(--border) 0px,
+    var(--border) 4px,
+    transparent 4px,
+    transparent 8px
+  );
+  background-size: 2px 8px;
+  animation: flowDown 1s linear infinite;
+}
+
+/* Glow effect on hover */
+.branch:hover .branch-icon {
+  box-shadow: 0 0 15px rgba(99, 102, 241, 0.2);
+}
+
+/* Key data flow line */
+.data-flow-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 0;
+  font-size: 11px;
+}
+
+.flow-arrow {
+  color: var(--accent);
+  font-size: 10px;
+  flex-shrink: 0;
+}
+
+.flow-node {
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-family: 'SF Mono', monospace;
+  font-size: 10px;
+}
+
+.flow-python { background: var(--blue-dim); color: var(--blue); border: 1px solid rgba(59, 130, 246, 0.2); }
+.flow-swift { background: var(--orange-dim); color: var(--orange); border: 1px solid rgba(249, 115, 22, 0.2); }
+.flow-db { background: var(--green-dim); color: var(--green); border: 1px solid rgba(34, 197, 94, 0.2); }
+.flow-ai { background: var(--purple-dim); color: var(--purple); border: 1px solid rgba(168, 85, 247, 0.2); }
+.flow-file { background: var(--amber-dim); color: var(--amber); border: 1px solid rgba(245, 158, 11, 0.2); }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1><span>Other Voices</span> — Architecture Mind Map</h1>
+  <div class="header-stats">
+    <div class="stat"><span class="dot" style="background:var(--blue)"></span> Python 3962 LOC</div>
+    <div class="stat"><span class="dot" style="background:var(--orange)"></span> Swift 5382 LOC</div>
+    <div class="stat"><span class="dot" style="background:var(--green)"></span> 486 tests</div>
+    <div class="stat"><span class="dot" style="background:var(--purple)"></span> 39 calls recorded</div>
+  </div>
+</div>
+
+<div class="nav" id="nav">
+  <div class="nav-tab active" data-view="overview">Overview</div>
+  <div class="nav-tab" data-view="pipeline">Pipeline</div>
+  <div class="nav-tab" data-view="data">Data Architecture</div>
+  <div class="nav-tab" data-view="app">SwiftUI App</div>
+  <div class="nav-tab" data-view="ai">AI Stack</div>
+  <div class="nav-tab" data-view="config">Configuration</div>
+  <div class="nav-tab" data-view="errors">Error Handling</div>
+  <div class="nav-tab" data-view="files">All Files</div>
+</div>
+
+<div class="content">
+
+<!-- ========== OVERVIEW ========== -->
+<div class="view active" id="view-overview">
+  <div class="mindmap">
+    <div class="mindmap-center">
+      <div class="mindmap-logo">🎙</div>
+      <div class="mindmap-title">Other Voices</div>
+      <div class="mindmap-sub">macOS Call Recorder with AI Intelligence — 9344 LOC</div>
+    </div>
+
+    <div class="mindmap-branches">
+      <div class="branch branch-pipeline" onclick="switchView('pipeline')">
+        <div class="branch-header">
+          <div class="branch-icon">⚡</div>
+          <div class="branch-title">Pipeline</div>
+        </div>
+        <div class="branch-items">
+          <div class="branch-item"><span class="bullet"></span>Detection → Recording → Transcription</div>
+          <div class="branch-item"><span class="bullet"></span>Speaker Resolution → Summarization</div>
+          <div class="branch-item"><span class="bullet"></span>Commitment Extraction → Save to DB</div>
+          <div class="branch-item"><span class="bullet"></span>6 стадий, каждая gated by settings</div>
+        </div>
+      </div>
+
+      <div class="branch branch-data" onclick="switchView('data')">
+        <div class="branch-header">
+          <div class="branch-icon">🗄</div>
+          <div class="branch-title">Data Architecture</div>
+        </div>
+        <div class="branch-items">
+          <div class="branch-item"><span class="bullet"></span>SQLite + FTS5 full-text search</div>
+          <div class="branch-item"><span class="bullet"></span>5 таблиц: calls, entities, commitments, chat, action_items</div>
+          <div class="branch-item"><span class="bullet"></span>WAV файлы: system.wav + mic.wav per session</div>
+          <div class="branch-item"><span class="bullet"></span>status.json — IPC daemon↔app</div>
+        </div>
+      </div>
+
+      <div class="branch branch-app" onclick="switchView('app')">
+        <div class="branch-header">
+          <div class="branch-icon">🖥</div>
+          <div class="branch-title">SwiftUI App</div>
+        </div>
+        <div class="branch-items">
+          <div class="branch-item"><span class="bullet"></span>3-column NavigationSplitView</div>
+          <div class="branch-item"><span class="bullet"></span>38 файлов, 5382 строки</div>
+          <div class="branch-item"><span class="bullet"></span>@Observable + SQLite C API</div>
+          <div class="branch-item"><span class="bullet"></span>18 Views + 8 Services + 9 Models</div>
+        </div>
+      </div>
+
+      <div class="branch branch-ai" onclick="switchView('ai')">
+        <div class="branch-header">
+          <div class="branch-icon">🧠</div>
+          <div class="branch-title">AI Stack</div>
+        </div>
+        <div class="branch-items">
+          <div class="branch-item"><span class="bullet"></span>mlx_whisper (large-v3) — транскрипция</div>
+          <div class="branch-item"><span class="bullet"></span>Ollama qwen3:14b + thinking mode</div>
+          <div class="branch-item"><span class="bullet"></span>Dual-prompt commitment extraction</div>
+          <div class="branch-item"><span class="bullet"></span>Chunked processing: 25K/chunk, 2K overlap</div>
+        </div>
+      </div>
+
+      <div class="branch branch-config" onclick="switchView('config')">
+        <div class="branch-header">
+          <div class="branch-icon">⚙</div>
+          <div class="branch-title">Configuration</div>
+        </div>
+        <div class="branch-items">
+          <div class="branch-item"><span class="bullet"></span>config.py — hardcoded constants</div>
+          <div class="branch-item"><span class="bullet"></span>settings.json — user preferences (mtime cache)</div>
+          <div class="branch-item"><span class="bullet"></span>templates.json — 6 summary templates</div>
+          <div class="branch-item"><span class="bullet"></span>Settings override flow: defaults → user → runtime</div>
+        </div>
+      </div>
+
+      <div class="branch branch-errors" onclick="switchView('errors')">
+        <div class="branch-header">
+          <div class="branch-icon">🛡</div>
+          <div class="branch-title">Error Handling</div>
+        </div>
+        <div class="branch-items">
+          <div class="branch-item"><span class="bullet"></span>Ollama offline → record + transcribe only</div>
+          <div class="branch-item"><span class="bullet"></span>Transcription fail → merged channel fallback</div>
+          <div class="branch-item"><span class="bullet"></span>JSON parse fail → brace repair + retry</div>
+          <div class="branch-item"><span class="bullet"></span>Pipeline crash → log + notify + continue</div>
+        </div>
+      </div>
+
+      <div class="branch branch-files" onclick="switchView('files')">
+        <div class="branch-header">
+          <div class="branch-icon">📁</div>
+          <div class="branch-title">File Map</div>
+        </div>
+        <div class="branch-items">
+          <div class="branch-item"><span class="bullet"></span>15 Python src files (3962 LOC)</div>
+          <div class="branch-item"><span class="bullet"></span>38 Swift app files (5382 LOC)</div>
+          <div class="branch-item"><span class="bullet"></span>4 evaluation files</div>
+          <div class="branch-item"><span class="bullet"></span>CI: GitHub Actions workflow</div>
+        </div>
+      </div>
+
+      <div class="branch branch-tests" onclick="switchView('files')">
+        <div class="branch-header">
+          <div class="branch-icon">✅</div>
+          <div class="branch-title">Testing</div>
+        </div>
+        <div class="branch-items">
+          <div class="branch-item"><span class="bullet"></span>338 Python tests (pytest)</div>
+          <div class="branch-item"><span class="bullet"></span>148 Swift tests (standalone exec)</div>
+          <div class="branch-item"><span class="bullet"></span>CI: Python 3.11-3.13 + Swift macOS-14</div>
+          <div class="branch-item"><span class="bullet"></span>Evaluation framework (not yet run)</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Key data flows -->
+    <div style="margin-top: 32px;">
+      <div class="view-header">
+        <div class="view-title">Key Data Flows</div>
+        <div class="view-desc">Как данные текут через систему от звонка до UI</div>
+      </div>
+
+      <div style="background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px;">
+        <div class="data-flow-row">
+          <span style="font-weight:600; font-size:11px; color:var(--text-dim); min-width:100px;">Recording:</span>
+          <span class="flow-node flow-python">CoreAudio</span>
+          <span class="flow-arrow">→</span>
+          <span class="flow-node flow-file">system.wav</span>
+          <span class="flow-arrow">+</span>
+          <span class="flow-node flow-file">mic.wav</span>
+        </div>
+        <div class="data-flow-row">
+          <span style="font-weight:600; font-size:11px; color:var(--text-dim); min-width:100px;">Transcription:</span>
+          <span class="flow-node flow-file">WAV files</span>
+          <span class="flow-arrow">→</span>
+          <span class="flow-node flow-ai">mlx_whisper</span>
+          <span class="flow-arrow">→</span>
+          <span class="flow-node flow-python">{text, segments[]}</span>
+        </div>
+        <div class="data-flow-row">
+          <span style="font-weight:600; font-size:11px; color:var(--text-dim); min-width:100px;">Resolution:</span>
+          <span class="flow-node flow-python">segments</span>
+          <span class="flow-arrow">→</span>
+          <span class="flow-node flow-ai">Ollama qwen3:14b</span>
+          <span class="flow-arrow">→</span>
+          <span class="flow-node flow-python">speaker_map{}</span>
+        </div>
+        <div class="data-flow-row">
+          <span style="font-weight:600; font-size:11px; color:var(--text-dim); min-width:100px;">Summary:</span>
+          <span class="flow-node flow-python">transcript</span>
+          <span class="flow-arrow">→</span>
+          <span class="flow-node flow-ai">Ollama + template</span>
+          <span class="flow-arrow">→</span>
+          <span class="flow-node flow-python">summary JSON</span>
+        </div>
+        <div class="data-flow-row">
+          <span style="font-weight:600; font-size:11px; color:var(--text-dim); min-width:100px;">Commitments:</span>
+          <span class="flow-node flow-python">resolved transcript</span>
+          <span class="flow-arrow">→</span>
+          <span class="flow-node flow-ai">Ollama dual-prompt</span>
+          <span class="flow-arrow">→</span>
+          <span class="flow-node flow-python">commitments[]</span>
+        </div>
+        <div class="data-flow-row">
+          <span style="font-weight:600; font-size:11px; color:var(--text-dim); min-width:100px;">Storage:</span>
+          <span class="flow-node flow-python">all results</span>
+          <span class="flow-arrow">→</span>
+          <span class="flow-node flow-db">SQLite (calls.db)</span>
+          <span class="flow-arrow">→</span>
+          <span class="flow-node flow-swift">SwiftUI reads</span>
+        </div>
+        <div class="data-flow-row">
+          <span style="font-weight:600; font-size:11px; color:var(--text-dim); min-width:100px;">IPC:</span>
+          <span class="flow-node flow-python">daemon writes</span>
+          <span class="flow-arrow">→</span>
+          <span class="flow-node flow-file">status.json</span>
+          <span class="flow-arrow">→</span>
+          <span class="flow-node flow-swift">DaemonMonitor reads</span>
+        </div>
+        <div class="data-flow-row">
+          <span style="font-weight:600; font-size:11px; color:var(--text-dim); min-width:100px;">Settings:</span>
+          <span class="flow-node flow-swift">SettingsSync writes</span>
+          <span class="flow-arrow">→</span>
+          <span class="flow-node flow-file">settings.json</span>
+          <span class="flow-arrow">→</span>
+          <span class="flow-node flow-python">settings.py reads</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== PIPELINE VIEW ========== -->
+<div class="view" id="view-pipeline">
+  <div class="view-header">
+    <div class="view-title">Processing Pipeline</div>
+    <div class="view-desc">6 стадий обработки звонка. Каждая стадия gated by user settings и Ollama availability.</div>
+  </div>
+
+  <div class="pipeline">
+    <!-- Stage 0: Detection -->
+    <div class="pipeline-stage">
+      <div class="stage-icon" style="background:var(--green-dim);color:var(--green)">👁</div>
+      <div class="stage-body">
+        <div class="stage-header">
+          <span class="stage-name">Detection</span>
+          <span class="stage-file">detector.py</span>
+        </div>
+        <div class="stage-desc">
+          Каждые 3 сек (POLL_INTERVAL) проверяет: запущен ли процесс звонка + есть ли UDP connections.
+          Zoom: только процесс CptHost. Остальные: процесс + ≥2 remote UDP IPs.
+          Gated by <code>is_app_enabled(app_name)</code>.
+        </div>
+        <div class="stage-io">
+          <span class="io-tag io-in">psutil.process_iter()</span>
+          <span class="io-tag io-in">net_connections(UDP)</span>
+          <span class="io-tag io-out">(bool, app_name)</span>
+        </div>
+        <span class="stage-toggle" onclick="toggleDetails(this)">Детали приложений ▾</span>
+        <div class="stage-details">
+          <table class="detail-table">
+            <tr><th>App</th><th>Process</th><th>Strategy</th></tr>
+            <tr><td>Zoom</td><td>CptHost</td><td>Process only (CptHost запускается только в звонке)</td></tr>
+            <tr><td>Teams</td><td>Microsoft Teams</td><td>Process + ≥2 UDP remote IPs</td></tr>
+            <tr><td>Discord</td><td>Discord</td><td>Process + ≥2 UDP remote IPs</td></tr>
+            <tr><td>Telegram</td><td>Telegram</td><td>Process + ≥2 UDP remote IPs</td></tr>
+            <tr><td>FaceTime</td><td>FaceTime</td><td>Process + ≥2 UDP remote IPs</td></tr>
+            <tr><td>Google Meet</td><td>Chrome/Arc Helper</td><td>Browser helper + WebRTC UDP</td></tr>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stage 1: Recording -->
+    <div class="pipeline-stage">
+      <div class="stage-icon" style="background:var(--red-dim);color:var(--red)">🔴</div>
+      <div class="stage-body">
+        <div class="stage-header">
+          <span class="stage-name">Recording</span>
+          <span class="stage-file">recorder.py → swift/AudioCapture</span>
+        </div>
+        <div class="stage-desc">
+          Запускает Swift subprocess (ScreenCaptureKit + AVAudioEngine).
+          Пишет два WAV: system.wav (loopback — собеседник) и mic.wav (микрофон — я).
+          Session ID = timestamp-based UUID. Gated by <code>auto_record_calls</code> setting.
+        </div>
+        <div class="stage-io">
+          <span class="io-tag io-in">CoreAudio streams</span>
+          <span class="io-tag io-out">system.wav</span>
+          <span class="io-tag io-out">mic.wav</span>
+          <span class="io-tag io-out">session metadata</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stage 2: Transcription -->
+    <div class="pipeline-stage">
+      <div class="stage-icon" style="background:var(--blue-dim);color:var(--blue)">📝</div>
+      <div class="stage-body">
+        <div class="stage-header">
+          <span class="stage-name">Transcription</span>
+          <span class="stage-file">transcriber.py</span>
+        </div>
+        <div class="stage-desc">
+          Dual-channel transcription через mlx_whisper (Apple Silicon native).
+          system.wav → SPEAKER_OTHER segments, mic.wav → SPEAKER_ME segments.
+          Merge by timestamp в unified timeline. Gated by <code>should_transcribe()</code>.
+        </div>
+        <div class="stage-io">
+          <span class="io-tag io-in">system.wav + mic.wav</span>
+          <span class="io-tag io-out">{text, segments[]}</span>
+          <span class="io-tag io-fallback">fallback: combined.wav</span>
+        </div>
+        <span class="stage-toggle" onclick="toggleDetails(this)">Формат сегментов ▾</span>
+        <div class="stage-details">
+          <div class="prompt-block">{
+  "text": "Full transcript...",
+  "segments": [
+    {"start": 0.0, "end": 5.2, "text": "Привет, как дела?", "speaker": "SPEAKER_ME"},
+    {"start": 5.5, "end": 12.1, "text": "Всё хорошо, давай обсудим проект.", "speaker": "SPEAKER_OTHER"}
+  ]
+}</div>
+          <p style="margin-top:8px; color:var(--text-dim)">Model: <code>mlx-community/whisper-large-v3-mlx</code> | Language: <code>ru</code> | Rate: 16kHz mono</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stage 3: Speaker Resolution -->
+    <div class="pipeline-stage">
+      <div class="stage-icon" style="background:var(--purple-dim);color:var(--purple)">👤</div>
+      <div class="stage-body">
+        <div class="stage-header">
+          <span class="stage-name">Speaker Resolution</span>
+          <span class="stage-file">speaker_resolver.py</span>
+        </div>
+        <div class="stage-desc">
+          Ollama определяет реальные имена из контекста разговора.
+          5 уровней confidence: self-intro (0.95) → direct address + response (0.85) → direct address (0.70)
+          → third-person intro (0.65) → contextual (0.40).
+          Requires: Ollama available + dual-channel segments.
+        </div>
+        <div class="stage-io">
+          <span class="io-tag io-in">unified_segments[]</span>
+          <span class="io-tag io-out">speaker_map{}</span>
+          <span class="io-tag io-error">skip if Ollama offline</span>
+        </div>
+        <span class="stage-toggle" onclick="toggleDetails(this)">Формат speaker_map ▾</span>
+        <div class="stage-details">
+          <div class="prompt-block">{
+  "SPEAKER_ME": {"confirmed": true, "source": "mic_channel"},
+  "SPEAKER_OTHER_1": {
+    "name": "Elena",
+    "confidence": 0.85,
+    "source": "direct_address_confirmed",
+    "evidence": "Elena, can you send the proposal?"
+  }
+}</div>
+          <p style="margin-top:8px; color:var(--text-dim)">Temperature: 0.1 | Max tokens: 2048 | Timeout: 120s</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stage 4: Summarization -->
+    <div class="pipeline-stage">
+      <div class="stage-icon" style="background:var(--cyan-dim);color:var(--cyan)">📋</div>
+      <div class="stage-body">
+        <div class="stage-header">
+          <span class="stage-name">Summarization</span>
+          <span class="stage-file">summarizer.py + templates.py</span>
+        </div>
+        <div class="stage-desc">
+          Template-based summarization через Ollama. 6 шаблонов (default, sales, 1-on-1, standup, interview, brainstorm).
+          Chunked map-reduce для длинных транскриптов (>25K chars). Entity extraction как побочный эффект.
+          Gated by <code>should_summarize()</code>.
+        </div>
+        <div class="stage-io">
+          <span class="io-tag io-in">transcript + template</span>
+          <span class="io-tag io-out">summary JSON</span>
+          <span class="io-tag io-out">entities[]</span>
+          <span class="io-tag io-fallback">JSON repair if truncated</span>
+        </div>
+        <span class="stage-toggle" onclick="toggleDetails(this)">Шаблоны ▾</span>
+        <div class="stage-details">
+          <table class="detail-table">
+            <tr><th>Template</th><th>Sections</th></tr>
+            <tr><td>default</td><td>summary, key_points, decisions, action_items, participants</td></tr>
+            <tr><td>sales_call</td><td>summary, objections, budget_signals, decision_makers, next_steps</td></tr>
+            <tr><td>one_on_one</td><td>summary, feedback, blockers, goals, mood</td></tr>
+            <tr><td>standup</td><td>summary, done_yesterday, doing_today, blockers</td></tr>
+            <tr><td>interview</td><td>summary, strengths, concerns, culture_fit, recommendation</td></tr>
+            <tr><td>brainstorm</td><td>summary, ideas, feasibility, next_steps</td></tr>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stage 5: Commitment Extraction -->
+    <div class="pipeline-stage">
+      <div class="stage-icon" style="background:var(--amber-dim);color:var(--amber)">🤝</div>
+      <div class="stage-body">
+        <div class="stage-header">
+          <span class="stage-name">Commitment Extraction</span>
+          <span class="stage-file">commitment_extractor.py</span>
+        </div>
+        <div class="stage-desc">
+          Dual-prompt система: Karpathy (primary) + Murati (fallback). Speaker-resolved transcript как input.
+          Chunked processing с dedup по границам. Русская специфика: перфективный вид ("сделаю") = commitment,
+          "постараюсь" = weak. Gated by <code>should_extract_commitments()</code>.
+        </div>
+        <div class="stage-io">
+          <span class="io-tag io-in">resolved transcript + speaker_map</span>
+          <span class="io-tag io-out">commitments[]</span>
+          <span class="io-tag io-out">extraction_notes</span>
+          <span class="io-tag io-error">skip if Ollama offline</span>
+        </div>
+        <span class="stage-toggle" onclick="toggleDetails(this)">Формат commitment ▾</span>
+        <div class="stage-details">
+          <div class="prompt-block">{
+  "id": 1,
+  "type": "outgoing",         // outgoing | incoming | third_party
+  "who": "SPEAKER_ME",
+  "who_name": null,
+  "to_whom": "SPEAKER_OTHER",
+  "to_whom_name": "Elena",
+  "what": "Send the revised proposal",
+  "deadline": "к пятнице",
+  "quote": "я пришлю тебе предложение до пятницы",
+  "timestamp": "00:03:42",
+  "uncertain": false
+}</div>
+          <p style="margin-top:8px; color:var(--text-dim)">Chunks: 25K chars, 2K overlap | Dedup: by (what, who, to_whom)</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stage 6: Save -->
+    <div class="pipeline-stage">
+      <div class="stage-icon" style="background:var(--green-dim);color:var(--green)">💾</div>
+      <div class="stage-body">
+        <div class="stage-header">
+          <span class="stage-name">Save to Database</span>
+          <span class="stage-file">database.py → calls.db</span>
+        </div>
+        <div class="stage-desc">
+          Атомарная запись в SQLite: INSERT call → INSERT entities → INSERT commitments.
+          FTS5 auto-sync через triggers. macOS notification с excerpt саммари и count commitments.
+        </div>
+        <div class="stage-io">
+          <span class="io-tag io-in">all pipeline results</span>
+          <span class="io-tag io-out">calls table</span>
+          <span class="io-tag io-out">entities table</span>
+          <span class="io-tag io-out">commitments table</span>
+          <span class="io-tag io-out">macOS notification</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== DATA ARCHITECTURE VIEW ========== -->
+<div class="view" id="view-data">
+  <div class="view-header">
+    <div class="view-title">Data Architecture</div>
+    <div class="view-desc">SQLite + FTS5 full-text search. 5 таблиц + virtual table. WAV files on disk.</div>
+  </div>
+
+  <div class="schema-grid">
+    <div class="schema-card">
+      <div class="schema-card-header">
+        <div class="schema-card-title">📊 calls</div>
+        <div class="schema-card-badge" style="background:var(--green-dim);color:var(--green)">PRIMARY</div>
+      </div>
+      <div class="schema-card-body">
+        <div class="column-row"><span class="col-name col-pk">session_id</span><span class="col-type">TEXT PK</span><span class="col-desc">UUID timestamp-based</span></div>
+        <div class="column-row"><span class="col-name">app_name</span><span class="col-type">TEXT</span><span class="col-desc">Zoom, Teams, Discord...</span></div>
+        <div class="column-row"><span class="col-name">started_at</span><span class="col-type">TEXT</span><span class="col-desc">ISO8601</span></div>
+        <div class="column-row"><span class="col-name">ended_at</span><span class="col-type">TEXT</span><span class="col-desc">ISO8601</span></div>
+        <div class="column-row"><span class="col-name">duration_seconds</span><span class="col-type">REAL</span><span class="col-desc"></span></div>
+        <div class="column-row"><span class="col-name">system_wav_path</span><span class="col-type">TEXT?</span><span class="col-desc">path to loopback audio</span></div>
+        <div class="column-row"><span class="col-name">mic_wav_path</span><span class="col-type">TEXT?</span><span class="col-desc">path to mic audio</span></div>
+        <div class="column-row"><span class="col-name">transcript</span><span class="col-type">TEXT?</span><span class="col-desc">full merged text (up to 51K)</span></div>
+        <div class="column-row"><span class="col-name">summary_json</span><span class="col-type">TEXT?</span><span class="col-desc">JSON summary object</span></div>
+        <div class="column-row"><span class="col-name">template_name</span><span class="col-type">TEXT</span><span class="col-desc">default, sales_call, ...</span></div>
+        <div class="column-row"><span class="col-name">notes</span><span class="col-type">TEXT?</span><span class="col-desc">user-editable</span></div>
+        <div class="column-row"><span class="col-name">transcript_segments</span><span class="col-type">TEXT?</span><span class="col-desc">JSON: [{start,end,text,speaker}]</span></div>
+      </div>
+    </div>
+
+    <div class="schema-card">
+      <div class="schema-card-header">
+        <div class="schema-card-title">🔍 calls_fts</div>
+        <div class="schema-card-badge" style="background:var(--blue-dim);color:var(--blue)">FTS5 VIRTUAL</div>
+      </div>
+      <div class="schema-card-body">
+        <div class="column-row"><span class="col-name">session_id</span><span class="col-type">TEXT</span><span class="col-desc">synced via triggers</span></div>
+        <div class="column-row"><span class="col-name">app_name</span><span class="col-type">TEXT</span><span class="col-desc"></span></div>
+        <div class="column-row"><span class="col-name">transcript</span><span class="col-type">TEXT</span><span class="col-desc">full-text searchable</span></div>
+        <div class="column-row"><span class="col-name">summary_json</span><span class="col-type">TEXT</span><span class="col-desc">searchable summaries</span></div>
+        <p style="margin-top:8px;font-size:10px;color:var(--text-dim)">Auto-synced: INSERT/UPDATE/DELETE triggers on calls table. Query sanitization for special chars.</p>
+      </div>
+    </div>
+
+    <div class="schema-card">
+      <div class="schema-card-header">
+        <div class="schema-card-title">👤 entities</div>
+        <div class="schema-card-badge" style="background:var(--purple-dim);color:var(--purple)">LINK</div>
+      </div>
+      <div class="schema-card-body">
+        <div class="column-row"><span class="col-name col-pk">id</span><span class="col-type">INT PK</span><span class="col-desc">autoincrement</span></div>
+        <div class="column-row"><span class="col-name">name</span><span class="col-type">TEXT</span><span class="col-desc">"Elena", "Acme Corp"</span></div>
+        <div class="column-row"><span class="col-name">type</span><span class="col-type">TEXT</span><span class="col-desc">person | company</span></div>
+        <div class="column-row"><span class="col-name col-fk">session_id</span><span class="col-type">TEXT FK</span><span class="col-desc">→ calls.session_id CASCADE</span></div>
+        <p style="margin-top:8px;font-size:10px;color:var(--text-dim)">UNIQUE(name, type, session_id). Extracted from summary by Ollama.</p>
+      </div>
+    </div>
+
+    <div class="schema-card">
+      <div class="schema-card-header">
+        <div class="schema-card-title">🤝 commitments</div>
+        <div class="schema-card-badge" style="background:var(--amber-dim);color:var(--amber)">TRACKING</div>
+      </div>
+      <div class="schema-card-body">
+        <div class="column-row"><span class="col-name col-pk">id</span><span class="col-type">INT PK</span><span class="col-desc">autoincrement</span></div>
+        <div class="column-row"><span class="col-name col-fk">session_id</span><span class="col-type">TEXT FK</span><span class="col-desc">→ calls CASCADE</span></div>
+        <div class="column-row"><span class="col-name">direction</span><span class="col-type">TEXT</span><span class="col-desc">outgoing | incoming | third_party</span></div>
+        <div class="column-row"><span class="col-name">who_label</span><span class="col-type">TEXT</span><span class="col-desc">SPEAKER_ME, SPEAKER_OTHER</span></div>
+        <div class="column-row"><span class="col-name">who_name</span><span class="col-type">TEXT?</span><span class="col-desc">resolved name</span></div>
+        <div class="column-row"><span class="col-name">to_label</span><span class="col-type">TEXT?</span><span class="col-desc"></span></div>
+        <div class="column-row"><span class="col-name">to_name</span><span class="col-type">TEXT?</span><span class="col-desc"></span></div>
+        <div class="column-row"><span class="col-name">text</span><span class="col-type">TEXT</span><span class="col-desc">commitment description</span></div>
+        <div class="column-row"><span class="col-name">verbatim_quote</span><span class="col-type">TEXT?</span><span class="col-desc">exact transcript phrase</span></div>
+        <div class="column-row"><span class="col-name">timestamp</span><span class="col-type">TEXT?</span><span class="col-desc">HH:MM:SS in call</span></div>
+        <div class="column-row"><span class="col-name">deadline_raw</span><span class="col-type">TEXT?</span><span class="col-desc">"к пятнице"</span></div>
+        <div class="column-row"><span class="col-name">deadline_type</span><span class="col-type">TEXT?</span><span class="col-desc">explicit_date | relative_week | ...</span></div>
+        <div class="column-row"><span class="col-name">significance</span><span class="col-type">TEXT?</span><span class="col-desc">high | medium | low</span></div>
+        <div class="column-row"><span class="col-name">uncertain</span><span class="col-type">INT</span><span class="col-desc">0/1 boolean</span></div>
+        <div class="column-row"><span class="col-name">status</span><span class="col-type">TEXT</span><span class="col-desc">open | done | dismissed</span></div>
+        <div class="column-row"><span class="col-name">created_at</span><span class="col-type">TEXT</span><span class="col-desc">datetime('now')</span></div>
+        <div class="column-row"><span class="col-name">resolved_at</span><span class="col-type">TEXT?</span><span class="col-desc">when done/dismissed</span></div>
+        <p style="margin-top:8px;font-size:10px;color:var(--amber)">⚠ Currently 0 rows. Pipeline not yet tested E2E.</p>
+      </div>
+    </div>
+
+    <div class="schema-card">
+      <div class="schema-card-header">
+        <div class="schema-card-title">💬 chat_messages</div>
+        <div class="schema-card-badge" style="background:var(--cyan-dim);color:var(--cyan)">CHAT</div>
+      </div>
+      <div class="schema-card-body">
+        <div class="column-row"><span class="col-name col-pk">id</span><span class="col-type">INT PK</span><span class="col-desc">autoincrement</span></div>
+        <div class="column-row"><span class="col-name col-fk">session_id</span><span class="col-type">TEXT FK</span><span class="col-desc">→ calls (nullable for global)</span></div>
+        <div class="column-row"><span class="col-name">role</span><span class="col-type">TEXT</span><span class="col-desc">user | assistant</span></div>
+        <div class="column-row"><span class="col-name">content</span><span class="col-type">TEXT</span><span class="col-desc">message text</span></div>
+        <div class="column-row"><span class="col-name">created_at</span><span class="col-type">TEXT</span><span class="col-desc">datetime('now')</span></div>
+        <div class="column-row"><span class="col-name">scope</span><span class="col-type">TEXT</span><span class="col-desc">call | global</span></div>
+      </div>
+    </div>
+
+    <div class="schema-card">
+      <div class="schema-card-header">
+        <div class="schema-card-title">📁 File Storage</div>
+        <div class="schema-card-badge" style="background:var(--orange-dim);color:var(--orange)">DISK</div>
+      </div>
+      <div class="schema-card-body">
+        <div class="column-row"><span class="col-name">data/calls.db</span><span class="col-type">SQLite</span><span class="col-desc">WAL mode, persistent conn</span></div>
+        <div class="column-row"><span class="col-name">data/recordings/</span><span class="col-type">DIR</span><span class="col-desc">WAV per session</span></div>
+        <div class="column-row"><span class="col-name">data/status.json</span><span class="col-type">JSON</span><span class="col-desc">IPC daemon→app</span></div>
+        <div class="column-row"><span class="col-name">data/settings.json</span><span class="col-type">JSON</span><span class="col-desc">IPC app→daemon</span></div>
+        <div class="column-row"><span class="col-name">data/templates.json</span><span class="col-type">JSON</span><span class="col-desc">exported at daemon start</span></div>
+        <div class="column-row"><span class="col-name">logs/daemon.log</span><span class="col-type">LOG</span><span class="col-desc">5MB rotating × 3 backups</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== APP ARCHITECTURE VIEW ========== -->
+<div class="view" id="view-app">
+  <div class="view-header">
+    <div class="view-title">SwiftUI App Architecture</div>
+    <div class="view-desc">3-column NavigationSplitView. 38 файлов, 5382 строки. macOS 14+, Swift 6 strict concurrency.</div>
+  </div>
+
+  <div class="app-tree">
+    <div class="tree-root">
+      <div class="tree-label" onclick="toggleTree(this)">
+        <span class="icon">🖥</span>
+        <span class="name">CallRecorderApp</span>
+        <span class="meta">@main entry point</span>
+      </div>
+      <div class="tree-children">
+        <!-- WelcomeView -->
+        <div class="tree-node">
+          <div class="tree-label">
+            <span class="icon">👋</span>
+            <span class="name">WelcomeView</span>
+            <span class="meta">if !hasCompletedOnboarding → first run</span>
+          </div>
+        </div>
+
+        <!-- MainView -->
+        <div class="tree-node">
+          <div class="tree-label" onclick="toggleTree(this)">
+            <span class="icon">🏠</span>
+            <span class="name">MainView</span>
+            <span class="meta">NavigationSplitView(.balanced)</span>
+          </div>
+          <div class="tree-children">
+            <!-- Sidebar -->
+            <div class="tree-node">
+              <div class="tree-label" onclick="toggleTree(this)">
+                <span class="icon">📂</span>
+                <span class="name">SidebarView</span>
+                <span class="meta">column 1 — навигация</span>
+              </div>
+              <div class="tree-children">
+                <div class="tree-node">
+                  <div class="tree-label">
+                    <span class="icon">📚</span>
+                    <span class="name">Library</span>
+                    <span class="meta">All Calls (39) · Action Items · Commitments</span>
+                  </div>
+                </div>
+                <div class="tree-node">
+                  <div class="tree-label">
+                    <span class="icon">📱</span>
+                    <span class="name">Apps Section</span>
+                    <span class="meta">Zoom (N) · Teams (N) · Discord (N) ...</span>
+                  </div>
+                </div>
+                <div class="tree-node">
+                  <div class="tree-label">
+                    <span class="icon">👥</span>
+                    <span class="name">People Section</span>
+                    <span class="meta">entities from summary → PersonDetailView</span>
+                  </div>
+                </div>
+                <div class="tree-node">
+                  <div class="tree-label">
+                    <span class="icon">🔴</span>
+                    <span class="name">DaemonStatusCard</span>
+                    <span class="meta">5 states: idle · recording · processing · offline · no Ollama</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Content -->
+            <div class="tree-node">
+              <div class="tree-label" onclick="toggleTree(this)">
+                <span class="icon">📋</span>
+                <span class="name">Content Column</span>
+                <span class="meta">column 2 — list</span>
+              </div>
+              <div class="tree-children">
+                <div class="tree-node">
+                  <div class="tree-label">
+                    <span class="icon">📞</span>
+                    <span class="name">CallListView</span>
+                    <span class="meta">grouped: Today / Yesterday / This Week / Month</span>
+                  </div>
+                </div>
+                <div class="tree-node">
+                  <div class="tree-label">
+                    <span class="icon">🤝</span>
+                    <span class="name">CommitmentsView</span>
+                    <span class="meta">tabs: Outgoing / Incoming / badge counts</span>
+                  </div>
+                </div>
+                <div class="tree-node">
+                  <div class="tree-label">
+                    <span class="icon">☑</span>
+                    <span class="name">ActionItemsView</span>
+                    <span class="meta">grouped action items from summaries</span>
+                  </div>
+                </div>
+                <div class="tree-node">
+                  <div class="tree-label">
+                    <span class="icon">👤</span>
+                    <span class="name">PersonDetailView</span>
+                    <span class="meta">564 LOC — temporal narrative across calls</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Detail -->
+            <div class="tree-node">
+              <div class="tree-label" onclick="toggleTree(this)">
+                <span class="icon">📄</span>
+                <span class="name">Detail Column</span>
+                <span class="meta">column 3 — call details</span>
+              </div>
+              <div class="tree-children">
+                <div class="tree-node">
+                  <div class="tree-label" onclick="toggleTree(this)">
+                    <span class="icon">📞</span>
+                    <span class="name">CallDetailView</span>
+                    <span class="meta">328 LOC — sticky header + tabs</span>
+                  </div>
+                  <div class="tree-children">
+                    <div class="tree-node"><div class="tree-label"><span class="icon">🎵</span><span class="name">AudioPlayerView</span><span class="meta">seek · play/pause · speed 0.75x→2x</span></div></div>
+                    <div class="tree-node"><div class="tree-label"><span class="icon">📝</span><span class="name">NotesView</span><span class="meta">editable TextEditor</span></div></div>
+                    <div class="tree-node"><div class="tree-label"><span class="icon">📋</span><span class="name">SummaryView</span><span class="meta">template-specific sections</span></div></div>
+                    <div class="tree-node"><div class="tree-label"><span class="icon">🤝</span><span class="name">Commitments section</span><span class="meta">inline in detail</span></div></div>
+                    <div class="tree-node"><div class="tree-label"><span class="icon">📜</span><span class="name">TranscriptView</span><span class="meta">LazyVStack · speaker colors · timestamps</span></div></div>
+                    <div class="tree-node"><div class="tree-label"><span class="icon">💬</span><span class="name">ChatView</span><span class="meta">Ollama chat with call context</span></div></div>
+                    <div class="tree-node"><div class="tree-label"><span class="icon">🏷</span><span class="name">TemplatePicker</span><span class="meta">change template → re-summarize</span></div></div>
+                    <div class="tree-node"><div class="tree-label"><span class="icon">📤</span><span class="name">Export toolbar</span><span class="meta">Markdown · Text · Save file</span></div></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Settings -->
+        <div class="tree-node">
+          <div class="tree-label" onclick="toggleTree(this)">
+            <span class="icon">⚙</span>
+            <span class="name">SettingsView</span>
+            <span class="meta">4 tabs · 410 LOC</span>
+          </div>
+          <div class="tree-children">
+            <div class="tree-node"><div class="tree-label"><span class="icon">🎙</span><span class="name">Recording</span><span class="meta">auto-record · per-app toggles · min duration</span></div></div>
+            <div class="tree-node"><div class="tree-label"><span class="icon">🧠</span><span class="name">Processing</span><span class="meta">transcribe · summarize · commitments toggles</span></div></div>
+            <div class="tree-node"><div class="tree-label"><span class="icon">🤖</span><span class="name">AI Model</span><span class="meta">Ollama URL · model name · live status check</span></div></div>
+            <div class="tree-node"><div class="tree-label"><span class="icon">💾</span><span class="name">Storage</span><span class="meta">retention policy · usage stats · clear data</span></div></div>
+          </div>
+        </div>
+
+        <!-- MenuBar -->
+        <div class="tree-node">
+          <div class="tree-label">
+            <span class="icon">▪</span>
+            <span class="name">MenuBarExtra</span>
+            <span class="meta">status icon + "Open" button</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Services -->
+    <div style="margin-top: 24px;">
+      <div class="view-header">
+        <div class="view-title">Services Layer</div>
+        <div class="view-desc">@MainActor @Observable services — Swift 6 strict concurrency compliant</div>
+      </div>
+
+      <div class="schema-grid">
+        <div class="schema-card">
+          <div class="schema-card-header">
+            <div class="schema-card-title">CallStore</div>
+            <div class="schema-card-badge" style="background:var(--green-dim);color:var(--green)">@Observable</div>
+          </div>
+          <div class="schema-card-body" style="font-size:11px;color:var(--text-dim)">
+            Central state. Holds calls[], entities[], filters, search query. Wraps SQLiteDatabase. Debounced refresh (500ms) triggered by StatusMonitor.
+          </div>
+        </div>
+        <div class="schema-card">
+          <div class="schema-card-header">
+            <div class="schema-card-title">DaemonMonitor</div>
+            <div class="schema-card-badge" style="background:var(--blue-dim);color:var(--blue)">@Observable</div>
+          </div>
+          <div class="schema-card-body" style="font-size:11px;color:var(--text-dim)">
+            Reads status.json periodically. Ollama health check every 30s. Provides DaemonStatus to UI. Timer + DispatchSource for file changes.
+          </div>
+        </div>
+        <div class="schema-card">
+          <div class="schema-card-header">
+            <div class="schema-card-title">AudioPlayer</div>
+            <div class="schema-card-badge" style="background:var(--purple-dim);color:var(--purple)">@Observable</div>
+          </div>
+          <div class="schema-card-body" style="font-size:11px;color:var(--text-dim)">
+            AVAudioEngine playback. Speed cycle: 0.75x → 1.0x → 1.25x → 1.5x → 2.0x. Space = play/pause via Notification.
+          </div>
+        </div>
+        <div class="schema-card">
+          <div class="schema-card-header">
+            <div class="schema-card-title">ChatService</div>
+            <div class="schema-card-badge" style="background:var(--cyan-dim);color:var(--cyan)">@Observable</div>
+          </div>
+          <div class="schema-card-body" style="font-size:11px;color:var(--text-dim)">
+            Ollama /api/chat with call context (summary + transcript). Conversation history. Task.detached for non-blocking sends.
+          </div>
+        </div>
+        <div class="schema-card">
+          <div class="schema-card-header">
+            <div class="schema-card-title">ResummarizeService</div>
+            <div class="schema-card-badge" style="background:var(--amber-dim);color:var(--amber)">async/await</div>
+          </div>
+          <div class="schema-card-body" style="font-size:11px;color:var(--text-dim)">
+            Re-runs summarization with different template via Ollama. Async/await (refactored from completion handlers). Updates call in DB.
+          </div>
+        </div>
+        <div class="schema-card">
+          <div class="schema-card-header">
+            <div class="schema-card-title">SettingsSync</div>
+            <div class="schema-card-badge" style="background:var(--orange-dim);color:var(--orange)">Singleton</div>
+          </div>
+          <div class="schema-card-body" style="font-size:11px;color:var(--text-dim)">
+            Writes @AppStorage → settings.json (atomic). Reads settings. Ollama connectivity check. Storage usage calculation.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== AI STACK VIEW ========== -->
+<div class="view" id="view-ai">
+  <div class="view-header">
+    <div class="view-title">AI Stack</div>
+    <div class="view-desc">2 модели: mlx_whisper (транскрипция, локально) + Ollama qwen3:14b (AI intelligence, thinking mode)</div>
+  </div>
+
+  <div class="ai-grid">
+    <div class="ai-card">
+      <div class="ai-card-header">🎙 Transcription — mlx_whisper</div>
+      <div class="ai-card-body">
+        <div class="ai-row"><span>Model</span><span style="font-family:monospace;color:var(--cyan)">mlx-community/whisper-large-v3-mlx</span></div>
+        <div class="ai-row"><span>Runtime</span><span>MLX (Apple Silicon native)</span></div>
+        <div class="ai-row"><span>Language</span><span>Russian (ru)</span></div>
+        <div class="ai-row"><span>Sample rate</span><span>16kHz mono</span></div>
+        <div class="ai-row"><span>Hallucination threshold</span><span>2.0</span></div>
+        <div class="ai-row"><span>No-speech threshold</span><span>0.6</span></div>
+        <div class="ai-row"><span>Output</span><span>{text, segments[{start, end, text}]}</span></div>
+        <div class="ai-row"><span>Typical speed</span><span>30s-2min per call</span></div>
+      </div>
+    </div>
+
+    <div class="ai-card">
+      <div class="ai-card-header">🧠 LLM — Ollama qwen3:14b</div>
+      <div class="ai-card-body">
+        <div class="ai-row"><span>Model</span><span style="font-family:monospace;color:var(--cyan)">qwen3:14b</span></div>
+        <div class="ai-row"><span>Runtime</span><span>Ollama (localhost:11434)</span></div>
+        <div class="ai-row"><span>Thinking mode</span><span style="color:var(--green)">Enabled (/api/chat)</span></div>
+        <div class="ai-row"><span>num_ctx</span><span>32768 tokens</span></div>
+        <div class="ai-row"><span>num_predict</span><span>16384 tokens</span></div>
+        <div class="ai-row"><span>Temperature</span><span>0.1 (deterministic)</span></div>
+        <div class="ai-row"><span>Health check</span><span>/api/tags, 5s timeout</span></div>
+        <div class="ai-row"><span style="color:var(--amber)">Known issue</span><span style="color:var(--amber)">51K → thinking eats all tokens</span></div>
+      </div>
+    </div>
+
+    <div class="ai-card">
+      <div class="ai-card-header">📋 Summarization Prompts</div>
+      <div class="ai-card-body">
+        <div class="ai-row"><span>Input</span><span>transcript + template sections</span></div>
+        <div class="ai-row"><span>Chunking</span><span>>25K chars → split + map-reduce</span></div>
+        <div class="ai-row"><span>Chunk size</span><span>25K chars, 2K overlap</span></div>
+        <div class="ai-row"><span>Merge strategy</span><span>LLM-based → fallback mechanical</span></div>
+        <div class="ai-row"><span>JSON repair</span><span>close braces on truncation</span></div>
+        <div class="ai-row"><span>Entity extraction</span><span>in same call (person, company)</span></div>
+        <div class="ai-row"><span>Templates</span><span>6: default, sales, 1on1, standup, interview, brainstorm</span></div>
+      </div>
+    </div>
+
+    <div class="ai-card">
+      <div class="ai-card-header">🤝 Commitment Extraction Prompts</div>
+      <div class="ai-card-body">
+        <div class="ai-row"><span>Primary prompt</span><span style="color:var(--green)">Karpathy (simple, reliable)</span></div>
+        <div class="ai-row"><span>Fallback prompt</span><span style="color:var(--amber)">Murati (strict, detailed)</span></div>
+        <div class="ai-row"><span>Chunking</span><span>same 25K/2K as summarization</span></div>
+        <div class="ai-row"><span>Cross-chunk dedup</span><span>by (what, who, to_whom)</span></div>
+        <div class="ai-row"><span>Russian rules</span><span>перфективный вид = commitment</span></div>
+        <div class="ai-row"><span>Confidence</span><span>"сделаю" +0.15, "постараюсь" 0.3</span></div>
+        <div class="ai-row"><span>Direction</span><span>outgoing / incoming / third_party</span></div>
+        <div class="ai-row"><span style="color:var(--red)">Status</span><span style="color:var(--red)">0 rows in production</span></div>
+      </div>
+    </div>
+
+    <div class="ai-card">
+      <div class="ai-card-header">👤 Speaker Resolution Prompt</div>
+      <div class="ai-card-body">
+        <div class="ai-row"><span>Input</span><span>unified_segments with speaker labels</span></div>
+        <div class="ai-row"><span>Confidence tiers</span><span>5 levels (0.40 → 0.95)</span></div>
+        <div class="ai-row"><span>Self-intro</span><span>0.95 ("Меня зовут...")</span></div>
+        <div class="ai-row"><span>Direct address</span><span>0.70-0.85</span></div>
+        <div class="ai-row"><span>Contextual</span><span>0.40</span></div>
+        <div class="ai-row"><span>Temperature</span><span>0.1</span></div>
+        <div class="ai-row"><span>Max tokens</span><span>2048</span></div>
+      </div>
+    </div>
+
+    <div class="ai-card">
+      <div class="ai-card-header">💬 Chat (Conversational)</div>
+      <div class="ai-card-body">
+        <div class="ai-row"><span>API</span><span>/api/chat (streaming)</span></div>
+        <div class="ai-row"><span>Context</span><span>summary + transcript</span></div>
+        <div class="ai-row"><span>History</span><span>per-call conversation</span></div>
+        <div class="ai-row"><span>Scope</span><span>call-specific or global</span></div>
+        <div class="ai-row"><span>FTS query sanitization</span><span>special chars escaped</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== CONFIGURATION VIEW ========== -->
+<div class="view" id="view-config">
+  <div class="view-header">
+    <div class="view-title">Configuration</div>
+    <div class="view-desc">3-layer override: config.py (hardcoded) → settings.json (user) → runtime checks</div>
+  </div>
+
+  <div class="config-grid">
+    <div class="config-section">
+      <div class="config-section-header">📍 Paths (config.py)</div>
+      <div class="config-row"><span class="config-key">BASE_DIR</span><span class="config-val">~/call-recorder</span></div>
+      <div class="config-row"><span class="config-key">DATA_DIR</span><span class="config-val">~/call-recorder/data</span></div>
+      <div class="config-row"><span class="config-key">DB_PATH</span><span class="config-val">data/calls.db</span></div>
+      <div class="config-row"><span class="config-key">STATUS_PATH</span><span class="config-val">data/status.json</span></div>
+      <div class="config-row"><span class="config-key">LOG_PATH</span><span class="config-val">logs/daemon.log</span></div>
+      <div class="config-row"><span class="config-key">RECORDINGS_DIR</span><span class="config-val">data/recordings/</span></div>
+      <div class="config-row"><span class="config-key">AUDIO_CAPTURE_BIN</span><span class="config-val">bin/audio-capture</span></div>
+    </div>
+
+    <div class="config-section">
+      <div class="config-section-header">⏱ Timing (config.py)</div>
+      <div class="config-row"><span class="config-key">POLL_INTERVAL</span><span class="config-val">3s</span></div>
+      <div class="config-row"><span class="config-key">MIN_CALL_DURATION</span><span class="config-val">30s</span></div>
+      <div class="config-row"><span class="config-key">OLLAMA_HEALTH_TIMEOUT</span><span class="config-val">5s</span></div>
+      <div class="config-row"><span class="config-key">LOG_MAX_BYTES</span><span class="config-val">5 MB</span></div>
+      <div class="config-row"><span class="config-key">LOG_BACKUP_COUNT</span><span class="config-val">3</span></div>
+    </div>
+
+    <div class="config-section">
+      <div class="config-section-header">🤖 AI Models (config.py)</div>
+      <div class="config-row"><span class="config-key">OLLAMA_BASE_URL</span><span class="config-val">http://localhost:11434</span></div>
+      <div class="config-row"><span class="config-key">OLLAMA_MODEL</span><span class="config-val">qwen3:14b</span></div>
+      <div class="config-row"><span class="config-key">num_ctx</span><span class="config-val">32768</span></div>
+      <div class="config-row"><span class="config-key">num_predict</span><span class="config-val">16384</span></div>
+      <div class="config-row"><span class="config-key">WHISPER_MODEL</span><span class="config-val">mlx-community/whisper-large-v3-mlx</span></div>
+      <div class="config-row"><span class="config-key">WHISPER_LANGUAGE</span><span class="config-val">ru</span></div>
+    </div>
+
+    <div class="config-section">
+      <div class="config-section-header">👤 User Settings (settings.json)</div>
+      <div class="config-row"><span class="config-key">auto_record_calls</span><span class="config-val" style="color:var(--green)">true</span></div>
+      <div class="config-row"><span class="config-key">enabled_apps</span><span class="config-val">{all: true}</span></div>
+      <div class="config-row"><span class="config-key">min_call_duration_seconds</span><span class="config-val">30</span></div>
+      <div class="config-row"><span class="config-key">transcribe_calls</span><span class="config-val" style="color:var(--green)">true</span></div>
+      <div class="config-row"><span class="config-key">generate_summary</span><span class="config-val" style="color:var(--green)">true</span></div>
+      <div class="config-row"><span class="config-key">extract_commitments</span><span class="config-val" style="color:var(--green)">true</span></div>
+      <div class="config-row"><span class="config-key">default_template</span><span class="config-val">"default"</span></div>
+      <div class="config-row"><span class="config-key">audio_retention</span><span class="config-val" style="color:var(--amber)">"forever"</span></div>
+      <div style="padding:8px 16px;font-size:10px;color:var(--amber)">⚠ settings.json not yet created on disk. Using hardcoded defaults.</div>
+    </div>
+
+    <div class="config-section">
+      <div class="config-section-header">📱 Call Apps (config.py)</div>
+      <div class="config-row"><span class="config-key">Zoom</span><span class="config-val">process: CptHost</span></div>
+      <div class="config-row"><span class="config-key">Microsoft Teams</span><span class="config-val">process + UDP</span></div>
+      <div class="config-row"><span class="config-key">Discord</span><span class="config-val">process + UDP</span></div>
+      <div class="config-row"><span class="config-key">Telegram</span><span class="config-val">process + UDP</span></div>
+      <div class="config-row"><span class="config-key">FaceTime</span><span class="config-val">process + UDP</span></div>
+      <div class="config-row"><span class="config-key">Google Meet</span><span class="config-val">browser helper + WebRTC</span></div>
+    </div>
+
+    <div class="config-section">
+      <div class="config-section-header">🔄 Override Flow</div>
+      <div style="padding:12px 16px;font-size:11px;color:var(--text-dim);line-height:1.6">
+        <div class="data-flow-row">
+          <span class="flow-node flow-python">config.py defaults</span>
+          <span class="flow-arrow">→</span>
+          <span class="flow-node flow-file">settings.json overrides</span>
+          <span class="flow-arrow">→</span>
+          <span class="flow-node flow-python">runtime getters</span>
+        </div>
+        <p style="margin-top:8px">settings.py caches file with mtime check. Re-reads only on file change. Getter functions gate each pipeline stage.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== ERROR HANDLING VIEW ========== -->
+<div class="view" id="view-errors">
+  <div class="view-header">
+    <div class="view-title">Error Handling & Graceful Degradation</div>
+    <div class="view-desc">Pipeline никогда не крашится. Каждый сбой → fallback → продолжение работы.</div>
+  </div>
+
+  <div class="error-flow">
+    <div class="error-scenario">
+      <div class="error-trigger" style="border-left:3px solid var(--red)">🔴 Ollama unavailable</div>
+      <div class="error-path"><span class="arrow">→</span><span class="action">check_ollama() returns False</span></div>
+      <div class="error-path"><span class="arrow">→</span><span class="result">Recording + Transcription proceed normally</span></div>
+      <div class="error-path"><span class="arrow">→</span><span class="fail">SKIP: speaker resolution, summarization, commitments</span></div>
+      <div class="error-path"><span class="arrow">→</span><span class="result">Save call with transcript only (no AI analysis)</span></div>
+      <div class="error-path"><span class="arrow">→</span><span class="action">status.json: ollama_available=false → UI shows warning</span></div>
+    </div>
+
+    <div class="error-scenario">
+      <div class="error-trigger" style="border-left:3px solid var(--amber)">🟡 Separate-channel transcription fails</div>
+      <div class="error-path"><span class="arrow">→</span><span class="action">Try: transcribe_separate(system.wav, mic.wav)</span></div>
+      <div class="error-path"><span class="arrow">→</span><span class="fail">Failure (mic not captured, etc.)</span></div>
+      <div class="error-path"><span class="arrow">→</span><span class="action">Fallback: ffmpeg merge → transcribe(combined.wav)</span></div>
+      <div class="error-path"><span class="arrow">→</span><span class="result">Transcript without speaker labels</span></div>
+      <div class="error-path"><span class="arrow">→</span><span class="fail">If merge also fails → save call without transcript</span></div>
+    </div>
+
+    <div class="error-scenario">
+      <div class="error-trigger" style="border-left:3px solid var(--amber)">🟡 Summarization JSON parse failure</div>
+      <div class="error-path"><span class="arrow">→</span><span class="action">Try: json.loads(response)</span></div>
+      <div class="error-path"><span class="arrow">→</span><span class="fail">JSONDecodeError (truncated output)</span></div>
+      <div class="error-path"><span class="arrow">→</span><span class="action">Try: _try_repair_json() — close braces</span></div>
+      <div class="error-path"><span class="arrow">→</span><span class="result">If repaired → use partial summary</span></div>
+      <div class="error-path"><span class="arrow">→</span><span class="fail">If unrepairable → save raw text as summary</span></div>
+    </div>
+
+    <div class="error-scenario">
+      <div class="error-trigger" style="border-left:3px solid var(--amber)">🟡 Commitment extraction fails</div>
+      <div class="error-path"><span class="arrow">→</span><span class="action">Try: Karpathy prompt</span></div>
+      <div class="error-path"><span class="arrow">→</span><span class="fail">Empty or invalid output</span></div>
+      <div class="error-path"><span class="arrow">→</span><span class="action">Try: Murati prompt (fallback)</span></div>
+      <div class="error-path"><span class="arrow">→</span><span class="result">If either succeeds → save commitments</span></div>
+      <div class="error-path"><span class="arrow">→</span><span class="fail">If both fail → save call without commitments (0 rows)</span></div>
+    </div>
+
+    <div class="error-scenario">
+      <div class="error-trigger" style="border-left:3px solid var(--red)">🔴 Token budget exhaustion (51K problem)</div>
+      <div class="error-path"><span class="arrow">→</span><span class="action">Long transcript (>30K tokens) + thinking mode</span></div>
+      <div class="error-path"><span class="arrow">→</span><span class="fail">qwen3:14b spends all num_predict on thinking, 0 content</span></div>
+      <div class="error-path"><span class="arrow">→</span><span class="action">Chunked processing splits into 25K-char chunks</span></div>
+      <div class="error-path"><span class="arrow">→</span><span class="result">Each chunk fits within token budget</span></div>
+      <div class="error-path"><span class="arrow">→</span><span class="fail">Legacy resummarize.py has num_predict=1024 — still fails</span></div>
+    </div>
+
+    <div class="error-scenario">
+      <div class="error-trigger" style="border-left:3px solid var(--green)">🟢 Short call (<30s)</div>
+      <div class="error-path"><span class="arrow">→</span><span class="action">Recording completes, duration checked</span></div>
+      <div class="error-path"><span class="arrow">→</span><span class="result">Skip entire pipeline — log "too short"</span></div>
+      <div class="error-path"><span class="arrow">→</span><span class="action">Delete WAV files, no DB insert</span></div>
+    </div>
+
+    <div class="error-scenario">
+      <div class="error-trigger" style="border-left:3px solid var(--green)">🟢 Pipeline crash (any unhandled exception)</div>
+      <div class="error-path"><span class="arrow">→</span><span class="action">try/except around process_recording()</span></div>
+      <div class="error-path"><span class="arrow">→</span><span class="result">Log full traceback to daemon.log</span></div>
+      <div class="error-path"><span class="arrow">→</span><span class="action">macOS notification: "Processing failed"</span></div>
+      <div class="error-path"><span class="arrow">→</span><span class="result">Daemon continues running, returns to IDLE state</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== FILES VIEW ========== -->
+<div class="view" id="view-files">
+  <div class="view-header">
+    <div class="view-title">File Map</div>
+    <div class="view-desc">53 source files. 15 Python (3962 LOC) + 38 Swift (5382 LOC) = 9344 LOC total.</div>
+  </div>
+
+  <h3 style="font-size:14px;margin-bottom:12px;color:var(--blue)">Python Source (src/) — 3962 LOC</h3>
+  <div class="files-grid" style="margin-bottom:24px">
+    <div class="file-card"><div class="file-card-name" style="color:var(--blue)">● daemon.py</div><div class="file-card-desc">Main event loop. State machine (idle→recording→processing). Pipeline orchestration. Signal handling. Status writes.</div><div class="file-card-stats"><span class="file-stat">681 LOC</span><span class="file-stat">CORE</span></div></div>
+    <div class="file-card"><div class="file-card-name" style="color:var(--blue)">● templates.py</div><div class="file-card-desc">6 summary templates. Prompt builder. Section definitions. Template export to JSON.</div><div class="file-card-stats"><span class="file-stat">716 LOC</span></div></div>
+    <div class="file-card"><div class="file-card-name" style="color:var(--blue)">● database.py</div><div class="file-card-desc">SQLite + FTS5. Schema creation. CRUD for calls, entities, commitments. Search. Normalization.</div><div class="file-card-stats"><span class="file-stat">532 LOC</span><span class="file-stat">CORE</span></div></div>
+    <div class="file-card"><div class="file-card-name" style="color:var(--blue)">● commitment_extractor.py</div><div class="file-card-desc">Dual-prompt extraction. Karpathy + Murati prompts. Chunking. Dedup. Russian-specific rules.</div><div class="file-card-stats"><span class="file-stat">394 LOC</span></div></div>
+    <div class="file-card"><div class="file-card-name" style="color:var(--blue)">● transcriber.py</div><div class="file-card-desc">mlx_whisper integration. Dual-channel (system+mic). Merge by timestamp. Fallback to combined.</div><div class="file-card-stats"><span class="file-stat">353 LOC</span><span class="file-stat">CORE</span></div></div>
+    <div class="file-card"><div class="file-card-name" style="color:var(--blue)">● summarizer.py</div><div class="file-card-desc">Ollama summarization. Chunked map-reduce. JSON repair. Entity extraction. Template-based output.</div><div class="file-card-stats"><span class="file-stat">305 LOC</span><span class="file-stat">CORE</span></div></div>
+    <div class="file-card"><div class="file-card-name" style="color:var(--blue)">● speaker_resolver.py</div><div class="file-card-desc">Name resolution from transcript context. 5-tier confidence. Ollama-powered. Transcript formatting.</div><div class="file-card-stats"><span class="file-stat">242 LOC</span></div></div>
+    <div class="file-card"><div class="file-card-name" style="color:var(--blue)">● recipes.py</div><div class="file-card-desc">Template instruction sets for workflows. CRUD. Search. JSON serialization.</div><div class="file-card-stats"><span class="file-stat">163 LOC</span></div></div>
+    <div class="file-card"><div class="file-card-name" style="color:var(--blue)">● chat.py</div><div class="file-card-desc">Chat interface with call context. Ollama /api/chat. Conversation history. FTS5 sanitization.</div><div class="file-card-stats"><span class="file-stat">129 LOC</span></div></div>
+    <div class="file-card"><div class="file-card-name" style="color:var(--blue)">● settings.py</div><div class="file-card-desc">User settings reader. mtime-based caching. Getter functions for pipeline gating.</div><div class="file-card-stats"><span class="file-stat">124 LOC</span></div></div>
+    <div class="file-card"><div class="file-card-name" style="color:var(--blue)">● recorder.py</div><div class="file-card-desc">Swift subprocess lifecycle. Start/stop recording. Session metadata.</div><div class="file-card-stats"><span class="file-stat">100 LOC</span><span class="file-stat">CORE</span></div></div>
+    <div class="file-card"><div class="file-card-name" style="color:var(--blue)">● config.py</div><div class="file-card-desc">Constants: paths, timing, apps, Ollama endpoint, model, health check.</div><div class="file-card-stats"><span class="file-stat">94 LOC</span></div></div>
+    <div class="file-card"><div class="file-card-name" style="color:var(--blue)">● detector.py</div><div class="file-card-desc">psutil-based call detection. Per-app strategies. UDP connection counting. Settings gating.</div><div class="file-card-stats"><span class="file-stat">83 LOC</span><span class="file-stat">CORE</span></div></div>
+    <div class="file-card"><div class="file-card-name" style="color:var(--blue)">● chunking.py</div><div class="file-card-desc">Transcript splitter. 25K chars/chunk, 2K overlap. For parallel AI processing.</div><div class="file-card-stats"><span class="file-stat">46 LOC</span></div></div>
+  </div>
+
+  <h3 style="font-size:14px;margin-bottom:12px;color:var(--orange)">Swift App (app/) — 5382 LOC</h3>
+  <div class="files-grid" style="margin-bottom:24px">
+    <div class="file-card"><div class="file-card-name" style="color:var(--orange)">● PersonDetailView.swift</div><div class="file-card-desc">Temporal narrative of one person across calls. Header, timeline, commitments, topics.</div><div class="file-card-stats"><span class="file-stat">564 LOC</span><span class="file-stat">VIEW</span></div></div>
+    <div class="file-card"><div class="file-card-name" style="color:var(--orange)">● SQLiteDatabase.swift</div><div class="file-card-desc">Persistent SQLite C API. All queries. Lightweight list + full detail columns.</div><div class="file-card-stats"><span class="file-stat">498 LOC</span><span class="file-stat">DATABASE</span></div></div>
+    <div class="file-card"><div class="file-card-name" style="color:var(--orange)">● SettingsView.swift</div><div class="file-card-desc">4-tab Settings: Recording, Processing, AI Model, Storage. Per-app toggles.</div><div class="file-card-stats"><span class="file-stat">410 LOC</span><span class="file-stat">VIEW</span></div></div>
+    <div class="file-card"><div class="file-card-name" style="color:var(--orange)">● CallDetailView.swift</div><div class="file-card-desc">Main call view. Sticky header, tabs, audio player, export toolbar, toast.</div><div class="file-card-stats"><span class="file-stat">328 LOC</span><span class="file-stat">VIEW</span></div></div>
+    <div class="file-card"><div class="file-card-name" style="color:var(--orange)">● ExportService.swift</div><div class="file-card-desc">Export: Markdown, Text, clipboard, NSSavePanel file save.</div><div class="file-card-stats"><span class="file-stat">299 LOC</span><span class="file-stat">SERVICE</span></div></div>
+    <div class="file-card"><div class="file-card-name" style="color:var(--orange)">● SummaryView.swift</div><div class="file-card-desc">Template-specific summary sections. Key points, decisions, action items lists.</div><div class="file-card-stats"><span class="file-stat">236 LOC</span><span class="file-stat">VIEW</span></div></div>
+    <div class="file-card"><div class="file-card-name" style="color:var(--orange)">● CallSummary.swift</div><div class="file-card-desc">Custom dict-based decoder (not Codable). Handles inconsistent JSON from Ollama.</div><div class="file-card-stats"><span class="file-stat">234 LOC</span><span class="file-stat">MODEL</span></div></div>
+    <div class="file-card"><div class="file-card-name" style="color:var(--orange)">● DaemonStatusCard.swift</div><div class="file-card-desc">5-state indicator: idle, recording (pulsing), processing (progress), offline, no Ollama.</div><div class="file-card-stats"><span class="file-stat">202 LOC</span><span class="file-stat">VIEW</span></div></div>
+    <div class="file-card"><div class="file-card-name" style="color:var(--orange)">● WelcomeView.swift</div><div class="file-card-desc">First Run Experience. Features, daemon/Ollama status, onboarding gate.</div><div class="file-card-stats"><span class="file-stat">188 LOC</span><span class="file-stat">VIEW</span></div></div>
+    <div class="file-card"><div class="file-card-name" style="color:var(--orange)">● SettingsSync.swift</div><div class="file-card-desc">@AppStorage → settings.json. Ollama check. Storage info. Atomic write.</div><div class="file-card-stats"><span class="file-stat">173 LOC</span><span class="file-stat">SERVICE</span></div></div>
+    <div class="file-card"><div class="file-card-name" style="color:var(--orange)">● ChatView.swift</div><div class="file-card-desc">Chat UI with Ollama. Message list, input field, loading state.</div><div class="file-card-stats"><span class="file-stat">160 LOC</span><span class="file-stat">VIEW</span></div></div>
+    <div class="file-card"><div class="file-card-name" style="color:var(--orange)">● Call.swift</div><div class="file-card-desc">Data model. Custom Hashable by sessionId. Pre-parsed summary. Date formatters.</div><div class="file-card-stats"><span class="file-stat">144 LOC</span><span class="file-stat">MODEL</span></div></div>
+    <div class="file-card"><div class="file-card-name" style="color:var(--orange)">● CallStore.swift</div><div class="file-card-desc">@Observable central state. Wraps DB. Filters, search, debounced refresh.</div><div class="file-card-stats"><span class="file-stat">140 LOC</span><span class="file-stat">SERVICE</span></div></div>
+    <div class="file-card"><div class="file-card-name" style="color:var(--orange)">● CommitmentsView.swift</div><div class="file-card-desc">Outgoing/Incoming tabs. Badge counts. Commitment rows with actions.</div><div class="file-card-stats"><span class="file-stat">137 LOC</span><span class="file-stat">VIEW</span></div></div>
+    <div class="file-card"><div class="file-card-name" style="color:var(--orange)">● DaemonMonitor.swift</div><div class="file-card-desc">Reads status.json. Timer-based polling. Ollama health check every 30s.</div><div class="file-card-stats"><span class="file-stat">126 LOC</span><span class="file-stat">SERVICE</span></div></div>
+    <div class="file-card"><div class="file-card-name" style="color:var(--orange)">● AudioPlayer.swift</div><div class="file-card-desc">AVAudioEngine. Speed cycle 0.75x→2x. Space play/pause notification.</div><div class="file-card-stats"><span class="file-stat">114 LOC</span><span class="file-stat">SERVICE</span></div></div>
+  </div>
+
+  <h3 style="font-size:14px;margin-bottom:12px;color:var(--pink)">Evaluation (evaluation/) — 4 files</h3>
+  <div class="files-grid" style="margin-bottom:24px">
+    <div class="file-card"><div class="file-card-name" style="color:var(--pink)">● DEFINITION.md</div><div class="file-card-desc">Formal commitment spec: what IS/ISN'T. Scoring rubric. Quality thresholds (P/R/F1 ≥ 0.70).</div><div class="file-card-stats"><span class="file-stat">100+ LOC</span></div></div>
+    <div class="file-card"><div class="file-card-name" style="color:var(--pink)">● evaluate.py</div><div class="file-card-desc">Greedy best-match algorithm. Precision/Recall/F1. Field accuracy. ASCII report.</div><div class="file-card-stats"><span class="file-stat">EVAL</span></div></div>
+    <div class="file-card"><div class="file-card-name" style="color:var(--pink)">● run_eval.py</div><div class="file-card-desc">E2E: fetch transcripts → extract → evaluate → report. CLI with --verbose, --skip-extract.</div><div class="file-card-stats"><span class="file-stat">RUNNER</span></div></div>
+    <div class="file-card"><div class="file-card-name" style="color:var(--pink)">● ground_truth_template.json</div><div class="file-card-desc">5 session IDs for annotation. Empty commitments[]. Needs manual filling.</div><div class="file-card-stats"><span class="file-stat" style="color:var(--amber)">NOT ANNOTATED</span></div></div>
+  </div>
+
+  <h3 style="font-size:14px;margin-bottom:12px;color:var(--green)">Testing — 486 tests</h3>
+  <div class="files-grid">
+    <div class="file-card"><div class="file-card-name" style="color:var(--green)">● Python tests/</div><div class="file-card-desc">338 tests via pytest. 18 test files covering all src/ modules.</div><div class="file-card-stats"><span class="file-stat" style="color:var(--green)">ALL PASS</span></div></div>
+    <div class="file-card"><div class="file-card-name" style="color:var(--green)">● Swift Tests/</div><div class="file-card-desc">148 tests as standalone executable (no XCTest — CLT limitation).</div><div class="file-card-stats"><span class="file-stat" style="color:var(--green)">ALL PASS</span></div></div>
+    <div class="file-card"><div class="file-card-name" style="color:var(--green)">● CI: tests.yml</div><div class="file-card-desc">GitHub Actions. Python 3.11-3.13 matrix + Swift macOS-14.</div><div class="file-card-stats"><span class="file-stat">AUTOMATED</span></div></div>
+  </div>
+</div>
+
+</div><!-- /content -->
+
+<script>
+// Navigation
+document.querySelectorAll('.nav-tab').forEach(tab => {
+  tab.addEventListener('click', () => switchView(tab.dataset.view));
+});
+
+function switchView(viewId) {
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+
+  const tab = document.querySelector(`.nav-tab[data-view="${viewId}"]`);
+  const view = document.getElementById(`view-${viewId}`);
+
+  if (tab) tab.classList.add('active');
+  if (view) view.classList.add('active');
+
+  // Scroll to top
+  document.querySelector('.content').scrollTop = 0;
+}
+
+// Toggle pipeline stage details
+function toggleDetails(el) {
+  const details = el.nextElementSibling;
+  if (details.classList.contains('open')) {
+    details.classList.remove('open');
+    el.textContent = el.textContent.replace('▴', '▾');
+  } else {
+    details.classList.add('open');
+    el.textContent = el.textContent.replace('▾', '▴');
+  }
+}
+
+// Toggle tree nodes
+function toggleTree(el) {
+  const children = el.parentElement.querySelector('.tree-children');
+  if (children) {
+    children.classList.toggle('collapsed');
+  }
+}
+
+// Keyboard navigation
+document.addEventListener('keydown', (e) => {
+  const views = ['overview', 'pipeline', 'data', 'app', 'ai', 'config', 'errors', 'files'];
+  const current = views.findIndex(v => document.getElementById(`view-${v}`).classList.contains('active'));
+
+  if (e.key === 'ArrowRight' && current < views.length - 1) {
+    switchView(views[current + 1]);
+  } else if (e.key === 'ArrowLeft' && current > 0) {
+    switchView(views[current - 1]);
+  }
+});
+</script>
+
+</body>
+</html>

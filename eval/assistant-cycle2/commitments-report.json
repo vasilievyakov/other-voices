@@ -1,0 +1,397 @@
+{
+ "aggregate": {
+  "sessions": 8,
+  "k": 3,
+  "mean_self_consistency": 1.0,
+  "recall_total": 9,
+  "recall_found": 8,
+  "total_seconds": 1080.0
+ },
+ "sessions": [
+  {
+   "session_id": "20260722_110231",
+   "candidates": 0,
+   "counts": [
+    0,
+    0,
+    0
+   ],
+   "self_consistency": null,
+   "uncertain_rate": 0.0,
+   "verified_exact_rate": 0.0,
+   "seconds": 0.0,
+   "extracted": []
+  },
+  {
+   "session_id": "20260722_100100",
+   "candidates": 4,
+   "counts": [
+    2,
+    2,
+    2
+   ],
+   "self_consistency": 1.0,
+   "uncertain_rate": 0.0,
+   "verified_exact_rate": 1.0,
+   "seconds": 51.5,
+   "extracted": [
+    {
+     "type": "outgoing",
+     "who": "SPEAKER_ME",
+     "to_whom": null,
+     "what": "А, давайте я лучше в Telegram скину.",
+     "deadline": null,
+     "quote": "А, давайте я лучше в Telegram скину.",
+     "uncertain": 0,
+     "confidence_votes": "3/3",
+     "verified": "exact"
+    },
+    {
+     "type": "outgoing",
+     "who": "SPEAKER_ME",
+     "to_whom": null,
+     "what": "Сейчас я пришлю ссылку.",
+     "deadline": null,
+     "quote": "Сейчас я пришлю ссылку.",
+     "uncertain": 0,
+     "confidence_votes": "3/3",
+     "verified": "exact"
+    }
+   ],
+   "recall": {
+    "total": 2,
+    "found": 2
+   }
+  },
+  {
+   "session_id": "20260721_160242",
+   "candidates": 5,
+   "counts": [
+    2,
+    2,
+    2
+   ],
+   "self_consistency": 1.0,
+   "uncertain_rate": 0.0,
+   "verified_exact_rate": 1.0,
+   "seconds": 139.5,
+   "extracted": [
+    {
+     "type": "outgoing",
+     "who": "SPEAKER_ME",
+     "to_whom": null,
+     "what": "и мы будем завтра их пробовать",
+     "deadline": null,
+     "quote": "и мы будем завтра их пробовать",
+     "uncertain": 0,
+     "confidence_votes": "3/3",
+     "verified": "exact"
+    },
+    {
+     "type": "outgoing",
+     "who": "SPEAKER_ME",
+     "to_whom": null,
+     "what": "И мы тоже это будем делать в пятницу, наверное.",
+     "deadline": null,
+     "quote": "И мы тоже это будем делать в пятницу, наверное.",
+     "uncertain": 0,
+     "confidence_votes": "3/3",
+     "verified": "exact"
+    }
+   ],
+   "recall": {
+    "total": 1,
+    "found": 0
+   }
+  },
+  {
+   "session_id": "20260721_130103",
+   "candidates": 4,
+   "counts": [
+    4,
+    4,
+    4
+   ],
+   "self_consistency": 1.0,
+   "uncertain_rate": 0.0,
+   "verified_exact_rate": 1.0,
+   "seconds": 132.8,
+   "extracted": [
+    {
+     "type": "outgoing",
+     "who": "SPEAKER_ME",
+     "to_whom": null,
+     "what": "сделаю универсальный набор который можно в принципе под любую нейронку развернуть это уже по сути универсальный",
+     "deadline": null,
+     "quote": "сделаю универсальный набор который можно в принципе под любую нейронку развернуть это уже по сути универсальный",
+     "uncertain": 0,
+     "confidence_votes": "3/3",
+     "verified": "exact"
+    },
+    {
+     "type": "outgoing",
+     "who": "SPEAKER_ME",
+     "to_whom": null,
+     "what": "это короче в каких-то местах я ставлю точки где мое участие важно то есть я говорю сделаю",
+     "deadline": null,
+     "quote": "это короче в каких-то местах я ставлю точки где мое участие важно то есть я говорю сделаю",
+     "uncertain": 0,
+     "confidence_votes": "3/3",
+     "verified": "exact"
+    },
+    {
+     "type": "outgoing",
+     "who": "SPEAKER_ME",
+     "to_whom": null,
+     "what": "Я сейчас собираю оптимальку, я скину, могу почитать на самом деле этот отчет.",
+     "deadline": null,
+     "quote": "Я сейчас собираю оптимальку, я скину, могу почитать на самом деле этот отчет.",
+     "uncertain": 0,
+     "confidence_votes": "3/3",
+     "verified": "exact"
+    },
+    {
+     "type": "outgoing",
+     "who": "SPEAKER_ME",
+     "to_whom": null,
+     "what": "смотрите на следующей неделе будем делать интерфейс и потом у нас будет недельку на",
+     "deadline": null,
+     "quote": "смотрите на следующей неделе будем делать интерфейс и потом у нас будет недельку на",
+     "uncertain": 0,
+     "confidence_votes": "3/3",
+     "verified": "exact"
+    }
+   ],
+   "recall": {
+    "total": 2,
+    "found": 2
+   }
+  },
+  {
+   "session_id": "20260720_171437",
+   "candidates": 20,
+   "counts": [
+    8,
+    8,
+    8
+   ],
+   "self_consistency": 1.0,
+   "uncertain_rate": 0.0,
+   "verified_exact_rate": 1.0,
+   "seconds": 424.6,
+   "extracted": [
+    {
+     "type": "outgoing",
+     "who": "SPEAKER_ME",
+     "to_whom": null,
+     "what": "давайте сделаю запись",
+     "deadline": null,
+     "quote": "давайте сделаю запись",
+     "uncertain": 0,
+     "confidence_votes": "3/3",
+     "verified": "exact"
+    },
+    {
+     "type": "outgoing",
+     "who": "SPEAKER_ME",
+     "to_whom": null,
+     "what": "если нужно вам скинем recording in progress тем чтобы на продлёнке",
+     "deadline": null,
+     "quote": "если нужно вам скинем recording in progress тем чтобы на продлёнке",
+     "uncertain": 0,
+     "confidence_votes": "3/3",
+     "verified": "exact"
+    },
+    {
+     "type": "outgoing",
+     "who": "SPEAKER_ME",
+     "to_whom": null,
+     "what": "Да, да, да, обязательно.",
+     "deadline": null,
+     "quote": "Да, да, да, обязательно.",
+     "uncertain": 0,
+     "confidence_votes": "3/3",
+     "verified": "exact"
+    },
+    {
+     "type": "outgoing",
+     "who": "SPEAKER_ME",
+     "to_whom": null,
+     "what": "сейчас я вам скину прям такой",
+     "deadline": null,
+     "quote": "сейчас я вам скину прям такой",
+     "uncertain": 0,
+     "confidence_votes": "3/3",
+     "verified": "exact"
+    },
+    {
+     "type": "outgoing",
+     "who": "SPEAKER_ME",
+     "to_whom": null,
+     "what": "файл открыть прям все скопировать и отправить ему какой вот документ я скину так это я вставила",
+     "deadline": null,
+     "quote": "файл открыть прям все скопировать и отправить ему какой вот документ я скину так это я вставила",
+     "uncertain": 0,
+     "confidence_votes": "3/3",
+     "verified": "exact"
+    },
+    {
+     "type": "outgoing",
+     "who": "SPEAKER_ME",
+     "to_whom": null,
+     "what": "сейчас ничего не будет что я окном делюсь подожди сейчас я заново поделюсь вот он",
+     "deadline": null,
+     "quote": "сейчас ничего не будет что я окном делюсь подожди сейчас я заново поделюсь вот он",
+     "uncertain": 0,
+     "confidence_votes": "3/3",
+     "verified": "exact"
+    },
+    {
+     "type": "outgoing",
+     "who": "SPEAKER_ME",
+     "to_whom": null,
+     "what": "давайте мы пришлем просто за завтра сделаем среди пришлем а завтра мы",
+     "deadline": null,
+     "quote": "давайте мы пришлем просто за завтра сделаем среди пришлем а завтра мы",
+     "uncertain": 0,
+     "confidence_votes": "3/3",
+     "verified": "exact"
+    },
+    {
+     "type": "outgoing",
+     "who": "SPEAKER_ME",
+     "to_whom": null,
+     "what": "задание на дом поэкспериментировать со всем что мы сделали мы пришлем задачник пройдите по нему",
+     "deadline": null,
+     "quote": "задание на дом поэкспериментировать со всем что мы сделали мы пришлем задачник пройдите по нему",
+     "uncertain": 0,
+     "confidence_votes": "3/3",
+     "verified": "exact"
+    }
+   ],
+   "recall": {
+    "total": 1,
+    "found": 1
+   }
+  },
+  {
+   "session_id": "20260720_145950",
+   "candidates": 6,
+   "counts": [
+    1,
+    1,
+    1
+   ],
+   "self_consistency": 1.0,
+   "uncertain_rate": 0.0,
+   "verified_exact_rate": 1.0,
+   "seconds": 116.7,
+   "extracted": [
+    {
+     "type": "outgoing",
+     "who": "SPEAKER_ME",
+     "to_whom": null,
+     "what": "обязательно в среду будем подчинять в итоге давайте 1810 чтобы нас получится",
+     "deadline": null,
+     "quote": "обязательно в среду будем подчинять в итоге давайте 1810 чтобы нас получится",
+     "uncertain": 0,
+     "confidence_votes": "3/3",
+     "verified": "exact"
+    }
+   ]
+  },
+  {
+   "session_id": "20260720_132102",
+   "candidates": 9,
+   "counts": [
+    4,
+    4,
+    4
+   ],
+   "self_consistency": 1.0,
+   "uncertain_rate": 0.0,
+   "verified_exact_rate": 1.0,
+   "seconds": 182.2,
+   "extracted": [
+    {
+     "type": "outgoing",
+     "who": "SPEAKER_ME",
+     "to_whom": null,
+     "what": "Давай дам. Я тебе скину тогда все сейчас после звонка.",
+     "deadline": null,
+     "quote": "Давай дам. Я тебе скину тогда все сейчас после звонка.",
+     "uncertain": 0,
+     "confidence_votes": "3/3",
+     "verified": "exact"
+    },
+    {
+     "type": "outgoing",
+     "who": "SPEAKER_ME",
+     "to_whom": null,
+     "what": "обязательно делать, и",
+     "deadline": null,
+     "quote": "обязательно делать, и",
+     "uncertain": 0,
+     "confidence_votes": "3/3",
+     "verified": "exact"
+    },
+    {
+     "type": "outgoing",
+     "who": "SPEAKER_ME",
+     "to_whom": null,
+     "what": "и пришлю а там есть хоть раз ручку подписать меня строили каком-нибудь ее можно одной кнопкой",
+     "deadline": null,
+     "quote": "и пришлю а там есть хоть раз ручку подписать меня строили каком-нибудь ее можно одной кнопкой",
+     "uncertain": 0,
+     "confidence_votes": "3/3",
+     "verified": "exact"
+    },
+    {
+     "type": "outgoing",
+     "who": "SPEAKER_ME",
+     "to_whom": null,
+     "what": "Футболку какую-нибудь сделать. Давай сделаем какие-нибудь футболки.",
+     "deadline": null,
+     "quote": "Футболку какую-нибудь сделать. Давай сделаем какие-нибудь футболки.",
+     "uncertain": 0,
+     "confidence_votes": "3/3",
+     "verified": "exact"
+    }
+   ],
+   "recall": {
+    "total": 2,
+    "found": 2
+   }
+  },
+  {
+   "session_id": "20260717_140213",
+   "candidates": 2,
+   "counts": [
+    1,
+    1,
+    1
+   ],
+   "self_consistency": 1.0,
+   "uncertain_rate": 0.0,
+   "verified_exact_rate": 1.0,
+   "seconds": 32.7,
+   "extracted": [
+    {
+     "type": "outgoing",
+     "who": "SPEAKER_ME",
+     "to_whom": null,
+     "what": "пока ты рассказываешь, я соберу какого-нибудь агентика",
+     "deadline": null,
+     "quote": "пока ты рассказываешь, я соберу какого-нибудь агентика",
+     "uncertain": 0,
+     "confidence_votes": "3/3",
+     "verified": "exact"
+    }
+   ],
+   "recall": {
+    "total": 1,
+    "found": 1
+   }
+  }
+ ]
+}

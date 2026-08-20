@@ -735,6 +735,58 @@ class TestPlatformCanaryInStatus:
         assert data["platform_canary"] == ["Google Meet"]
 
 
+class TestExtractionCanary:
+    @staticmethod
+    def _isolate(daemon_mod, tmp_path, monkeypatch):
+        monkeypatch.setattr(daemon_mod, "STATUS_PATH", tmp_path / "status.json")
+        monkeypatch.setattr(daemon_mod, "_ollama_available", True)
+        monkeypatch.setattr(daemon_mod, "_system_audio_ok", True)
+        monkeypatch.setattr(daemon_mod, "_mic_only_streak", 0)
+        monkeypatch.setattr(daemon_mod, "_platform_canary", [])
+        monkeypatch.setattr(daemon_mod, "_extraction_canary", None)
+
+    def test_status_contains_extraction_canary_default_none(
+        self, tmp_path, monkeypatch
+    ):
+        import src.daemon as daemon_mod
+
+        self._isolate(daemon_mod, tmp_path, monkeypatch)
+        daemon_mod.write_status("idle")
+        import json as _json
+
+        data = _json.loads((tmp_path / "status.json").read_text())
+        assert "extraction_canary" in data
+        assert data["extraction_canary"] is None
+
+    def test_canary_set_on_long_call_without_candidates(self, tmp_path, monkeypatch):
+        import src.daemon as daemon_mod
+
+        self._isolate(daemon_mod, tmp_path, monkeypatch)
+        transcript = "\n".join(
+            "[SPEAKER_ME 0:0%d] Погода сегодня отличная." % i for i in range(5)
+        )
+        daemon_mod._update_extraction_canary("sess-1", 3000.0, transcript)
+        assert daemon_mod._extraction_canary == "sess-1"
+
+    def test_canary_cleared_when_candidates_found(self, tmp_path, monkeypatch):
+        import src.daemon as daemon_mod
+
+        self._isolate(daemon_mod, tmp_path, monkeypatch)
+        monkeypatch.setattr(daemon_mod, "_extraction_canary", "old-sess")
+        transcript = "[SPEAKER_ME 0:01] Я отправлю тебе документ завтра."
+        daemon_mod._update_extraction_canary("sess-2", 3000.0, transcript)
+        assert daemon_mod._extraction_canary is None
+
+    def test_canary_untouched_on_short_call(self, tmp_path, monkeypatch):
+        import src.daemon as daemon_mod
+
+        self._isolate(daemon_mod, tmp_path, monkeypatch)
+        monkeypatch.setattr(daemon_mod, "_extraction_canary", "old-sess")
+        transcript = "[SPEAKER_ME 0:01] Погода отличная."
+        daemon_mod._update_extraction_canary("sess-3", 120.0, transcript)
+        assert daemon_mod._extraction_canary == "old-sess"
+
+
 class TestCommitmentsPersisted:
     @patch("src.daemon.check_ollama", return_value=True)
     @patch("src.daemon.notify")
@@ -788,10 +840,15 @@ class TestCommitmentsV2Wiring:
         from src.daemon import process_recording
 
         v2_item = {
-            "type": "outgoing", "who": "SPEAKER_ME", "to_whom": "Вася",
-            "what": "прислать смету", "deadline": "пятница",
-            "quote": "пришлю смету в пятницу", "uncertain": 0,
-            "confidence_votes": "3/3", "verified": "exact",
+            "type": "outgoing",
+            "who": "SPEAKER_ME",
+            "to_whom": "Вася",
+            "what": "прислать смету",
+            "deadline": "пятница",
+            "quote": "пришлю смету в пятницу",
+            "uncertain": 0,
+            "confidence_votes": "3/3",
+            "verified": "exact",
         }
         mock_extract.return_value = [v2_item]
         transcriber = MagicMock()
@@ -805,7 +862,9 @@ class TestCommitmentsV2Wiring:
         # старый путь вернул СВОИ commitments — они должны быть вытеснены v2
         summarizer.summarize.return_value = {
             "summary": "s",
-            "commitments": [{"type": "outgoing", "who": "SPEAKER_ME", "what": "старое"}],
+            "commitments": [
+                {"type": "outgoing", "who": "SPEAKER_ME", "what": "старое"}
+            ],
         }
 
         process_recording(sample_session, transcriber, summarizer, tmp_db)
@@ -817,3 +876,94 @@ class TestCommitmentsV2Wiring:
         call = tmp_db.get_call(sample_session["session_id"])
         summary = json.loads(call["summary_json"])
         assert summary["commitments"][0]["what"] == "прислать смету"
+
+
+class TestCommitmentEnrichment:
+    """process_recording computes title and deadline_date for each v2 item."""
+
+    def _transcriber(self):
+        transcriber = MagicMock()
+        transcriber.transcribe_separate.return_value = {
+            "text": "[0:00] SPEAKER_ME: пришлю смету завтра",
+            "segments": [],
+            "transcript_me": ["пришлю смету завтра"],
+            "transcript_others": ["ок"],
+        }
+        return transcriber
+
+    def _summarizer(self):
+        summarizer = MagicMock()
+        summarizer.summarize.return_value = {"summary": "s"}
+        return summarizer
+
+    def _item(self, deadline=None, quote=None):
+        return {
+            "type": "outgoing",
+            "who": "SPEAKER_ME",
+            "to_whom": None,
+            "what": "прислать смету",
+            "deadline": deadline,
+            "quote": quote,
+            "uncertain": 0,
+            "confidence_votes": "3/3",
+            "verified": "exact",
+        }
+
+    def _run(self, tmp_db, sample_session, item, title=None):
+        with (
+            patch("src.daemon.check_ollama", return_value=True),
+            patch("src.daemon.notify"),
+            patch("src.daemon.write_status"),
+            patch("src.daemon.extract_commitments", return_value=[item]),
+            patch("src.daemon.normalize_title", return_value=title) as mock_title,
+        ):
+            process_recording(
+                sample_session, self._transcriber(), self._summarizer(), tmp_db
+            )
+        return tmp_db.get_commitments(sample_session["session_id"]), mock_title
+
+    def test_deadline_date_from_deadline_phrase(self, tmp_db, sample_session):
+        from datetime import datetime, timedelta
+
+        item = self._item(deadline="завтра", quote="пришлю смету завтра")
+        stored, _ = self._run(tmp_db, sample_session, item)
+        call_date = datetime.fromisoformat(sample_session["started_at"]).date()
+        expected = (call_date + timedelta(days=1)).isoformat()
+        assert stored[0]["deadline_date"] == expected
+
+    def test_deadline_date_from_quote_when_deadline_empty(self, tmp_db, sample_session):
+        from datetime import datetime, timedelta
+
+        item = self._item(deadline=None, quote="пришлю смету завтра")
+        stored, _ = self._run(tmp_db, sample_session, item)
+        call_date = datetime.fromisoformat(sample_session["started_at"]).date()
+        expected = (call_date + timedelta(days=1)).isoformat()
+        assert stored[0]["deadline_date"] == expected
+
+    def test_deadline_date_none_when_unparseable(self, tmp_db, sample_session):
+        item = self._item(deadline="как получится", quote="пришлю как получится")
+        stored, _ = self._run(tmp_db, sample_session, item)
+        assert stored[0]["deadline_date"] is None
+
+    def test_title_written_and_normalize_called_with_quote_and_deadline(
+        self, tmp_db, sample_session
+    ):
+        item = self._item(deadline="завтра", quote="пришлю смету завтра")
+        stored, mock_title = self._run(
+            tmp_db, sample_session, item, title="прислать смету — завтра"
+        )
+        assert stored[0]["title"] == "прислать смету — завтра"
+        mock_title.assert_called_once_with("пришлю смету завтра", "завтра")
+
+    def test_title_none_stays_null(self, tmp_db, sample_session):
+        item = self._item(deadline=None, quote="пришлю смету завтра")
+        stored, _ = self._run(tmp_db, sample_session, item, title=None)
+        assert stored[0]["title"] is None
+
+    def test_summary_json_carries_enriched_fields(self, tmp_db, sample_session):
+        item = self._item(deadline="завтра", quote="пришлю смету завтра")
+        self._run(tmp_db, sample_session, item, title="прислать смету — завтра")
+        call_row = tmp_db.get_call(sample_session["session_id"])
+        summary = json.loads(call_row["summary_json"])
+        assert summary["commitments"][0]["title"] == "прислать смету — завтра"
+        assert summary["commitments"][0]["deadline_date"] is not None
