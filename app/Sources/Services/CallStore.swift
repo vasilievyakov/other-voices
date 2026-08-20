@@ -69,6 +69,10 @@ package final class CallStore {
         db.getCall(sessionId)
     }
 
+    func openCommitments() -> [Commitment] {
+        db.openCommitments()
+    }
+
     func allActionItems(days: Int = 90) -> [ActionItem] {
         let calls = db.actionItemCalls(days: days)
         var items: [ActionItem] = []

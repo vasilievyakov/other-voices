@@ -1,103 +1,107 @@
 import SwiftUI
 
+/// Commitments tab — reads the REAL commitments table (extraction v2 with
+/// verified quotes), not the legacy action_items strings. Uncertain items
+/// live in their own visually distinct section and never mix with the
+/// confident debt (Allen's rule: a confident number over shaky data is a lie).
 struct ActionItemsView: View {
     @Environment(CallStore.self) private var store
     @Binding var selectedCallId: String?
-    @State private var items: [ActionItem] = []
+    @State private var commitments: [Commitment] = []
+
+    private var outgoing: [Commitment] {
+        commitments.filter { !$0.uncertain && $0.direction == "outgoing" }
+    }
+    private var incoming: [Commitment] {
+        commitments.filter { !$0.uncertain && $0.direction == "incoming" }
+    }
+    private var unconfirmed: [Commitment] {
+        commitments.filter { $0.uncertain }
+    }
 
     var body: some View {
         List {
-            if items.isEmpty {
-                ContentUnavailableView("No action items",
+            if commitments.isEmpty {
+                ContentUnavailableView(
+                    "No open commitments",
                     systemImage: "checklist",
-                    description: Text("Complete a call to see action items here."))
+                    description: Text(
+                        "Not found doesn't mean none were made — extraction "
+                        + "doesn't cover everything. New calls feed this list."
+                    )
+                )
                 .listRowSeparator(.hidden)
             } else {
-                ForEach(groupedByCall, id: \.0) { sessionId, callItems in
+                commitmentSection("You promised", items: outgoing, icon: "arrow.up.right.circle")
+                commitmentSection("Promised to you", items: incoming, icon: "arrow.down.left.circle")
+
+                if !unconfirmed.isEmpty {
                     Section {
-                        ForEach(callItems) { item in
-                            Button {
-                                selectedCallId = item.sessionId
-                            } label: {
-                                ActionItemRow(item: item)
-                            }
-                            .buttonStyle(.plain)
-                            .accessibilityHint("Opens the call for this action item")
+                        ForEach(unconfirmed) { c in
+                            row(c)
+                                .opacity(0.6)
                         }
                     } header: {
-                        if let first = callItems.first {
-                            HStack {
-                                // TODO: use Call.iconForApp(name) once a static method is added to Call.swift
-                                Image(systemName: iconForApp(first.appName))
-                                    .foregroundStyle(.secondary)
-                                Text(first.appName)
-                                    .fontWeight(.medium)
-                                Text("—")
-                                    .foregroundStyle(.tertiary)
-                                Text(first.callDateFormatted)
-                                    .foregroundStyle(.secondary)
-                            }
+                        Label("Needs confirmation — low extraction confidence",
+                              systemImage: "questionmark.circle")
                             .font(.caption)
-                        }
+                            .foregroundStyle(.orange)
                     }
                 }
             }
         }
         .listStyle(.inset)
-        .onAppear { items = store.allActionItems() }
-        .onChange(of: store.totalCount) { _, _ in items = store.allActionItems() }
+        .onAppear { commitments = store.openCommitments() }
+        .onChange(of: store.totalCount) { _, _ in
+            commitments = store.openCommitments()
+        }
     }
 
-    private var groupedByCall: [(String, [ActionItem])] {
-        var dict: [String: [ActionItem]] = [:]
-        var order: [String] = []
-        for item in items {
-            if dict[item.sessionId] == nil {
-                order.append(item.sessionId)
+    @ViewBuilder
+    private func commitmentSection(_ title: String, items: [Commitment], icon: String) -> some View {
+        if !items.isEmpty {
+            Section {
+                ForEach(items) { c in
+                    row(c)
+                }
+            } header: {
+                Label(title, systemImage: icon)
+                    .font(.caption)
+                    .fontWeight(.medium)
             }
-            dict[item.sessionId, default: []].append(item)
-        }
-        return order.map { ($0, dict[$0]!) }
-    }
-
-    // TODO: remove this once Call.swift exposes a static iconForApp(_:) method;
-    // then replace all call sites with Call.iconForApp(name).
-    private func iconForApp(_ name: String) -> String {
-        switch name {
-        case "Zoom": return "video.fill"
-        case "Google Meet": return "globe"
-        case "Telegram": return "bubble.left.fill"
-        case "FaceTime": return "phone.fill"
-        case "Discord": return "headphones"
-        case "Microsoft Teams": return "person.3.fill"
-        default: return "phone.fill"
         }
     }
-}
 
-struct ActionItemRow: View {
-    let item: ActionItem
-
-    var body: some View {
-        HStack(alignment: .top, spacing: 8) {
-            Image(systemName: "arrow.right.circle")
-                .font(.system(size: 13))
-                .foregroundStyle(.secondary)
-                .padding(.top, 2)
-                .accessibilityHidden(true)
-
-            VStack(alignment: .leading, spacing: 2) {
-                Text(item.text)
-                    .font(.body)
-
-                if let person = item.person {
-                    Text(person)
+    private func row(_ c: Commitment) -> some View {
+        Button {
+            selectedCallId = c.sessionId
+        } label: {
+            VStack(alignment: .leading, spacing: 3) {
+                HStack(alignment: .top) {
+                    Text(c.text)
+                        .font(.body)
+                    Spacer()
+                    Text(c.callDate)
                         .font(.caption)
-                        .foregroundStyle(.tint)
+                        .foregroundStyle(.secondary)
+                        .monospacedDigit()
+                }
+                if let deadline = c.deadline, !deadline.isEmpty {
+                    Text("к сроку: \(deadline)")
+                        .font(.caption)
+                        .foregroundStyle(.orange)
+                }
+                if let quote = c.quote, !quote.isEmpty {
+                    Text("«\(quote)»")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(2)
                 }
             }
+            .padding(.vertical, 2)
+            .contentShape(Rectangle())
         }
-        .padding(.vertical, 2)
-        .contentShape(Rectangle())
+        .buttonStyle(.plain)
+        .accessibilityHint("Opens the call for this commitment")
     }
 }

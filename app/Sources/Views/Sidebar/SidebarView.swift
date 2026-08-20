@@ -39,7 +39,7 @@ struct SidebarView: View {
             } icon: {
                 Image(systemName: SidebarItem.actionItems.icon)
             }
-            .badge(store.allActionItems().count)
+            .badge(store.openCommitments().filter { !$0.uncertain }.count)
             .accessibilityLabel("Commitments")
             .tag(SidebarItem.actionItems)
 

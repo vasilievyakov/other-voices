@@ -131,6 +131,48 @@ final class SQLiteDatabase {
         return readCalls(stmt: stmt!)
     }
 
+    func openCommitments() -> [Commitment] {
+        guard let db = ensureOpen() else { return [] }
+
+        let sql = """
+        SELECT c.id, c.session_id, c.direction,
+               COALESCE(NULLIF(c.who_name, ''), c.who_label) AS who,
+               c.text, c.verbatim_quote, c.deadline_raw, c.uncertain,
+               ca.app_name, COALESCE(ca.started_at, '')
+        FROM commitments c
+        JOIN calls ca ON ca.session_id = c.session_id
+        WHERE c.status = 'open'
+        ORDER BY ca.started_at DESC, c.id
+        """
+        var stmt: OpaquePointer?
+        guard sqlite3_prepare_v2(db, sql, -1, &stmt, nil) == SQLITE_OK else { return [] }
+        defer { sqlite3_finalize(stmt) }
+
+        func text(_ idx: Int32) -> String? {
+            guard let c = sqlite3_column_text(stmt, idx) else { return nil }
+            return String(cString: c)
+        }
+
+        var results: [Commitment] = []
+        while sqlite3_step(stmt) == SQLITE_ROW {
+            results.append(
+                Commitment(
+                    id: Int(sqlite3_column_int64(stmt, 0)),
+                    sessionId: text(1) ?? "",
+                    direction: text(2) ?? "",
+                    who: text(3) ?? "",
+                    text: text(4) ?? "",
+                    quote: text(5),
+                    deadline: text(6),
+                    uncertain: sqlite3_column_int(stmt, 7) != 0,
+                    appName: text(8) ?? "",
+                    callDate: String((text(9) ?? "").prefix(10))
+                )
+            )
+        }
+        return results
+    }
+
     func allEntities() -> [Entity] {
         guard let db = ensureOpen() else { return [] }
 
